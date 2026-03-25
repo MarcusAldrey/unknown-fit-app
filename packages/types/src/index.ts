@@ -46,6 +46,7 @@ export interface ExercicioTreino {
   treino_id: string;
   nome_exercicio: string;
   ordem: number;
+  numero_series_prescritas: number;
   prescricao: string | null;
   repeticao_ou_tempo: string | null;
   rer_rm_valor: string | null;

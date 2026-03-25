@@ -89,6 +89,7 @@ export function ExerciciosScreen({ route, navigation }: Props) {
       await api.post(`/personal/treinos/${treinoId}/exercicios`, {
         nome_exercicio: ex.nome_exercicio,
         ordem: nextOrdem,
+        numero_series_prescritas: ex.numero_series_prescritas,
         repeticao_ou_tempo: ex.repeticao_ou_tempo,
         rer_rm_valor: ex.rer_rm_valor,
         descanso_segundos: ex.descanso_segundos,
@@ -284,6 +285,7 @@ export function ExerciciosScreen({ route, navigation }: Props) {
             <View style={styles.info}>
               <Text style={styles.nome}>{item.nome_exercicio}</Text>
               <Text style={styles.detalhe}>
+                {item.numero_series_prescritas} séries ·{" "}
                 {item.repeticao_ou_tempo ?? "—"} · RER/RM:{" "}
                 {item.rer_rm_valor ?? "—"} · Desc:{" "}
                 {item.descanso_segundos ? `${item.descanso_segundos}s` : "—"}

@@ -1,10 +1,11 @@
 import uuid
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ExercicioTreinoCreate(BaseModel):
     nome_exercicio: str
     ordem: int
+    numero_series_prescritas: int = Field(ge=1)
     prescricao: str | None = None
     repeticao_ou_tempo: str | None = None
     rer_rm_valor: str | None = None
@@ -16,6 +17,7 @@ class ExercicioTreinoCreate(BaseModel):
 class ExercicioTreinoUpdate(BaseModel):
     nome_exercicio: str | None = None
     ordem: int | None = None
+    numero_series_prescritas: int | None = Field(default=None, ge=1)
     prescricao: str | None = None
     repeticao_ou_tempo: str | None = None
     rer_rm_valor: str | None = None
@@ -29,6 +31,7 @@ class ExercicioTreinoOut(BaseModel):
     treino_id: uuid.UUID
     nome_exercicio: str
     ordem: int
+    numero_series_prescritas: int
     prescricao: str | None = None
     repeticao_ou_tempo: str | None = None
     rer_rm_valor: str | None = None

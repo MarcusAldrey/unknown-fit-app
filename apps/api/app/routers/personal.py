@@ -250,6 +250,7 @@ async def criar_exercicio(
         treino_id=treino_id,
         nome_exercicio=body.nome_exercicio,
         ordem=body.ordem,
+        numero_series_prescritas=body.numero_series_prescritas,
         prescricao=body.prescricao,
         repeticao_ou_tempo=body.repeticao_ou_tempo,
         rer_rm_valor=body.rer_rm_valor,

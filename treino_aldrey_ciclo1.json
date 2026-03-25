@@ -1,0 +1,322 @@
+{
+  "nome": "Aldrey - Ciclo 1 - Adaptativo - ABCDE - 08FEV26",
+  "treinos": [
+    {
+      "treino": "A",
+      "foco": "Peito, Ombro e Tríceps",
+      "exercicios": [
+        {
+          "nome": "Supino Inclinado com Barra",
+          "series": 3,
+          "repeticoes": "8-12",
+          "tecnica": null,
+          "rer_rm": "2",
+          "descanso": "1:30min a 2min",
+          "observacoes": null
+        },
+        {
+          "nome": "Supino Reto com Halteres",
+          "series": 3,
+          "repeticoes": "8-12",
+          "tecnica": null,
+          "rer_rm": "2",
+          "descanso": "1:30min a 2min",
+          "observacoes": null
+        },
+        {
+          "nome": "Crucifixo com Halter",
+          "series": 3,
+          "repeticoes": "8-12",
+          "tecnica": null,
+          "rer_rm": "2",
+          "descanso": "1:30min a 2min",
+          "observacoes": null
+        },
+        {
+          "nome": "Desenvolvimento Militar",
+          "series": 3,
+          "repeticoes": "8-12",
+          "tecnica": null,
+          "rer_rm": "2",
+          "descanso": "1:30min a 2min",
+          "observacoes": null
+        },
+        {
+          "nome": "Tríceps Francês com Halteres",
+          "series": 3,
+          "repeticoes": "8-12",
+          "tecnica": null,
+          "rer_rm": "2",
+          "descanso": "1min a 1:30min",
+          "observacoes": null
+        },
+        {
+          "nome": "Tríceps na Polia",
+          "series": 3,
+          "repeticoes": "8-12",
+          "tecnica": null,
+          "rer_rm": "2",
+          "descanso": "1min a 1:30min",
+          "observacoes": null
+        }
+      ]
+    },
+    {
+      "treino": "B",
+      "foco": "Inferiores (Força)",
+      "exercicios": [
+        {
+          "nome": "Levantamento Terra",
+          "series": 3,
+          "repeticoes": "5",
+          "tecnica": null,
+          "rer_rm": "100%/85%",
+          "descanso": null,
+          "observacoes": "Usar séries longe da falha (1 a 3 reps) com carga progressiva para aquecer e encontrar carga de trabalho. Usar carga de trabalho que falhe em 5RM, depois fazer as outras duas séries em 85% dessa carga."
+        },
+        {
+          "nome": "Agachamento",
+          "series": 3,
+          "repeticoes": "5",
+          "tecnica": null,
+          "rer_rm": "100%/85%",
+          "descanso": "1:30min a 2min",
+          "observacoes": "Usar séries longe da falha (1 a 3 reps) com carga progressiva para aquecer e encontrar carga de trabalho. Usar carga de trabalho que falhe em 5RM, depois fazer as outras duas séries em 85% dessa carga."
+        },
+        {
+          "nome": "Cadeira Extensora",
+          "series": 3,
+          "repeticoes": "8-12",
+          "tecnica": null,
+          "rer_rm": "2",
+          "descanso": "1:30min a 2min",
+          "observacoes": null
+        },
+        {
+          "nome": "Cadeira Flexora",
+          "series": 3,
+          "repeticoes": "8-12",
+          "tecnica": null,
+          "rer_rm": "2",
+          "descanso": "1min",
+          "observacoes": null
+        },
+        {
+          "nome": "Abdominal Canoa",
+          "series": 3,
+          "repeticoes": null,
+          "tecnica": "Isometria",
+          "duracao": "30seg a 1min",
+          "rer_rm": null,
+          "descanso": "1min",
+          "observacoes": "Falhar em todas. Direcionar as mãos e pernas para longe do corpo para dificultar sempre que atingir 1 minuto na progressão. Também é possível adicionar carga em mãos e pernas."
+        },
+        {
+          "nome": "Prancha Frontal",
+          "series": 3,
+          "repeticoes": null,
+          "tecnica": "Isometria",
+          "duracao": "30seg a 1min",
+          "rer_rm": null,
+          "descanso": "1min",
+          "observacoes": "Falhar em todas."
+        },
+        {
+          "nome": "Prancha Lateral",
+          "series": 3,
+          "repeticoes": null,
+          "tecnica": "Isometria",
+          "duracao": "30seg a 1min",
+          "rer_rm": null,
+          "descanso": "1min para alternar lados",
+          "observacoes": "Alternar continuamente entre lados. Levantar perna de cima no ar + segurar anilha a frente do corpo com braço de cima são formas de dificultar e manter dentro de 1min."
+        }
+      ]
+    },
+    {
+      "treino": "C",
+      "foco": "Costas e Bíceps",
+      "exercicios": [
+        {
+          "nome": "Remada Curvada Pronada",
+          "series": 3,
+          "repeticoes": "8-12",
+          "tecnica": null,
+          "rer_rm": "2",
+          "descanso": "1:30min a 2min",
+          "observacoes": "Verter os cotovelos a frente do corpo e trazer a barra apenas até a linha do queixo ou levemente abaixo."
+        },
+        {
+          "nome": "Puxada Alta Triângulo",
+          "series": 3,
+          "repeticoes": "8-12",
+          "tecnica": null,
+          "rer_rm": "2",
+          "descanso": "1:30min a 2min",
+          "observacoes": null
+        },
+        {
+          "nome": "Remada Baixa",
+          "series": 3,
+          "repeticoes": "8-12",
+          "tecnica": null,
+          "rer_rm": "2",
+          "descanso": "1:30min a 2min",
+          "observacoes": null
+        },
+        {
+          "nome": "Rosca Direta com Barra",
+          "series": 3,
+          "repeticoes": "6-8",
+          "tecnica": null,
+          "rer_rm": "2",
+          "descanso": "2min a 3min",
+          "observacoes": "Socar peso nessa bagaça."
+        },
+        {
+          "nome": "Suitcase Carry",
+          "series": 3,
+          "repeticoes": null,
+          "tecnica": "Instabilidade",
+          "duracao": null,
+          "passos_minimos": 20,
+          "rer_rm": null,
+          "descanso": "30seg",
+          "observacoes": "Segurar uma anilha/halter/Kettlebell com apenas uma mão e andar sem deixar o tronco e quadril lateralizar. Andar pelo menos 20 passos. Utilizar carga alta."
+        },
+        {
+          "nome": "Panturrilha em Pé",
+          "series": 3,
+          "repeticoes": "6-8",
+          "tecnica": null,
+          "rer_rm": "FALHA",
+          "descanso": "2min a 3min",
+          "observacoes": "Pode fazer onde preferir, contanto que o joelho esteja esticado conta como em pé. Socar carga e FALHAR."
+        }
+      ]
+    },
+    {
+      "treino": "D",
+      "foco": "Super Bíceps, Super Lombar e Ombritos",
+      "exercicios": [
+        {
+          "nome": "Agachamento Zercher",
+          "series": 4,
+          "repeticoes": "8-12",
+          "tecnica": null,
+          "rer_rm": "2",
+          "descanso": "2min a 3min",
+          "observacoes": null
+        },
+        {
+          "nome": "Isometria de Bíceps em 90 graus de Rosca Direta",
+          "series": 3,
+          "repeticoes": null,
+          "tecnica": "Isometria",
+          "duracao": "40seg a 80seg",
+          "rer_rm": null,
+          "descanso": "1min a 1:30min",
+          "observacoes": "Segurar a carga no ângulo de 90 graus."
+        },
+        {
+          "nome": "Rosca Martelo",
+          "series": 3,
+          "repeticoes": "8-12",
+          "tecnica": null,
+          "rer_rm": null,
+          "descanso": "1:30min a 2min",
+          "observacoes": null
+        },
+        {
+          "nome": "Rosca Scott",
+          "series": 3,
+          "repeticoes": "8-12",
+          "tecnica": null,
+          "rer_rm": null,
+          "descanso": "1:30min a 2min",
+          "observacoes": null
+        },
+        {
+          "nome": "Superman no Solo",
+          "series": 3,
+          "repeticoes": null,
+          "tecnica": null,
+          "duracao": "30seg a 1min",
+          "rer_rm": "FALHA",
+          "descanso": "1min",
+          "observacoes": null
+        },
+        {
+          "nome": "Desenvolvimento Militar com Halter",
+          "series": 3,
+          "repeticoes": "12-15",
+          "tecnica": null,
+          "rer_rm": "FALHA",
+          "descanso": "1min a 1:30min",
+          "observacoes": null
+        },
+        {
+          "nome": "Elevação Lateral",
+          "series": 3,
+          "repeticoes": "12-15",
+          "tecnica": null,
+          "rer_rm": "FALHA",
+          "descanso": "1min a 1:30min",
+          "observacoes": null
+        }
+      ]
+    },
+    {
+      "treino": "E",
+      "foco": "Inferiores Complementar",
+      "exercicios": [
+        {
+          "nome": "Afundo no Smith",
+          "series": 3,
+          "repeticoes": "6-8",
+          "tecnica": null,
+          "rer_rm": null,
+          "descanso": "2min a 3min",
+          "observacoes": null
+        },
+        {
+          "nome": "Elevação Pélvica",
+          "series": 3,
+          "repeticoes": "6-8",
+          "tecnica": null,
+          "rer_rm": null,
+          "descanso": "2min a 3min",
+          "observacoes": null
+        },
+        {
+          "nome": "Cadeira Extensora",
+          "series": 3,
+          "repeticoes": "8-12",
+          "tecnica": null,
+          "rer_rm": null,
+          "descanso": "1:30min a 2min",
+          "observacoes": null
+        },
+        {
+          "nome": "Cadeira Flexora",
+          "series": 3,
+          "repeticoes": "8-12",
+          "tecnica": null,
+          "rer_rm": null,
+          "descanso": "1:30min a 2min",
+          "observacoes": null
+        },
+        {
+          "nome": "Flexão de Joelho no Solo",
+          "series": 3,
+          "repeticoes": null,
+          "tecnica": "Isometria",
+          "duracao": "30seg a 1min",
+          "rer_rm": null,
+          "descanso": "Descansar 30seg antes de alternar pernas. 2 a 3min antes de repetir séries.",
+          "observacoes": "Manter apenas os calcanhares e a parte alta das costas no solo."
+        }
+      ]
+    }
+  ]
+}

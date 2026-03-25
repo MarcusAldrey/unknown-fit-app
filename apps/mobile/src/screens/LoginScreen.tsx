@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import axios from "axios";
 import { useAuth } from "../contexts/AuthContext";
 
 export function LoginScreen() {
@@ -27,8 +28,12 @@ export function LoginScreen() {
     setLoading(true);
     try {
       await login({ email: email.trim(), senha });
-    } catch {
-      Alert.alert("Erro", "Credenciais inválidas. Tente novamente.");
+    } catch (error) {
+      if (axios.isAxiosError(error) && !error.response) {
+        Alert.alert("Erro", "Falha de conexão com o servidor.");
+      } else {
+        Alert.alert("Erro", "Credenciais inválidas. Tente novamente.");
+      }
     } finally {
       setLoading(false);
     }

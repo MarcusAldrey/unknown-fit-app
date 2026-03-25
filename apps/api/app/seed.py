@@ -3,6 +3,7 @@ Seed idempotente para ExercicioBase.
 Executar: python -m app.seed
 """
 import asyncio
+from datetime import date
 
 from sqlalchemy import select
 
@@ -12,6 +13,9 @@ from app.models.usuario import Usuario, Role
 from app.models.personal import Personal
 from app.models.aluno import Aluno
 from app.models.vinculo import VinculoPersonalAluno
+from app.models.conjunto_treino import ConjuntoTreino
+from app.models.treino import Treino
+from app.models.exercicio_treino import ExercicioTreino, Tecnica
 from app.services.auth import hash_senha
 
 EXERCICIOS_BASE = [
@@ -151,6 +155,142 @@ async def seed():
         print("Usuários de teste criados:")
         print("  Personal: personal@ecg.com / 123456")
         print("  Aluno:    aluno@ecg.com / 123456")
+
+    # --- Fixture: Treino Aldrey - Ciclo 1 para aluno@ecg.com ---
+    await _seed_treino_aldrey_ciclo1()
+
+
+async def _seed_treino_aldrey_ciclo1():
+    """Cria o ConjuntoTreino 'Aldrey - Ciclo 1' para aluno@ecg.com (idempotente)."""
+    CONJUNTO_NOME = "Aldrey - Ciclo 1 - Adaptativo - ABCDE - 08FEV26"
+
+    TREINOS = [
+        {
+            "codigo": "A",
+            "nome": "Peito, Ombro e Tríceps",
+            "ordem": 0,
+            "exercicios": [
+                {"nome": "Supino Inclinado com Barra", "series": 3, "rep": "8-12", "tecnica": Tecnica.PADRAO, "rer": "2", "descanso": 90, "obs": None},
+                {"nome": "Supino Reto com Halteres", "series": 3, "rep": "8-12", "tecnica": Tecnica.PADRAO, "rer": "2", "descanso": 90, "obs": None},
+                {"nome": "Crucifixo com Halter", "series": 3, "rep": "8-12", "tecnica": Tecnica.PADRAO, "rer": "2", "descanso": 90, "obs": None},
+                {"nome": "Desenvolvimento Militar", "series": 3, "rep": "8-12", "tecnica": Tecnica.PADRAO, "rer": "2", "descanso": 90, "obs": None},
+                {"nome": "Tríceps Francês com Halteres", "series": 3, "rep": "8-12", "tecnica": Tecnica.PADRAO, "rer": "2", "descanso": 60, "obs": None},
+                {"nome": "Tríceps na Polia", "series": 3, "rep": "8-12", "tecnica": Tecnica.PADRAO, "rer": "2", "descanso": 60, "obs": None},
+            ],
+        },
+        {
+            "codigo": "B",
+            "nome": "Inferiores (Força)",
+            "ordem": 1,
+            "exercicios": [
+                {"nome": "Levantamento Terra", "series": 3, "rep": "5", "tecnica": Tecnica.PADRAO, "rer": "100%/85%", "descanso": None, "obs": "Usar séries longe da falha (1 a 3 reps) com carga progressiva para aquecer e encontrar carga de trabalho. Usar carga de trabalho que falhe em 5RM, depois fazer as outras duas séries em 85% dessa carga."},
+                {"nome": "Agachamento", "series": 3, "rep": "5", "tecnica": Tecnica.PADRAO, "rer": "100%/85%", "descanso": 90, "obs": "Usar séries longe da falha (1 a 3 reps) com carga progressiva para aquecer e encontrar carga de trabalho. Usar carga de trabalho que falhe em 5RM, depois fazer as outras duas séries em 85% dessa carga."},
+                {"nome": "Cadeira Extensora", "series": 3, "rep": "8-12", "tecnica": Tecnica.PADRAO, "rer": "2", "descanso": 90, "obs": None},
+                {"nome": "Cadeira Flexora", "series": 3, "rep": "8-12", "tecnica": Tecnica.PADRAO, "rer": "2", "descanso": 60, "obs": None},
+                {"nome": "Abdominal Canoa", "series": 3, "rep": "30seg a 1min", "tecnica": Tecnica.ISOMETRIA, "rer": None, "descanso": 60, "obs": "Falhar em todas. Direcionar as mãos e pernas para longe do corpo para dificultar sempre que atingir 1 minuto na progressão. Também é possível adicionar carga em mãos e pernas."},
+                {"nome": "Prancha Frontal", "series": 3, "rep": "30seg a 1min", "tecnica": Tecnica.ISOMETRIA, "rer": None, "descanso": 60, "obs": "Falhar em todas."},
+                {"nome": "Prancha Lateral", "series": 3, "rep": "30seg a 1min", "tecnica": Tecnica.ISOMETRIA, "rer": None, "descanso": 60, "obs": "Alternar continuamente entre lados. Levantar perna de cima no ar + segurar anilha a frente do corpo com braço de cima são formas de dificultar e manter dentro de 1min."},
+            ],
+        },
+        {
+            "codigo": "C",
+            "nome": "Costas e Bíceps",
+            "ordem": 2,
+            "exercicios": [
+                {"nome": "Remada Curvada Pronada", "series": 3, "rep": "8-12", "tecnica": Tecnica.PADRAO, "rer": "2", "descanso": 90, "obs": "Verter os cotovelos a frente do corpo e trazer a barra apenas até a linha do queixo ou levemente abaixo."},
+                {"nome": "Puxada Alta Triângulo", "series": 3, "rep": "8-12", "tecnica": Tecnica.PADRAO, "rer": "2", "descanso": 90, "obs": None},
+                {"nome": "Remada Baixa", "series": 3, "rep": "8-12", "tecnica": Tecnica.PADRAO, "rer": "2", "descanso": 90, "obs": None},
+                {"nome": "Rosca Direta com Barra", "series": 3, "rep": "6-8", "tecnica": Tecnica.PADRAO, "rer": "2", "descanso": 120, "obs": "Socar peso nessa bagaça."},
+                {"nome": "Suitcase Carry", "series": 3, "rep": "20 passos mínimos", "tecnica": Tecnica.INSTABILIDADE, "rer": None, "descanso": 30, "obs": "Segurar uma anilha/halter/Kettlebell com apenas uma mão e andar sem deixar o tronco e quadril lateralizar. Andar pelo menos 20 passos. Utilizar carga alta."},
+                {"nome": "Panturrilha em Pé", "series": 3, "rep": "6-8", "tecnica": Tecnica.PADRAO, "rer": "FALHA", "descanso": 120, "obs": "Pode fazer onde preferir, contanto que o joelho esteja esticado conta como em pé. Socar carga e FALHAR."},
+            ],
+        },
+        {
+            "codigo": "D",
+            "nome": "Super Bíceps, Super Lombar e Ombritos",
+            "ordem": 3,
+            "exercicios": [
+                {"nome": "Agachamento Zercher", "series": 4, "rep": "8-12", "tecnica": Tecnica.PADRAO, "rer": "2", "descanso": 120, "obs": None},
+                {"nome": "Isometria de Bíceps em 90 graus de Rosca Direta", "series": 3, "rep": "40seg a 80seg", "tecnica": Tecnica.ISOMETRIA, "rer": None, "descanso": 60, "obs": "Segurar a carga no ângulo de 90 graus."},
+                {"nome": "Rosca Martelo", "series": 3, "rep": "8-12", "tecnica": Tecnica.PADRAO, "rer": None, "descanso": 90, "obs": None},
+                {"nome": "Rosca Scott", "series": 3, "rep": "8-12", "tecnica": Tecnica.PADRAO, "rer": None, "descanso": 90, "obs": None},
+                {"nome": "Superman no Solo", "series": 3, "rep": "30seg a 1min", "tecnica": Tecnica.PADRAO, "rer": "FALHA", "descanso": 60, "obs": None},
+                {"nome": "Desenvolvimento Militar com Halter", "series": 3, "rep": "12-15", "tecnica": Tecnica.PADRAO, "rer": "FALHA", "descanso": 60, "obs": None},
+                {"nome": "Elevação Lateral", "series": 3, "rep": "12-15", "tecnica": Tecnica.PADRAO, "rer": "FALHA", "descanso": 60, "obs": None},
+            ],
+        },
+        {
+            "codigo": "E",
+            "nome": "Inferiores Complementar",
+            "ordem": 4,
+            "exercicios": [
+                {"nome": "Afundo no Smith", "series": 3, "rep": "6-8", "tecnica": Tecnica.PADRAO, "rer": None, "descanso": 120, "obs": None},
+                {"nome": "Elevação Pélvica", "series": 3, "rep": "6-8", "tecnica": Tecnica.PADRAO, "rer": None, "descanso": 120, "obs": None},
+                {"nome": "Cadeira Extensora", "series": 3, "rep": "8-12", "tecnica": Tecnica.PADRAO, "rer": None, "descanso": 90, "obs": None},
+                {"nome": "Cadeira Flexora", "series": 3, "rep": "8-12", "tecnica": Tecnica.PADRAO, "rer": None, "descanso": 90, "obs": None},
+                {"nome": "Flexão de Joelho no Solo", "series": 3, "rep": "30seg a 1min", "tecnica": Tecnica.ISOMETRIA, "rer": None, "descanso": 30, "obs": "Manter apenas os calcanhares e a parte alta das costas no solo."},
+            ],
+        },
+    ]
+
+    async with async_session() as session:
+        # Buscar aluno
+        result_a = await session.execute(
+            select(Aluno).join(Usuario).where(Usuario.email == "aluno@ecg.com")
+        )
+        aluno = result_a.scalar_one_or_none()
+        if aluno is None:
+            print("Seed treino: aluno@ecg.com não encontrado, pulando fixture de treino.")
+            return
+
+        # Verificar se já existe
+        result_c = await session.execute(
+            select(ConjuntoTreino).where(
+                ConjuntoTreino.aluno_id == aluno.id,
+                ConjuntoTreino.nome == CONJUNTO_NOME,
+            )
+        )
+        if result_c.scalar_one_or_none() is not None:
+            print(f"Seed treino: conjunto '{CONJUNTO_NOME}' já existe, pulando.")
+            return
+
+        # Criar conjunto
+        conjunto = ConjuntoTreino(
+            aluno_id=aluno.id,
+            nome=CONJUNTO_NOME,
+            ativo=True,
+            data_inicio=date(2026, 2, 8),
+        )
+        session.add(conjunto)
+        await session.flush()
+
+        # Criar treinos e exercícios
+        for treino_data in TREINOS:
+            treino = Treino(
+                conjunto_treino_id=conjunto.id,
+                codigo=treino_data["codigo"],
+                nome=treino_data["nome"],
+                ordem=treino_data["ordem"],
+            )
+            session.add(treino)
+            await session.flush()
+
+            for idx, ex in enumerate(treino_data["exercicios"]):
+                session.add(ExercicioTreino(
+                    treino_id=treino.id,
+                    nome_exercicio=ex["nome"],
+                    ordem=idx,
+                    numero_series_prescritas=ex["series"],
+                    repeticao_ou_tempo=ex["rep"],
+                    tecnica=ex["tecnica"],
+                    rer_rm_valor=ex["rer"],
+                    descanso_segundos=ex["descanso"],
+                    observacoes=ex["obs"],
+                ))
+
+        await session.commit()
+        total_ex = sum(len(t["exercicios"]) for t in TREINOS)
+        print(f"Seed treino: '{CONJUNTO_NOME}' criado com {len(TREINOS)} treinos e {total_ex} exercícios.")
 
 
 if __name__ == "__main__":

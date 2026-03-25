@@ -21,6 +21,7 @@ class ExercicioTreino(Base):
     treino_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("treinos.id"))
     nome_exercicio: Mapped[str] = mapped_column(String(255))
     ordem: Mapped[int] = mapped_column(Integer)
+    numero_series_prescritas: Mapped[int] = mapped_column(Integer, default=1)
     prescricao: Mapped[str | None] = mapped_column(Text, nullable=True)
     repeticao_ou_tempo: Mapped[str | None] = mapped_column(String(50), nullable=True)
     rer_rm_valor: Mapped[str | None] = mapped_column(String(50), nullable=True)

@@ -9,4 +9,13 @@ from app.schemas.exercicio import (  # noqa: F401
     ExercicioTreinoOut,
     ExercicioBaseOut,
 )
-from app.schemas.sessao import SessaoCreate, SessaoOut, SerieCreate, SerieOut  # noqa: F401
+from app.schemas.sessao import (  # noqa: F401
+    SessaoCreate,
+    SessaoOut,
+    SessaoResumoOut,
+    SessaoAtivaOut,
+    SerieCreate,
+    SerieOut,
+    SerieDetalheOut,
+    UltimoPesoExercicioOut,
+)

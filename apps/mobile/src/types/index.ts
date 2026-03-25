@@ -91,6 +91,7 @@ export interface ExercicioTreino {
   treino_id: string;
   nome_exercicio: string;
   ordem: number;
+  numero_series_prescritas: number;
   prescricao: string | null;
   repeticao_ou_tempo: string | null;
   rer_rm_valor: string | null;
@@ -102,6 +103,7 @@ export interface ExercicioTreino {
 export interface ExercicioTreinoCreate {
   nome_exercicio: string;
   ordem?: number;
+  numero_series_prescritas: number;
   prescricao?: string;
   repeticao_ou_tempo?: string;
   rer_rm_valor?: string;
@@ -113,6 +115,7 @@ export interface ExercicioTreinoCreate {
 export interface ExercicioTreinoUpdate {
   nome_exercicio?: string;
   ordem?: number;
+  numero_series_prescritas?: number;
   prescricao?: string;
   repeticao_ou_tempo?: string;
   rer_rm_valor?: string;
@@ -139,8 +142,28 @@ export interface SessaoTreino {
   status: StatusSessao;
 }
 
+export interface SessaoResumo {
+  id: string;
+  treino_id: string;
+  treino_codigo: string;
+  treino_nome: string;
+  iniciado_em: string;
+  finalizado_em: string | null;
+  status: StatusSessao;
+}
+
 export interface SessaoCreate {
   treino_id: string;
+}
+
+export interface SessaoAtiva {
+  id: string;
+  treino_id: string;
+  treino_codigo: string;
+  treino_nome: string;
+  iniciado_em: string;
+  status: StatusSessao;
+  series: SerieExecutada[];
 }
 
 // --- Série Executada ---
@@ -153,6 +176,21 @@ export interface SerieExecutada {
   peso_utilizado: number | null;
   repeticoes_realizadas: number | null;
   concluida: boolean;
+}
+
+export interface SerieDetalhe {
+  id: string;
+  exercicio_treino_id: string;
+  nome_exercicio: string;
+  numero_serie: number;
+  peso_utilizado: number | null;
+  repeticoes_realizadas: number | null;
+  concluida: boolean;
+}
+
+export interface UltimoPesoExercicio {
+  exercicio_treino_id: string;
+  peso_utilizado: number | null;
 }
 
 export interface SerieCreate {

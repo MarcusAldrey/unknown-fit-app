@@ -47,6 +47,7 @@ export function CriarExercicioScreen({ route, navigation }: Props) {
     useForm<ExercicioTreinoCreate>({
       defaultValues: {
         nome_exercicio: exercicioData?.nome_exercicio ?? "",
+        numero_series_prescritas: exercicioData?.numero_series_prescritas ?? 3,
         repeticao_ou_tempo: exercicioData?.repeticao_ou_tempo ?? "",
         rer_rm_valor: exercicioData?.rer_rm_valor ?? "",
         descanso_segundos: exercicioData?.descanso_segundos ?? 60,
@@ -121,6 +122,7 @@ export function CriarExercicioScreen({ route, navigation }: Props) {
     mutationFn: async (data: ExercicioTreinoCreate) => {
       await api.patch(`/personal/exercicios/${exercicioData!.id}`, {
         nome_exercicio: data.nome_exercicio,
+        numero_series_prescritas: data.numero_series_prescritas,
         repeticao_ou_tempo: data.repeticao_ou_tempo || null,
         rer_rm_valor: data.rer_rm_valor || null,
         descanso_segundos: data.descanso_segundos || null,
@@ -211,6 +213,22 @@ export function CriarExercicioScreen({ route, navigation }: Props) {
               placeholderTextColor="#555"
               value={value ?? ""}
               onChangeText={onChange}
+            />
+          )}
+        />
+
+        <Text style={styles.label}>Séries Prescritas</Text>
+        <Controller
+          control={control}
+          name="numero_series_prescritas"
+          render={({ field: { onChange, value } }) => (
+            <TextInput
+              style={styles.input}
+              placeholder="3"
+              placeholderTextColor="#555"
+              keyboardType="numeric"
+              value={String(value ?? "")}
+              onChangeText={(v) => onChange(Math.max(1, Number(v) || 1))}
             />
           )}
         />

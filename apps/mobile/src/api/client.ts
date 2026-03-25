@@ -3,7 +3,9 @@ import * as SecureStore from "expo-secure-store";
 import Constants from "expo-constants";
 
 // Em dev, usa o IP da máquina; em prod, usar URL do servidor
-const DEV_API_HOST = Constants.expoConfig?.extra?.apiHost ?? "192.168.1.9";
+const hostFromExpo = Constants.expoConfig?.hostUri?.split(":")[0];
+const DEV_API_HOST =
+  Constants.expoConfig?.extra?.apiHost ?? hostFromExpo ?? "192.168.1.18";
 const API_BASE_URL = __DEV__
   ? `http://${DEV_API_HOST}:8000/api/v1`
   : "https://api.ecg.com/api/v1";
