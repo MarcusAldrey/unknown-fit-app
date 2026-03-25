@@ -1,0 +1,15 @@
+{
+  "name": "ecg",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev:mobile": "pnpm --filter @ecg/mobile start",
+    "dev:api": "pnpm --filter @ecg/api dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck"
+  },
+  "devDependencies": {
+    "turbo": "^2.4.0"
+  },
+  "packageManager": "pnpm@9.15.0"
+}
