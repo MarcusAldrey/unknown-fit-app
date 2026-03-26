@@ -38,12 +38,14 @@ export interface Treino {
   conjunto_treino_id: string;
   codigo: string;
   nome: string;
+  observacoes_aluno: string | null;
   ordem: number;
 }
 
 export interface ExercicioTreino {
   id: string;
   treino_id: string;
+  exercicio_base_id: string;
   nome_exercicio: string;
   ordem: number;
   numero_series_prescritas: number;
@@ -53,6 +55,7 @@ export interface ExercicioTreino {
   descanso_segundos: number | null;
   tecnica: Tecnica;
   observacoes: string | null;
+  observacoes_aluno: string | null;
 }
 
 export interface ExercicioBase {

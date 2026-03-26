@@ -14,6 +14,7 @@ export type AlunoTreinoStackParamList = {
   SessaoTreino: {
     treinoId: string;
     treinoCodigo: string;
+    treinoNome?: string;
     sessaoAtiva?: SessaoAtiva;
   };
 };
@@ -25,7 +26,7 @@ export type AlunoHistoricoStackParamList = {
 
 export type AlunoTabParamList = {
   MeuTreino: NavigatorScreenParams<AlunoTreinoStackParamList>;
-  TodosTreinos: NavigatorScreenParams<AlunoHistoricoStackParamList>;
+  Perfil: NavigatorScreenParams<AlunoHistoricoStackParamList>;
 };
 
 const TreinoStack = createNativeStackNavigator<AlunoTreinoStackParamList>();
@@ -68,7 +69,7 @@ function HistoricoStackNavigator() {
       <HistoricoStack.Screen
         name="HistoricoTreinos"
         component={HistoricoTreinosScreen}
-        options={{ title: "Todos os Treinos" }}
+        options={{ headerShown: false }}
       />
       <HistoricoStack.Screen
         name="DetalheTreinoRealizado"
@@ -95,9 +96,9 @@ export function AlunoStack() {
         options={{ title: "Meu Treino" }}
       />
       <Tab.Screen
-        name="TodosTreinos"
+        name="Perfil"
         component={HistoricoStackNavigator}
-        options={{ title: "Todos os Treinos" }}
+        options={{ title: "Perfil" }}
       />
     </Tab.Navigator>
   );

@@ -9,6 +9,13 @@ class ConjuntoTreinoCreate(BaseModel):
     data_fim: date | None = None
 
 
+class ConjuntoTreinoUpdate(BaseModel):
+    nome: str | None = None
+    data_inicio: date | None = None
+    data_fim: date | None = None
+    ativo: bool | None = None
+
+
 class ConjuntoTreinoOut(BaseModel):
     id: uuid.UUID
     aluno_id: uuid.UUID

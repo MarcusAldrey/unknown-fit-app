@@ -1,4 +1,6 @@
 import React from "react";
+import { NavigatorScreenParams } from "@react-navigation/native";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import { AlunosListScreen } from "../screens/personal/AlunosListScreen";
@@ -8,13 +10,16 @@ import { TreinosScreen } from "../screens/personal/TreinosScreen";
 import { CriarTreinoScreen } from "../screens/personal/CriarTreinoScreen";
 import { ExerciciosScreen } from "../screens/personal/ExerciciosScreen";
 import { CriarExercicioScreen } from "../screens/personal/CriarExercicioScreen";
+import { EditarExercicioBaseScreen } from "../screens/personal/EditarExercicioBaseScreen";
+import { CatalogoExerciciosScreen } from "../screens/personal/CatalogoExerciciosScreen";
 
-import type { ExercicioTreino } from "../types";
+import type { ExercicioTreino, ExercicioBase } from "../types";
 
 export type PersonalStackParamList = {
   AlunosList: undefined;
+  CatalogoExercicios: undefined;
   AlunoFicha: { alunoId: string };
-  CriarConjunto: { alunoId: string };
+  CriarConjunto: { alunoId: string; alunoNome: string };
   Treinos: { conjuntoId: string; conjuntoNome: string; alunoNome: string };
   CriarTreino: { conjuntoId: string; conjuntoNome: string; alunoNome: string };
   Exercicios: { treinoId: string; treinoCodigo: string; treinoNome: string };
@@ -22,53 +27,71 @@ export type PersonalStackParamList = {
     treinoId: string;
     exercicioData?: ExercicioTreino;
   };
+  EditarExercicioBase: {
+    exercicio: ExercicioBase;
+  };
 };
 
-const Stack = createNativeStackNavigator<PersonalStackParamList>();
+export type PersonalAlunosStackParamList = {
+  AlunosFlow: NavigatorScreenParams<PersonalStackParamList>;
+};
 
-export function PersonalStack() {
+export type PersonalCatalogoStackParamList = {
+  CatalogoFlow: NavigatorScreenParams<PersonalStackParamList>;
+};
+
+export type PersonalTabParamList = {
+  MeusAlunos: undefined;
+  Exercicios: undefined;
+};
+
+const AlunosStack = createNativeStackNavigator<PersonalStackParamList>();
+const CatalogoStack = createNativeStackNavigator<PersonalStackParamList>();
+const Tab = createBottomTabNavigator<PersonalTabParamList>();
+
+function MeusAlunosStackNavigator() {
   return (
-    <Stack.Navigator
+    <AlunosStack.Navigator
       screenOptions={{
         headerStyle: { backgroundColor: "#0d0d0d" },
         headerTintColor: "#fff",
         headerBackButtonDisplayMode: "minimal",
       }}
     >
-      <Stack.Screen
+      <AlunosStack.Screen
         name="AlunosList"
         component={AlunosListScreen}
-        options={{ title: "Meus Alunos" }}
+        options={{ headerShown: false }}
       />
-      <Stack.Screen
+      <AlunosStack.Screen
         name="AlunoFicha"
         component={AlunoFichaScreen}
         options={{ title: "Ficha do Aluno" }}
       />
-      <Stack.Screen
+      <AlunosStack.Screen
         name="CriarConjunto"
         component={CriarConjuntoScreen}
         options={{ title: "Nova Periodização" }}
       />
-      <Stack.Screen
+      <AlunosStack.Screen
         name="Treinos"
         component={TreinosScreen}
         options={{ title: "Treinos" }}
       />
-      <Stack.Screen
+      <AlunosStack.Screen
         name="CriarTreino"
         component={CriarTreinoScreen}
-        options={({ route }) => ({
+        options={{
           title: "Novo Treino",
           headerRight: undefined,
-        })}
+        }}
       />
-      <Stack.Screen
+      <AlunosStack.Screen
         name="Exercicios"
         component={ExerciciosScreen}
         options={{ title: "Exercícios" }}
       />
-      <Stack.Screen
+      <AlunosStack.Screen
         name="CriarExercicio"
         component={CriarExercicioScreen}
         options={({ route }) => ({
@@ -77,6 +100,53 @@ export function PersonalStack() {
             : "Novo Exercício",
         })}
       />
-    </Stack.Navigator>
+    </AlunosStack.Navigator>
+  );
+}
+
+function CatalogoStackNavigator() {
+  return (
+    <CatalogoStack.Navigator
+      screenOptions={{
+        headerStyle: { backgroundColor: "#0d0d0d" },
+        headerTintColor: "#fff",
+        headerBackButtonDisplayMode: "minimal",
+      }}
+    >
+      <CatalogoStack.Screen
+        name="CatalogoExercicios"
+        component={CatalogoExerciciosScreen}
+        options={{ headerShown: false }}
+      />
+      <CatalogoStack.Screen
+        name="EditarExercicioBase"
+        component={EditarExercicioBaseScreen}
+        options={{ title: "Editar Exercício" }}
+      />
+    </CatalogoStack.Navigator>
+  );
+}
+
+export function PersonalStack() {
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: { backgroundColor: "#0d0d0d", borderTopColor: "#202020" },
+        tabBarActiveTintColor: "#22c55e",
+        tabBarInactiveTintColor: "#7a7a7a",
+      }}
+    >
+      <Tab.Screen
+        name="MeusAlunos"
+        component={MeusAlunosStackNavigator}
+        options={{ title: "Meus Alunos" }}
+      />
+      <Tab.Screen
+        name="Exercicios"
+        component={CatalogoStackNavigator}
+        options={{ title: "Exercícios" }}
+      />
+    </Tab.Navigator>
   );
 }

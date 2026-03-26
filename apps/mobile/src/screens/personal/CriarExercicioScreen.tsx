@@ -46,7 +46,7 @@ export function CriarExercicioScreen({ route, navigation }: Props) {
   const { control, handleSubmit, setValue, watch } =
     useForm<ExercicioTreinoCreate>({
       defaultValues: {
-        nome_exercicio: exercicioData?.nome_exercicio ?? "",
+        exercicio_base_id: exercicioData?.exercicio_base_id ?? "",
         numero_series_prescritas: exercicioData?.numero_series_prescritas ?? 3,
         repeticao_ou_tempo: exercicioData?.repeticao_ou_tempo ?? "",
         rer_rm_valor: exercicioData?.rer_rm_valor ?? "",
@@ -56,7 +56,7 @@ export function CriarExercicioScreen({ route, navigation }: Props) {
       },
     });
 
-  const selectedName = watch("nome_exercicio");
+  const selectedExercicioBaseId = watch("exercicio_base_id");
 
   // Fetch existing exercises count for auto-ordem on create
   const { data: existingExercicios } = useQuery<ExercicioTreino[]>({
@@ -89,7 +89,7 @@ export function CriarExercicioScreen({ route, navigation }: Props) {
 
   const handleSelectExercicio = useCallback(
     (ex: ExercicioBase) => {
-      setValue("nome_exercicio", ex.nome);
+      setValue("exercicio_base_id", ex.id);
       setSearchText(ex.nome);
       setShowDropdown(false);
       Keyboard.dismiss();
@@ -121,7 +121,7 @@ export function CriarExercicioScreen({ route, navigation }: Props) {
   const editMutation = useMutation({
     mutationFn: async (data: ExercicioTreinoCreate) => {
       await api.patch(`/personal/exercicios/${exercicioData!.id}`, {
-        nome_exercicio: data.nome_exercicio,
+        exercicio_base_id: data.exercicio_base_id,
         numero_series_prescritas: data.numero_series_prescritas,
         repeticao_ou_tempo: data.repeticao_ou_tempo || null,
         rer_rm_valor: data.rer_rm_valor || null,
@@ -165,26 +165,25 @@ export function CriarExercicioScreen({ route, navigation }: Props) {
             placeholder="Buscar exercício..."
             placeholderTextColor="#555"
             value={searchText}
-            editable={!isEditMode}
             onChangeText={(text) => {
               setSearchText(text);
               setShowDropdown(true);
               if (!text.trim()) {
-                setValue("nome_exercicio", "");
+                setValue("exercicio_base_id", "");
               }
             }}
             onFocus={() => {
               if (searchText.trim()) setShowDropdown(true);
             }}
           />
-          {selectedName ? (
+          {selectedExercicioBaseId ? (
             <View style={styles.selectedBadge}>
               <Text style={styles.selectedBadgeText}>✓</Text>
             </View>
           ) : null}
         </View>
 
-        {!isEditMode && showDropdown && filteredExercicios.length > 0 && (
+        {showDropdown && filteredExercicios.length > 0 && (
           <View style={styles.dropdown}>
             {filteredExercicios.slice(0, 8).map((ex) => (
               <TouchableOpacity
@@ -307,9 +306,12 @@ export function CriarExercicioScreen({ route, navigation }: Props) {
         />
 
         <TouchableOpacity
-          style={[styles.button, !selectedName && styles.buttonDisabled]}
+          style={[
+            styles.button,
+            !selectedExercicioBaseId && styles.buttonDisabled,
+          ]}
           onPress={handleSubmit(onSubmit)}
-          disabled={!selectedName || isPending}
+          disabled={!selectedExercicioBaseId || isPending}
         >
           <Text style={styles.buttonText}>
             {isPending

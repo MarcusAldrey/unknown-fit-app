@@ -87,7 +87,7 @@ export function ExerciciosScreen({ route, navigation }: Props) {
     mutationFn: async (ex: ExercicioTreino) => {
       const nextOrdem = (exercicios?.length ?? 0) + 1;
       await api.post(`/personal/treinos/${treinoId}/exercicios`, {
-        nome_exercicio: ex.nome_exercicio,
+        exercicio_base_id: ex.exercicio_base_id,
         ordem: nextOrdem,
         numero_series_prescritas: ex.numero_series_prescritas,
         repeticao_ou_tempo: ex.repeticao_ou_tempo,
@@ -187,34 +187,37 @@ export function ExerciciosScreen({ route, navigation }: Props) {
   const displayExercicios = reorderMode ? localExercicios : (exercicios ?? []);
 
   const renderHeader = () => (
-    <View style={styles.contextHeader}>
-      <View style={styles.contextRow}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.contextTitle}>Treino {treinoCodigo}</Text>
-          <TouchableOpacity
-            style={styles.editNomeRow}
-            onPress={() => {
-              setEditNomeText(localNome);
-              setEditNomeVisible(true);
-            }}
-          >
-            <Text style={styles.contextSub}>{localNome}</Text>
-            <Text style={styles.editIcon}>✎</Text>
-          </TouchableOpacity>
+    <>
+      <View style={styles.contextHeader}>
+        <View style={styles.contextRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.contextTitle}>Treino {treinoCodigo}</Text>
+            <TouchableOpacity
+              style={styles.editNomeRow}
+              onPress={() => {
+                setEditNomeText(localNome);
+                setEditNomeVisible(true);
+              }}
+            >
+              <Text style={styles.contextSub}>{localNome}</Text>
+              <Text style={styles.editIcon}>✎</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-        {!reorderMode && displayExercicios.length > 1 && (
-          <TouchableOpacity
-            style={styles.reorderBtn}
-            onPress={() => setReorderMode(true)}
-          >
-            <Text style={styles.reorderBtnText}>Reordenar</Text>
-          </TouchableOpacity>
-        )}
       </View>
+
+      {!reorderMode && displayExercicios.length > 1 && (
+        <TouchableOpacity
+          style={styles.reorderBtnAfterSeparator}
+          onPress={() => setReorderMode(true)}
+        >
+          <Text style={styles.reorderBtnText}>Reordenar exercícios</Text>
+        </TouchableOpacity>
+      )}
       {reorderMode && (
         <View style={styles.reorderBar}>
           <Text style={styles.reorderLabel}>
-            Use as setas para reordenar os exercícios
+            Segure e use as setas para reordenar os exercícios
           </Text>
           <View style={styles.reorderActions}>
             <TouchableOpacity
@@ -237,7 +240,7 @@ export function ExerciciosScreen({ route, navigation }: Props) {
           </View>
         </View>
       )}
-    </View>
+    </>
   );
 
   const renderFooter = () =>
@@ -279,17 +282,34 @@ export function ExerciciosScreen({ route, navigation }: Props) {
             style={styles.card}
             activeOpacity={reorderMode ? 1 : 0.7}
             onLongPress={reorderMode ? undefined : () => setReorderMode(true)}
-            onPress={reorderMode ? undefined : () => {}}
+            onPress={
+              reorderMode
+                ? undefined
+                : () =>
+                    navigation.navigate("CriarExercicio", {
+                      treinoId,
+                      exercicioData: item,
+                    })
+            }
           >
             <Text style={styles.ordem}>{item.ordem}</Text>
             <View style={styles.info}>
               <Text style={styles.nome}>{item.nome_exercicio}</Text>
-              <Text style={styles.detalhe}>
-                {item.numero_series_prescritas} séries ·{" "}
-                {item.repeticao_ou_tempo ?? "—"} · RER/RM:{" "}
-                {item.rer_rm_valor ?? "—"} · Desc:{" "}
-                {item.descanso_segundos ? `${item.descanso_segundos}s` : "—"}
-              </Text>
+              <View style={styles.detalhesContainer}>
+                <Text style={styles.detalhe}>
+                  Séries: {item.numero_series_prescritas}
+                </Text>
+                <Text style={styles.detalhe}>
+                  Repetição/Tempo: {item.repeticao_ou_tempo ?? "—"}
+                </Text>
+                <Text style={styles.detalhe}>
+                  Descanso:{" "}
+                  {item.descanso_segundos ? `${item.descanso_segundos}s` : "—"}
+                </Text>
+                <Text style={styles.detalhe}>
+                  RER/RM: {item.rer_rm_valor ?? "—"}
+                </Text>
+              </View>
               {item.tecnica !== "PADRAO" && (
                 <Text style={styles.tecnica}>{item.tecnica}</Text>
               )}
@@ -450,7 +470,9 @@ const styles = StyleSheet.create({
   editIcon: { color: "#555", fontSize: 14 },
 
   // --- Reorder bar ---
-  reorderBtn: {
+  reorderBtnAfterSeparator: {
+    alignSelf: "flex-end",
+    marginBottom: 12,
     backgroundColor: "#1a1a1a",
     borderRadius: 8,
     paddingHorizontal: 12,
@@ -458,12 +480,15 @@ const styles = StyleSheet.create({
   },
   reorderBtnText: { color: "#888", fontSize: 13 },
   reorderBar: {
-    marginTop: 12,
-    backgroundColor: "#1a1a1a",
+    marginTop: 8,
+    marginBottom: 14,
+    backgroundColor: "#151d17",
+    borderWidth: 1,
+    borderColor: "#23422f",
     borderRadius: 10,
     padding: 12,
   },
-  reorderLabel: { color: "#888", fontSize: 13, marginBottom: 10 },
+  reorderLabel: { color: "#9ccfb0", fontSize: 13, marginBottom: 10 },
   reorderActions: { flexDirection: "row", gap: 10, justifyContent: "flex-end" },
   cancelBtn: {
     borderWidth: 1,
@@ -500,7 +525,8 @@ const styles = StyleSheet.create({
   },
   info: { flex: 1 },
   nome: { color: "#fff", fontSize: 16, fontWeight: "bold" },
-  detalhe: { color: "#aaa", fontSize: 13, marginTop: 4 },
+  detalhesContainer: { marginTop: 6, gap: 2 },
+  detalhe: { color: "#aaa", fontSize: 13 },
   tecnica: { color: "#22c55e", fontSize: 12, marginTop: 4, fontWeight: "bold" },
   obs: { color: "#666", fontSize: 12, marginTop: 4, fontStyle: "italic" },
   menuBtn: {

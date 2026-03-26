@@ -39,6 +39,7 @@ EXERCICIOS_BASE = [
     {"nome": "Cadeira Extensora", "grupo_muscular": "Pernas", "equipamento": "Máquina"},
     {"nome": "Mesa Flexora", "grupo_muscular": "Pernas", "equipamento": "Máquina"},
     {"nome": "Agachamento Búlgaro", "grupo_muscular": "Pernas", "equipamento": "Halteres"},
+    {"nome": "Afundo no Smith", "grupo_muscular": "Pernas", "equipamento": "Smith"},
     {"nome": "Stiff", "grupo_muscular": "Pernas", "equipamento": "Barra"},
     {"nome": "Panturrilha em Pé", "grupo_muscular": "Pernas", "equipamento": "Máquina"},
     {"nome": "Panturrilha Sentado", "grupo_muscular": "Pernas", "equipamento": "Máquina"},
@@ -68,6 +69,25 @@ EXERCICIOS_BASE = [
     {"nome": "Abdução de Quadril", "grupo_muscular": "Glúteos", "equipamento": "Máquina"},
     {"nome": "Kickback no Cabo", "grupo_muscular": "Glúteos", "equipamento": "Cabo"},
 ]
+
+
+async def _resolver_exercicio_base_id(session, nome: str):
+    result = await session.execute(
+        select(ExercicioBase).where(ExercicioBase.nome == nome)
+    )
+    exercicio = result.scalar_one_or_none()
+    if exercicio is not None:
+        return exercicio.id
+
+    exercicio = ExercicioBase(
+        nome=nome,
+        grupo_muscular="Outros",
+        equipamento=None,
+        criado_por_sistema=False,
+    )
+    session.add(exercicio)
+    await session.flush()
+    return exercicio.id
 
 
 async def seed():
@@ -276,9 +296,10 @@ async def _seed_treino_aldrey_ciclo1():
             await session.flush()
 
             for idx, ex in enumerate(treino_data["exercicios"]):
+                exercicio_base_id = await _resolver_exercicio_base_id(session, ex["nome"])
                 session.add(ExercicioTreino(
                     treino_id=treino.id,
-                    nome_exercicio=ex["nome"],
+                    exercicio_base_id=exercicio_base_id,
                     ordem=idx,
                     numero_series_prescritas=ex["series"],
                     repeticao_ou_tempo=ex["rep"],

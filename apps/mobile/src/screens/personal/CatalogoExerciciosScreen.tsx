@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  TextInput,
 } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -13,15 +14,21 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import api from "../../api/client";
 import { useAuth } from "../../contexts/AuthContext";
-import type { AlunoResumo, Usuario } from "../../types";
+import type { ExercicioBase, Usuario } from "../../types";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
 
-type Props = NativeStackScreenProps<PersonalStackParamList, "AlunosList">;
+type Props = NativeStackScreenProps<
+  PersonalStackParamList,
+  "CatalogoExercicios"
+>;
 
-export function AlunosListScreen({ navigation }: Props) {
+export function CatalogoExerciciosScreen({ navigation }: Props) {
   const { logout } = useAuth();
   const insets = useSafeAreaInsets();
+
   const [menuAberto, setMenuAberto] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  const [grupoFiltro, setGrupoFiltro] = useState("Todos");
 
   const { data: usuario } = useQuery<Usuario>({
     queryKey: ["auth", "me"],
@@ -31,13 +38,39 @@ export function AlunosListScreen({ navigation }: Props) {
     },
   });
 
-  const { data: alunos, isLoading } = useQuery<AlunoResumo[]>({
-    queryKey: ["personal", "alunos"],
+  const { data: exerciciosBase, isLoading } = useQuery<ExercicioBase[]>({
+    queryKey: ["catalogo", "exercicios-base"],
     queryFn: async () => {
-      const res = await api.get("/personal/alunos");
+      const res = await api.get("/catalogo/exercicios-base");
       return res.data;
     },
+    staleTime: 0,
+    refetchOnMount: "always",
   });
+
+  const grupos = useMemo(() => {
+    const base = exerciciosBase ?? [];
+    const unicos = Array.from(
+      new Set(base.map((ex) => ex.grupo_muscular)),
+    ).sort((a, b) => a.localeCompare(b));
+    return ["Todos", ...unicos];
+  }, [exerciciosBase]);
+
+  const exerciciosFiltrados = useMemo(() => {
+    const base = exerciciosBase ?? [];
+    const termo = searchText.trim().toLowerCase();
+
+    return base.filter((ex) => {
+      const matchGrupo =
+        grupoFiltro === "Todos" || ex.grupo_muscular === grupoFiltro;
+      const matchBusca =
+        !termo ||
+        ex.nome.toLowerCase().includes(termo) ||
+        ex.grupo_muscular.toLowerCase().includes(termo) ||
+        (ex.equipamento ?? "").toLowerCase().includes(termo);
+      return matchGrupo && matchBusca;
+    });
+  }, [exerciciosBase, searchText, grupoFiltro]);
 
   if (isLoading) {
     return (
@@ -50,7 +83,7 @@ export function AlunosListScreen({ navigation }: Props) {
   return (
     <View style={[styles.container, { paddingTop: insets.top + 16 }]}>
       <View style={styles.topBar}>
-        <Text style={styles.topBarNome}>{usuario?.nome ?? "Meus Alunos"}</Text>
+        <Text style={styles.topBarNome}>{usuario?.nome ?? "Exercícios"}</Text>
         <View style={styles.topBarRight}>
           <TouchableOpacity
             style={styles.settingsButton}
@@ -79,25 +112,66 @@ export function AlunosListScreen({ navigation }: Props) {
         </View>
       </View>
 
-      <Text style={styles.sectionTitle}>Meus Alunos</Text>
+      <Text style={styles.sectionTitle}>Exercícios</Text>
       <View style={styles.sectionSeparator} />
 
+      <TextInput
+        style={styles.searchInput}
+        value={searchText}
+        onChangeText={setSearchText}
+        placeholder="Buscar exercício, grupo ou equipamento"
+        placeholderTextColor="#666"
+      />
+
+      <View style={styles.filterRow}>
+        <FlatList
+          horizontal
+          data={grupos}
+          keyExtractor={(item) => item}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 8 }}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={[
+                styles.filterChip,
+                grupoFiltro === item && styles.filterChipActive,
+              ]}
+              onPress={() => setGrupoFiltro(item)}
+            >
+              <Text
+                style={[
+                  styles.filterChipText,
+                  grupoFiltro === item && styles.filterChipTextActive,
+                ]}
+              >
+                {item}
+              </Text>
+            </TouchableOpacity>
+          )}
+        />
+      </View>
+
       <FlatList
-        data={alunos}
+        data={exerciciosFiltrados}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: 24 }}
         ListEmptyComponent={
-          <Text style={styles.empty}>Nenhum aluno vinculado.</Text>
+          <Text style={styles.empty}>Nenhum exercício encontrado.</Text>
         }
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.card}
             onPress={() =>
-              navigation.navigate("AlunoFicha", { alunoId: item.id })
+              navigation.navigate("EditarExercicioBase", {
+                exercicio: item,
+              })
             }
           >
             <Text style={styles.nome}>{item.nome}</Text>
-            <Text style={styles.email}>{item.email}</Text>
+            <Text style={styles.subInfo}>
+              {item.grupo_muscular}
+              {item.equipamento ? ` · ${item.equipamento}` : ""}
+            </Text>
           </TouchableOpacity>
         )}
       />
@@ -181,6 +255,33 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 12,
   },
+  searchInput: {
+    backgroundColor: "#1a1a1a",
+    color: "#fff",
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: "#282828",
+  },
+  filterRow: {
+    marginBottom: 10,
+  },
+  filterChip: {
+    backgroundColor: "#1a1a1a",
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  filterChipActive: {
+    backgroundColor: "#132817",
+    borderColor: "#245132",
+  },
+  filterChipText: { color: "#888", fontSize: 12, fontWeight: "600" },
+  filterChipTextActive: { color: "#9fe6b4" },
   card: {
     backgroundColor: "#1a1a1a",
     borderRadius: 12,
@@ -188,6 +289,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   nome: { color: "#fff", fontSize: 18, fontWeight: "bold" },
-  email: { color: "#888", fontSize: 14, marginTop: 4 },
+  subInfo: { color: "#888", fontSize: 14, marginTop: 4 },
   empty: { color: "#888", textAlign: "center", marginTop: 32, fontSize: 16 },
 });

@@ -19,7 +19,7 @@ class ExercicioTreino(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     treino_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("treinos.id"))
-    nome_exercicio: Mapped[str] = mapped_column(String(255))
+    exercicio_base_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("exercicios_base.id"))
     ordem: Mapped[int] = mapped_column(Integer)
     numero_series_prescritas: Mapped[int] = mapped_column(Integer, default=1)
     prescricao: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -28,9 +28,15 @@ class ExercicioTreino(Base):
     descanso_segundos: Mapped[int | None] = mapped_column(Integer, nullable=True)
     tecnica: Mapped[Tecnica] = mapped_column(SAEnum(Tecnica), default=Tecnica.PADRAO)
     observacoes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    observacoes_aluno: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     treino: Mapped["Treino"] = relationship(back_populates="exercicios")
+    exercicio_base: Mapped["ExercicioBase"] = relationship(back_populates="usos_em_treinos", lazy="joined")
     series_executadas: Mapped[list["SerieExecutada"]] = relationship(back_populates="exercicio_treino")
+
+    @property
+    def nome_exercicio(self) -> str:
+        return self.exercicio_base.nome
 
 
 from app.models.treino import Treino  # noqa: E402

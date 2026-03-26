@@ -75,6 +75,7 @@ export interface Treino {
   conjunto_treino_id: string;
   codigo: string;
   nome: string;
+  observacoes_aluno: string | null;
   ordem: number;
 }
 
@@ -89,6 +90,7 @@ export interface TreinoCreate {
 export interface ExercicioTreino {
   id: string;
   treino_id: string;
+  exercicio_base_id: string;
   nome_exercicio: string;
   ordem: number;
   numero_series_prescritas: number;
@@ -98,10 +100,11 @@ export interface ExercicioTreino {
   descanso_segundos: number | null;
   tecnica: Tecnica;
   observacoes: string | null;
+  observacoes_aluno: string | null;
 }
 
 export interface ExercicioTreinoCreate {
-  nome_exercicio: string;
+  exercicio_base_id: string;
   ordem?: number;
   numero_series_prescritas: number;
   prescricao?: string;
@@ -110,10 +113,11 @@ export interface ExercicioTreinoCreate {
   descanso_segundos?: number;
   tecnica?: Tecnica;
   observacoes?: string;
+  observacoes_aluno?: string;
 }
 
 export interface ExercicioTreinoUpdate {
-  nome_exercicio?: string;
+  exercicio_base_id?: string;
   ordem?: number;
   numero_series_prescritas?: number;
   prescricao?: string;
@@ -122,6 +126,7 @@ export interface ExercicioTreinoUpdate {
   descanso_segundos?: number;
   tecnica?: Tecnica;
   observacoes?: string;
+  observacoes_aluno?: string;
 }
 
 export interface ExercicioBase {

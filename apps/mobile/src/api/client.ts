@@ -2,13 +2,18 @@ import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 import Constants from "expo-constants";
 
-// Em dev, usa o IP da máquina; em prod, usar URL do servidor
+// Prioriza URL explícita via env para evitar depender de IP fixo de rede.
+const envApiUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
 const hostFromExpo = Constants.expoConfig?.hostUri?.split(":")[0];
-const DEV_API_HOST =
-  Constants.expoConfig?.extra?.apiHost ?? hostFromExpo ?? "192.168.1.18";
-const API_BASE_URL = __DEV__
-  ? `http://${DEV_API_HOST}:8000/api/v1`
-  : "https://api.ecg.com/api/v1";
+const extraApiHost =
+  typeof Constants.expoConfig?.extra?.apiHost === "string"
+    ? Constants.expoConfig.extra.apiHost
+    : undefined;
+
+const DEV_API_HOST = extraApiHost ?? hostFromExpo ?? "127.0.0.1";
+const DEV_API_BASE_URL = `http://${DEV_API_HOST}:8000/api/v1`;
+const API_BASE_URL =
+  envApiUrl || (__DEV__ ? DEV_API_BASE_URL : "https://api.ecg.com/api/v1");
 
 const api = axios.create({
   baseURL: API_BASE_URL,

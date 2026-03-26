@@ -1,4 +1,5 @@
 import uuid
+from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
@@ -14,12 +15,14 @@ from app.models import (
     ConjuntoTreino,
     Treino,
     ExercicioTreino,
+    ExercicioBase,
     Tecnica,
 )
 from app.schemas import (
     AlunoResumo,
     AlunoFicha,
     ConjuntoTreinoCreate,
+    ConjuntoTreinoUpdate,
     ConjuntoTreinoOut,
     TreinoCreate,
     TreinoUpdate,
@@ -139,18 +142,9 @@ async def ativar_conjunto(
     db: AsyncSession = Depends(get_db),
 ):
     await _get_aluno_vinculado(personal, aluno_id, db)
+    hoje = date.today()
 
-    # Desativar todos os conjuntos do aluno
-    result = await db.execute(
-        select(ConjuntoTreino).where(
-            ConjuntoTreino.aluno_id == aluno_id,
-            ConjuntoTreino.ativo == True,  # noqa: E712
-        )
-    )
-    for c in result.scalars().all():
-        c.ativo = False
-
-    # Ativar o escolhido
+    # Buscar conjunto alvo antes de aplicar alterações
     result = await db.execute(
         select(ConjuntoTreino).where(
             ConjuntoTreino.id == conjunto_id,
@@ -161,7 +155,53 @@ async def ativar_conjunto(
     if conjunto is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conjunto não encontrado")
 
+    # Periodizações concluídas não podem ser reativadas
+    if conjunto.data_fim is not None and not conjunto.ativo:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Esta periodização já foi concluída e não pode ser ativada novamente.",
+        )
+
+    # Desativar conjunto(s) ativo(s) e marcar como concluído(s)
+    result = await db.execute(
+        select(ConjuntoTreino).where(
+            ConjuntoTreino.aluno_id == aluno_id,
+            ConjuntoTreino.ativo == True,  # noqa: E712
+        )
+    )
+    for c in result.scalars().all():
+        if c.id != conjunto_id:
+            c.data_fim = hoje
+        c.ativo = False
+
     conjunto.ativo = True
+    if conjunto.data_inicio is None:
+        conjunto.data_inicio = hoje
+    await db.flush()
+    await db.refresh(conjunto)
+    return conjunto
+
+
+@router.patch("/conjuntos/{conjunto_id}", response_model=ConjuntoTreinoOut)
+async def editar_conjunto(
+    conjunto_id: uuid.UUID,
+    body: ConjuntoTreinoUpdate,
+    personal: Personal = Depends(get_current_personal),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(ConjuntoTreino).where(ConjuntoTreino.id == conjunto_id)
+    )
+    conjunto = result.scalar_one_or_none()
+    if conjunto is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conjunto não encontrado")
+
+    await _get_aluno_vinculado(personal, conjunto.aluno_id, db)
+
+    update_data = body.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(conjunto, key, value)
+
     await db.flush()
     await db.refresh(conjunto)
     return conjunto
@@ -194,6 +234,7 @@ async def criar_treino(
         conjunto_treino_id=conjunto_id,
         codigo=body.codigo,
         nome=body.nome,
+        observacoes_aluno=body.observacoes_aluno,
         ordem=body.ordem,
     )
     db.add(treino)
@@ -223,6 +264,43 @@ async def editar_treino(
     return treino
 
 
+@router.delete("/treinos/{treino_id}", status_code=204)
+async def deletar_treino(
+    treino_id: uuid.UUID,
+    personal: Personal = Depends(get_current_personal),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(Treino).where(Treino.id == treino_id))
+    treino = result.scalar_one_or_none()
+    if treino is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Treino não encontrado")
+
+    result = await db.execute(
+        select(ConjuntoTreino).where(ConjuntoTreino.id == treino.conjunto_treino_id)
+    )
+    conjunto = result.scalar_one_or_none()
+    if conjunto is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conjunto não encontrado")
+
+    await _get_aluno_vinculado(personal, conjunto.aluno_id, db)
+
+    conjunto_id = treino.conjunto_treino_id
+    await db.delete(treino)
+    await db.flush()
+
+    # Reordenar treinos restantes no conjunto e recodificar (A, B, C...)
+    result = await db.execute(
+        select(Treino)
+        .where(Treino.conjunto_treino_id == conjunto_id)
+        .order_by(Treino.ordem)
+    )
+    for idx, t in enumerate(result.scalars().all(), start=1):
+        t.ordem = idx
+        t.codigo = chr(64 + idx)
+
+    await db.flush()
+
+
 # --- Exercícios ---
 
 @router.get("/treinos/{treino_id}/exercicios", response_model=list[ExercicioTreinoOut])
@@ -246,9 +324,16 @@ async def criar_exercicio(
     personal: Personal = Depends(get_current_personal),
     db: AsyncSession = Depends(get_db),
 ):
+    result = await db.execute(
+        select(ExercicioBase).where(ExercicioBase.id == body.exercicio_base_id)
+    )
+    exercicio_base = result.scalar_one_or_none()
+    if exercicio_base is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Exercício base não encontrado")
+
     exercicio = ExercicioTreino(
         treino_id=treino_id,
-        nome_exercicio=body.nome_exercicio,
+        exercicio_base_id=body.exercicio_base_id,
         ordem=body.ordem,
         numero_series_prescritas=body.numero_series_prescritas,
         prescricao=body.prescricao,
@@ -257,6 +342,7 @@ async def criar_exercicio(
         descanso_segundos=body.descanso_segundos,
         tecnica=Tecnica(body.tecnica),
         observacoes=body.observacoes,
+        observacoes_aluno=body.observacoes_aluno,
     )
     db.add(exercicio)
     await db.flush()
@@ -281,6 +367,12 @@ async def editar_exercicio(
     update_data = body.model_dump(exclude_unset=True)
     if "tecnica" in update_data:
         update_data["tecnica"] = Tecnica(update_data["tecnica"])
+    if "exercicio_base_id" in update_data:
+        result = await db.execute(
+            select(ExercicioBase).where(ExercicioBase.id == update_data["exercicio_base_id"])
+        )
+        if result.scalar_one_or_none() is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Exercício base não encontrado")
     for key, value in update_data.items():
         setattr(exercicio, key, value)
 

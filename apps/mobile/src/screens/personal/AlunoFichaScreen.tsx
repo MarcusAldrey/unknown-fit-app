@@ -41,12 +41,28 @@ export function AlunoFichaScreen({ route, navigation }: Props) {
 
   const sortedConjuntos = useMemo(() => {
     if (!conjuntos) return [];
+
+    const toTime = (value: string | null) => {
+      if (!value) return Number.POSITIVE_INFINITY;
+      const time = new Date(value).getTime();
+      return Number.isNaN(time) ? Number.POSITIVE_INFINITY : time;
+    };
+
     return [...conjuntos].sort((a, b) => {
       if (a.ativo && !b.ativo) return -1;
       if (!a.ativo && b.ativo) return 1;
-      return 0;
+
+      const inicioDiff = toTime(a.data_inicio) - toTime(b.data_inicio);
+      if (inicioDiff !== 0) return inicioDiff;
+
+      return toTime(a.data_fim) - toTime(b.data_fim);
     });
   }, [conjuntos]);
+
+  const conjuntoAtivo = useMemo(
+    () => conjuntos?.find((conjunto) => conjunto.ativo) ?? null,
+    [conjuntos],
+  );
 
   const ativarMutation = useMutation({
     mutationFn: async (conjuntoId: string) => {
@@ -59,8 +75,14 @@ export function AlunoFichaScreen({ route, navigation }: Props) {
         queryKey: ["personal", "aluno", alunoId, "conjuntos"],
       });
     },
-    onError: () => {
-      Alert.alert("Erro", "Não foi possível ativar a periodização.");
+    onError: (error: any) => {
+      const detail = error?.response?.data?.detail;
+      Alert.alert(
+        "Erro",
+        typeof detail === "string"
+          ? detail
+          : "Não foi possível ativar a periodização.",
+      );
     },
   });
 
@@ -103,7 +125,9 @@ export function AlunoFichaScreen({ route, navigation }: Props) {
   const renderFooter = () => (
     <TouchableOpacity
       style={styles.addCard}
-      onPress={() => navigation.navigate("CriarConjunto", { alunoId })}
+      onPress={() =>
+        navigation.navigate("CriarConjunto", { alunoId, alunoNome: aluno.nome })
+      }
     >
       <Text style={styles.addIcon}>+</Text>
       <Text style={styles.addText}>Nova Periodização</Text>
@@ -120,7 +144,7 @@ export function AlunoFichaScreen({ route, navigation }: Props) {
   );
 
   const formatDate = (d: string | null) => {
-    if (!d) return null;
+    if (!d) return "—";
     const date = new Date(d);
     return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
   };
@@ -159,13 +183,14 @@ export function AlunoFichaScreen({ route, navigation }: Props) {
                 <View style={styles.ativoHeader}>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.ativoNome}>{item.nome}</Text>
-                    {(item.data_inicio || item.data_fim) && (
+                    <View style={styles.datasContainer}>
                       <Text style={styles.ativoDatas}>
-                        {formatDate(item.data_inicio)}
-                        {item.data_inicio && item.data_fim ? " → " : ""}
-                        {formatDate(item.data_fim)}
+                        Início em: {formatDate(item.data_inicio)}
                       </Text>
-                    )}
+                      <Text style={styles.ativoDatas}>
+                        Término em: {formatDate(item.data_fim)}
+                      </Text>
+                    </View>
                   </View>
                   <View style={styles.badgeContainer}>
                     <Text style={styles.badge}>ATIVA</Text>
@@ -187,13 +212,46 @@ export function AlunoFichaScreen({ route, navigation }: Props) {
                 }
               >
                 <View style={styles.inativoRow}>
-                  <Text style={styles.inativoNome}>{item.nome}</Text>
-                  <TouchableOpacity
-                    style={styles.ativarBtn}
-                    onPress={() => ativarMutation.mutate(item.id)}
-                  >
-                    <Text style={styles.ativarText}>Ativar</Text>
-                  </TouchableOpacity>
+                  <View style={styles.inativoInfo}>
+                    <Text style={styles.inativoNome}>{item.nome}</Text>
+                    <View style={styles.datasContainer}>
+                      <Text style={styles.inativoDatas}>
+                        Início em: {formatDate(item.data_inicio)}
+                      </Text>
+                      <Text style={styles.inativoDatas}>
+                        Término em: {formatDate(item.data_fim)}
+                      </Text>
+                    </View>
+                  </View>
+                  {item.data_fim ? (
+                    <View style={styles.concluidaBadge}>
+                      <Text style={styles.concluidaText}>Concluída</Text>
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.ativarBtn}
+                      onPress={() => {
+                        if (!conjuntoAtivo || conjuntoAtivo.id === item.id) {
+                          ativarMutation.mutate(item.id);
+                          return;
+                        }
+
+                        Alert.alert(
+                          "Confirmar ativação",
+                          `Ao ativar a periodização ${item.nome}, a periodização ${conjuntoAtivo.nome} será marcada como concluída. Tem certeza?`,
+                          [
+                            { text: "Cancelar", style: "cancel" },
+                            {
+                              text: "Ativar periodização",
+                              onPress: () => ativarMutation.mutate(item.id),
+                            },
+                          ],
+                        );
+                      }}
+                    >
+                      <Text style={styles.ativarText}>Ativar</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               </TouchableOpacity>
             )
@@ -246,6 +304,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
   },
   ativoNome: { color: "#fff", fontSize: 20, fontWeight: "bold" },
+  datasContainer: { marginTop: 4 },
   ativoDatas: { color: "#888", fontSize: 13, marginTop: 4 },
   badgeContainer: {
     backgroundColor: "#22c55e",
@@ -275,7 +334,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  inativoNome: { color: "#999", fontSize: 15, flex: 1 },
+  inativoInfo: { flex: 1, paddingRight: 12 },
+  inativoNome: { color: "#999", fontSize: 15 },
+  inativoDatas: { color: "#666", fontSize: 12, marginTop: 2 },
   ativarBtn: {
     backgroundColor: "#0a1f0a",
     borderWidth: 1,
@@ -285,6 +346,15 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   ativarText: { color: "#22c55e", fontSize: 13, fontWeight: "600" },
+  concluidaBadge: {
+    backgroundColor: "#201616",
+    borderWidth: 1,
+    borderColor: "#4a2626",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  concluidaText: { color: "#ef9a9a", fontSize: 13, fontWeight: "600" },
 
   // --- Footer / Empty ---
   addCard: {

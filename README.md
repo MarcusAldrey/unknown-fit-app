@@ -51,6 +51,9 @@ alembic upgrade head
 
 # Iniciar servidor
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# Ou, pela raiz do monorepo (atalho)
+pnpm api
 ```
 
 ### 3. Mobile

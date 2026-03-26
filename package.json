@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev:mobile": "pnpm --filter @ecg/mobile start",
-    "dev:api": "pnpm --filter @ecg/api dev",
+    "dev:api": "apps\\api\\.venv\\Scripts\\python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 --app-dir apps/api",
+    "api": "pnpm run dev:api",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck"
   },

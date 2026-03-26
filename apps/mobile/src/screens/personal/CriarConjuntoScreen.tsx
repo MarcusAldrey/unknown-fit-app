@@ -12,13 +12,13 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import api from "../../api/client";
-import type { ConjuntoTreinoCreate } from "../../types";
+import type { ConjuntoTreino, ConjuntoTreinoCreate } from "../../types";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
 
 type Props = NativeStackScreenProps<PersonalStackParamList, "CriarConjunto">;
 
 export function CriarConjuntoScreen({ route, navigation }: Props) {
-  const { alunoId } = route.params;
+  const { alunoId, alunoNome } = route.params;
   const queryClient = useQueryClient();
 
   const { control, handleSubmit } = useForm<ConjuntoTreinoCreate>({
@@ -27,13 +27,21 @@ export function CriarConjuntoScreen({ route, navigation }: Props) {
 
   const mutation = useMutation({
     mutationFn: async (data: ConjuntoTreinoCreate) => {
-      await api.post(`/personal/alunos/${alunoId}/conjuntos`, data);
+      const res = await api.post<ConjuntoTreino>(
+        `/personal/alunos/${alunoId}/conjuntos`,
+        data,
+      );
+      return res.data;
     },
-    onSuccess: () => {
+    onSuccess: (conjuntoCriado) => {
       queryClient.invalidateQueries({
         queryKey: ["personal", "aluno", alunoId, "conjuntos"],
       });
-      navigation.goBack();
+      navigation.replace("Treinos", {
+        conjuntoId: conjuntoCriado.id,
+        conjuntoNome: conjuntoCriado.nome,
+        alunoNome,
+      });
     },
     onError: () => {
       Alert.alert("Erro", "Não foi possível criar a periodização.");

@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 
 
 class ExercicioTreinoCreate(BaseModel):
-    nome_exercicio: str
+    exercicio_base_id: uuid.UUID
     ordem: int
     numero_series_prescritas: int = Field(ge=1)
     prescricao: str | None = None
@@ -12,10 +12,11 @@ class ExercicioTreinoCreate(BaseModel):
     descanso_segundos: int | None = None
     tecnica: str = "PADRAO"
     observacoes: str | None = None
+    observacoes_aluno: str | None = None
 
 
 class ExercicioTreinoUpdate(BaseModel):
-    nome_exercicio: str | None = None
+    exercicio_base_id: uuid.UUID | None = None
     ordem: int | None = None
     numero_series_prescritas: int | None = Field(default=None, ge=1)
     prescricao: str | None = None
@@ -24,11 +25,13 @@ class ExercicioTreinoUpdate(BaseModel):
     descanso_segundos: int | None = None
     tecnica: str | None = None
     observacoes: str | None = None
+    observacoes_aluno: str | None = None
 
 
 class ExercicioTreinoOut(BaseModel):
     id: uuid.UUID
     treino_id: uuid.UUID
+    exercicio_base_id: uuid.UUID
     nome_exercicio: str
     ordem: int
     numero_series_prescritas: int
@@ -38,6 +41,7 @@ class ExercicioTreinoOut(BaseModel):
     descanso_segundos: int | None = None
     tecnica: str
     observacoes: str | None = None
+    observacoes_aluno: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -49,3 +53,13 @@ class ExercicioBaseOut(BaseModel):
     equipamento: str | None = None
 
     model_config = {"from_attributes": True}
+
+
+class ExercicioBaseUpdate(BaseModel):
+    nome: str | None = None
+    grupo_muscular: str | None = None
+    equipamento: str | None = None
+
+
+class ExercicioObservacaoAlunoUpdate(BaseModel):
+    observacoes_aluno: str | None = None

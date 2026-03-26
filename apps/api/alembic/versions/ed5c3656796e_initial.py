@@ -82,6 +82,7 @@ def upgrade() -> None:
     sa.Column('conjunto_treino_id', sa.UUID(), nullable=False),
     sa.Column('codigo', sa.String(length=10), nullable=False),
     sa.Column('nome', sa.String(length=255), nullable=False),
+    sa.Column('observacoes_aluno', sa.Text(), nullable=True),
     sa.Column('ordem', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['conjunto_treino_id'], ['conjuntos_treino.id'], ),
     sa.PrimaryKeyConstraint('id')
@@ -89,14 +90,17 @@ def upgrade() -> None:
     op.create_table('exercicios_treino',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('treino_id', sa.UUID(), nullable=False),
-    sa.Column('nome_exercicio', sa.String(length=255), nullable=False),
+    sa.Column('exercicio_base_id', sa.UUID(), nullable=False),
     sa.Column('ordem', sa.Integer(), nullable=False),
+    sa.Column('numero_series_prescritas', sa.Integer(), nullable=False),
     sa.Column('prescricao', sa.Text(), nullable=True),
     sa.Column('repeticao_ou_tempo', sa.String(length=50), nullable=True),
     sa.Column('rer_rm_valor', sa.String(length=50), nullable=True),
     sa.Column('descanso_segundos', sa.Integer(), nullable=True),
     sa.Column('tecnica', sa.Enum('PADRAO', 'ISOMETRIA', 'INSTABILIDADE', name='tecnica'), nullable=False),
     sa.Column('observacoes', sa.Text(), nullable=True),
+    sa.Column('observacoes_aluno', sa.Text(), nullable=True),
+    sa.ForeignKeyConstraint(['exercicio_base_id'], ['exercicios_base.id'], ),
     sa.ForeignKeyConstraint(['treino_id'], ['treinos.id'], ),
     sa.PrimaryKeyConstraint('id')
     )

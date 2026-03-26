@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import String, Integer, ForeignKey
+from sqlalchemy import String, Integer, ForeignKey, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID
 
@@ -14,6 +14,7 @@ class Treino(Base):
     conjunto_treino_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("conjuntos_treino.id"))
     codigo: Mapped[str] = mapped_column(String(10))
     nome: Mapped[str] = mapped_column(String(255))
+    observacoes_aluno: Mapped[str | None] = mapped_column(Text, nullable=True)
     ordem: Mapped[int] = mapped_column(Integer)
 
     conjunto: Mapped["ConjuntoTreino"] = relationship(back_populates="treinos")

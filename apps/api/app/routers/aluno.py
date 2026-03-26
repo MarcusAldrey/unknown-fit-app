@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -29,6 +29,8 @@ from app.schemas import (
     SerieOut,
     SerieDetalheOut,
     UltimoPesoExercicioOut,
+    TreinoObservacaoAlunoUpdate,
+    ExercicioObservacaoAlunoUpdate,
 )
 
 router = APIRouter()
@@ -74,6 +76,60 @@ async def treinos_do_conjunto_ativo(
         .order_by(Treino.ordem)
     )
     return result.scalars().all()
+
+
+@router.patch("/treinos/{treino_id}/observacoes-aluno", response_model=TreinoOut)
+async def atualizar_observacoes_aluno_treino(
+    treino_id: uuid.UUID,
+    body: TreinoObservacaoAlunoUpdate,
+    aluno: Aluno = Depends(get_current_aluno),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Treino)
+        .where(Treino.id == treino_id)
+        .options(selectinload(Treino.conjunto))
+    )
+    treino = result.scalar_one_or_none()
+
+    if treino is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Treino não encontrado")
+
+    if treino.conjunto.aluno_id != aluno.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Treino não pertence ao aluno")
+
+    texto = body.observacoes_aluno.strip() if body.observacoes_aluno else None
+    treino.observacoes_aluno = texto or None
+    await db.flush()
+    await db.refresh(treino)
+    return treino
+
+
+@router.patch("/exercicios/{exercicio_treino_id}/observacoes-aluno", response_model=ExercicioTreinoOut)
+async def atualizar_observacoes_aluno_exercicio(
+    exercicio_treino_id: uuid.UUID,
+    body: ExercicioObservacaoAlunoUpdate,
+    aluno: Aluno = Depends(get_current_aluno),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(ExercicioTreino)
+        .where(ExercicioTreino.id == exercicio_treino_id)
+        .options(selectinload(ExercicioTreino.treino).selectinload(Treino.conjunto))
+    )
+    exercicio = result.scalar_one_or_none()
+
+    if exercicio is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Exercício não encontrado")
+
+    if exercicio.treino.conjunto.aluno_id != aluno.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Exercício não pertence ao aluno")
+
+    texto = body.observacoes_aluno.strip() if body.observacoes_aluno else None
+    exercicio.observacoes_aluno = texto or None
+    await db.flush()
+    await db.refresh(exercicio)
+    return exercicio
 
 
 @router.get("/treinos/{treino_id}/exercicios", response_model=list[ExercicioTreinoOut])
@@ -341,6 +397,36 @@ async def registrar_serie(
     return serie
 
 
+@router.delete("/sessoes/{sessao_id}/series/{serie_id}", status_code=204)
+async def excluir_serie(
+    sessao_id: uuid.UUID,
+    serie_id: uuid.UUID,
+    aluno: Aluno = Depends(get_current_aluno),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(SerieExecutada, SessaoTreino)
+        .join(SessaoTreino, SerieExecutada.sessao_treino_id == SessaoTreino.id)
+        .where(
+            SerieExecutada.id == serie_id,
+            SerieExecutada.sessao_treino_id == sessao_id,
+            SessaoTreino.aluno_id == aluno.id,
+            SessaoTreino.status == StatusSessao.EM_ANDAMENTO,
+        )
+    )
+    row = result.first()
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Série não encontrada na sessão em andamento",
+        )
+
+    serie, _ = row
+    await db.delete(serie)
+    await db.flush()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 @router.patch("/sessoes/{sessao_id}/finalizar", response_model=SessaoOut)
 async def finalizar_sessao(
     sessao_id: uuid.UUID,
@@ -363,3 +449,28 @@ async def finalizar_sessao(
     await db.flush()
     await db.refresh(sessao)
     return sessao
+
+
+@router.delete("/sessoes/{sessao_id}", status_code=204)
+async def descartar_sessao(
+    sessao_id: uuid.UUID,
+    aluno: Aluno = Depends(get_current_aluno),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(SessaoTreino).where(
+            SessaoTreino.id == sessao_id,
+            SessaoTreino.aluno_id == aluno.id,
+            SessaoTreino.status == StatusSessao.EM_ANDAMENTO,
+        )
+    )
+    sessao = result.scalar_one_or_none()
+    if sessao is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Sessão em andamento não encontrada",
+        )
+
+    await db.delete(sessao)
+    await db.flush()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
