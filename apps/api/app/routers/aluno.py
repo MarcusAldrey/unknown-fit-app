@@ -331,6 +331,7 @@ async def listar_series_da_sessao(
             peso_utilizado=serie.peso_utilizado,
             repeticoes_realizadas=serie.repeticoes_realizadas,
             concluida=serie.concluida,
+            concluida_em=serie.concluida_em,
         )
         for serie, exercicio in rows
     ]
@@ -390,6 +391,7 @@ async def registrar_serie(
         peso_utilizado=body.peso_utilizado,
         repeticoes_realizadas=body.repeticoes_realizadas,
         concluida=body.concluida,
+        concluida_em=datetime.utcnow() if body.concluida else None,
     )
     db.add(serie)
     await db.flush()

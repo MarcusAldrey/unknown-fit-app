@@ -17,6 +17,7 @@ from app.models import (
     ExercicioTreino,
     ExercicioBase,
     Tecnica,
+    RegistroPesoAluno,
 )
 from app.schemas import (
     AlunoResumo,
@@ -30,6 +31,8 @@ from app.schemas import (
     ExercicioTreinoCreate,
     ExercicioTreinoUpdate,
     ExercicioTreinoOut,
+    RegistroPesoCreate,
+    RegistroPesoOut,
 )
 
 router = APIRouter()
@@ -97,6 +100,38 @@ async def ficha_aluno(
         peso=aluno.peso,
         altura=aluno.altura,
     )
+
+
+@router.get("/alunos/{aluno_id}/peso", response_model=list[RegistroPesoOut])
+async def listar_registros_peso(
+    aluno_id: uuid.UUID,
+    personal: Personal = Depends(get_current_personal),
+    db: AsyncSession = Depends(get_db),
+):
+    await _get_aluno_vinculado(personal, aluno_id, db)
+    result = await db.execute(
+        select(RegistroPesoAluno)
+        .where(RegistroPesoAluno.aluno_id == aluno_id)
+        .order_by(RegistroPesoAluno.registrado_em.desc())
+    )
+    return result.scalars().all()
+
+
+@router.post("/alunos/{aluno_id}/peso", response_model=RegistroPesoOut, status_code=201)
+async def registrar_peso(
+    aluno_id: uuid.UUID,
+    body: RegistroPesoCreate,
+    personal: Personal = Depends(get_current_personal),
+    db: AsyncSession = Depends(get_db),
+):
+    aluno = await _get_aluno_vinculado(personal, aluno_id, db)
+    registro = RegistroPesoAluno(aluno_id=aluno_id, peso=body.peso)
+    aluno.peso = body.peso
+
+    db.add(registro)
+    await db.flush()
+    await db.refresh(registro)
+    return registro
 
 
 # --- Conjuntos de Treino ---

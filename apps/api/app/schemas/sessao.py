@@ -44,6 +44,7 @@ class SerieOut(BaseModel):
     peso_utilizado: float | None = None
     repeticoes_realizadas: int | None = None
     concluida: bool
+    concluida_em: datetime | None = None
 
     model_config = {"from_attributes": True}
 
@@ -56,6 +57,7 @@ class SerieDetalheOut(BaseModel):
     peso_utilizado: float | None = None
     repeticoes_realizadas: int | None = None
     concluida: bool
+    concluida_em: datetime | None = None
 
 
 class UltimoPesoExercicioOut(BaseModel):

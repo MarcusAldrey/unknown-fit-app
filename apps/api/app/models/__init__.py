@@ -8,3 +8,4 @@ from app.models.exercicio_treino import ExercicioTreino, Tecnica  # noqa: F401
 from app.models.exercicio_base import ExercicioBase  # noqa: F401
 from app.models.sessao_treino import SessaoTreino, StatusSessao  # noqa: F401
 from app.models.serie_executada import SerieExecutada  # noqa: F401
+from app.models.peso_registro import RegistroPesoAluno  # noqa: F401

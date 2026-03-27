@@ -1,6 +1,11 @@
 from app.schemas.auth import LoginRequest, TokenResponse, RefreshRequest  # noqa: F401
 from app.schemas.usuario import UsuarioOut  # noqa: F401
-from app.schemas.aluno import AlunoFicha, AlunoResumo  # noqa: F401
+from app.schemas.aluno import (  # noqa: F401
+    AlunoFicha,
+    AlunoResumo,
+    RegistroPesoCreate,
+    RegistroPesoOut,
+)
 from app.schemas.conjunto_treino import (  # noqa: F401
     ConjuntoTreinoCreate,
     ConjuntoTreinoUpdate,

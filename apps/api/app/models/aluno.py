@@ -20,9 +20,11 @@ class Aluno(Base):
     vinculos: Mapped[list["VinculoPersonalAluno"]] = relationship(back_populates="aluno")
     conjuntos_treino: Mapped[list["ConjuntoTreino"]] = relationship(back_populates="aluno")
     sessoes: Mapped[list["SessaoTreino"]] = relationship(back_populates="aluno")
+    registros_peso: Mapped[list["RegistroPesoAluno"]] = relationship(back_populates="aluno")
 
 
 from app.models.usuario import Usuario  # noqa: E402
 from app.models.vinculo import VinculoPersonalAluno  # noqa: E402
 from app.models.conjunto_treino import ConjuntoTreino  # noqa: E402
 from app.models.sessao_treino import SessaoTreino  # noqa: E402
+from app.models.peso_registro import RegistroPesoAluno  # noqa: E402

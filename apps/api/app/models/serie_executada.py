@@ -1,6 +1,7 @@
 import uuid
+from datetime import datetime
 
-from sqlalchemy import Integer, Float, Boolean, ForeignKey
+from sqlalchemy import Integer, Float, Boolean, ForeignKey, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID
 
@@ -17,6 +18,7 @@ class SerieExecutada(Base):
     peso_utilizado: Mapped[float | None] = mapped_column(Float, nullable=True)
     repeticoes_realizadas: Mapped[int | None] = mapped_column(Integer, nullable=True)
     concluida: Mapped[bool] = mapped_column(Boolean, default=False)
+    concluida_em: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     sessao: Mapped["SessaoTreino"] = relationship(back_populates="series")
     exercicio_treino: Mapped["ExercicioTreino"] = relationship(back_populates="series_executadas")
