@@ -208,7 +208,8 @@ export function TreinosScreen({ route, navigation }: Props) {
             </TouchableOpacity>
             <Text style={styles.contextSub}>{alunoNome}</Text>
             <Text style={styles.historicoResumoText}>
-              O aluno realizou {totalTreinosRealizados} {treinoTexto} desta periodização
+              O aluno realizou {totalTreinosRealizados} {treinoTexto} desta
+              periodização
             </Text>
             <TouchableOpacity
               style={styles.historicoBtn}

@@ -84,6 +84,26 @@ class ExercicioTreinoUpdate(BaseModel):
     observacoes_aluno: str | None = None
 
 
+class ExercicioTreinoEquivalentesUpdate(BaseModel):
+    exercicios_equivalentes_ids: list[uuid.UUID] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validar_duplicidade(self):
+        if len(set(self.exercicios_equivalentes_ids)) != len(self.exercicios_equivalentes_ids):
+            raise ValueError("Não é permitido repetir exercícios equivalentes")
+        return self
+
+
+class ExercicioTreinoEquivalenteOut(BaseModel):
+    id: uuid.UUID
+    exercicio_treino_id: uuid.UUID
+    exercicio_equivalente_treino_id: uuid.UUID
+    nome_exercicio: str
+    ordem: int
+
+    model_config = {"from_attributes": True}
+
+
 class ExercicioTreinoOut(BaseModel):
     id: uuid.UUID
     treino_id: uuid.UUID
@@ -102,6 +122,7 @@ class ExercicioTreinoOut(BaseModel):
     tecnica: str
     observacoes: str | None = None
     observacoes_aluno: str | None = None
+    equivalentes: list[ExercicioTreinoEquivalenteOut] = Field(default_factory=list)
 
     model_config = {"from_attributes": True}
 

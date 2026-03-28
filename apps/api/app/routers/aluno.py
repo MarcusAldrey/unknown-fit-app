@@ -4,7 +4,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import aliased, selectinload
 
 from app.database import get_db
 from app.deps import get_current_aluno
@@ -16,6 +16,7 @@ from app.models import (
     SerieExecutada,
     StatusSessao,
     ExercicioTreino,
+    ExercicioTreinoEquivalente,
 )
 from app.schemas import (
     ConjuntoTreinoOut,
@@ -157,6 +158,11 @@ async def exercicios_do_treino(
     result = await db.execute(
         select(ExercicioTreino)
         .where(ExercicioTreino.treino_id == treino_id)
+        .options(
+            selectinload(ExercicioTreino.equivalentes).selectinload(
+                ExercicioTreinoEquivalente.exercicio_equivalente_treino
+            )
+        )
         .order_by(ExercicioTreino.ordem)
     )
     return result.scalars().all()
@@ -304,6 +310,7 @@ async def listar_series_da_sessao(
     aluno: Aluno = Depends(get_current_aluno),
     db: AsyncSession = Depends(get_db),
 ):
+    exercicio_executado_alias = aliased(ExercicioTreino)
     result = await db.execute(
         select(SessaoTreino).where(
             SessaoTreino.id == sessao_id,
@@ -315,8 +322,12 @@ async def listar_series_da_sessao(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sessão não encontrada")
 
     result = await db.execute(
-        select(SerieExecutada, ExercicioTreino)
+        select(SerieExecutada, ExercicioTreino, exercicio_executado_alias)
         .join(ExercicioTreino, SerieExecutada.exercicio_treino_id == ExercicioTreino.id)
+        .outerjoin(
+            exercicio_executado_alias,
+            SerieExecutada.exercicio_treino_executado_id == exercicio_executado_alias.id,
+        )
         .where(SerieExecutada.sessao_treino_id == sessao_id)
         .order_by(ExercicioTreino.ordem, SerieExecutada.numero_serie)
     )
@@ -326,14 +337,18 @@ async def listar_series_da_sessao(
         SerieDetalheOut(
             id=serie.id,
             exercicio_treino_id=serie.exercicio_treino_id,
+            exercicio_treino_executado_id=serie.exercicio_treino_executado_id,
             nome_exercicio=exercicio.nome_exercicio,
+            nome_exercicio_executado=(
+                exercicio_executado.nome_exercicio if exercicio_executado is not None else None
+            ),
             numero_serie=serie.numero_serie,
             peso_utilizado=serie.peso_utilizado,
             repeticoes_realizadas=serie.repeticoes_realizadas,
             concluida=serie.concluida,
             concluida_em=serie.concluida_em,
         )
-        for serie, exercicio in rows
+        for serie, exercicio, exercicio_executado in rows
     ]
 
 
@@ -384,9 +399,59 @@ async def registrar_serie(
             detail="Sessão não encontrada ou já finalizada",
         )
 
+    exercicio_prescrito = (
+        await db.execute(
+            select(ExercicioTreino).where(
+                ExercicioTreino.id == body.exercicio_treino_id,
+                ExercicioTreino.treino_id == sessao.treino_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if exercicio_prescrito is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Exercício do bloco não pertence ao treino da sessão",
+        )
+
+    exercicio_executado_id = body.exercicio_treino_executado_id
+    if exercicio_executado_id is not None and exercicio_executado_id != body.exercicio_treino_id:
+        exercicio_executado = (
+            await db.execute(
+                select(ExercicioTreino).where(
+                    ExercicioTreino.id == exercicio_executado_id,
+                    ExercicioTreino.treino_id == sessao.treino_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if exercicio_executado is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Exercício ativo não pertence ao treino da sessão",
+            )
+
+        equivalente = (
+            await db.execute(
+                select(ExercicioTreinoEquivalente.id).where(
+                    ExercicioTreinoEquivalente.exercicio_treino_id == body.exercicio_treino_id,
+                    ExercicioTreinoEquivalente.exercicio_equivalente_treino_id
+                    == exercicio_executado_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if equivalente is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Exercício ativo não está configurado como equivalente para este bloco",
+            )
+
     serie = SerieExecutada(
         sessao_treino_id=sessao_id,
         exercicio_treino_id=body.exercicio_treino_id,
+        exercicio_treino_executado_id=(
+            exercicio_executado_id
+            if exercicio_executado_id is not None and exercicio_executado_id != body.exercicio_treino_id
+            else None
+        ),
         numero_serie=body.numero_serie,
         peso_utilizado=body.peso_utilizado,
         repeticoes_realizadas=body.repeticoes_realizadas,

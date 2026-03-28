@@ -208,6 +208,31 @@ def upgrade() -> None:
     )
 
     op.create_table(
+        "exercicios_treino_equivalentes",
+        sa.Column("id", sa.UUID(), nullable=False),
+        sa.Column("exercicio_treino_id", sa.UUID(), nullable=False),
+        sa.Column("exercicio_equivalente_treino_id", sa.UUID(), nullable=False),
+        sa.Column("ordem", sa.Integer(), nullable=False),
+        sa.CheckConstraint(
+            "exercicio_treino_id <> exercicio_equivalente_treino_id",
+            name="ck_exercicio_equivalente_not_self",
+        ),
+        sa.ForeignKeyConstraint(["exercicio_equivalente_treino_id"], ["exercicios_treino.id"]),
+        sa.ForeignKeyConstraint(["exercicio_treino_id"], ["exercicios_treino.id"]),
+        sa.PrimaryKeyConstraint("id"),
+        sa.UniqueConstraint(
+            "exercicio_treino_id",
+            "exercicio_equivalente_treino_id",
+            name="uq_exercicio_treino_equivalente",
+        ),
+    )
+    op.create_index(
+        "ix_exercicios_treino_equivalentes_exercicio_treino_id",
+        "exercicios_treino_equivalentes",
+        ["exercicio_treino_id"],
+    )
+
+    op.create_table(
         "sessoes_treino",
         sa.Column("id", sa.UUID(), nullable=False),
         sa.Column("aluno_id", sa.UUID(), nullable=False),
@@ -235,11 +260,13 @@ def upgrade() -> None:
         sa.Column("id", sa.UUID(), nullable=False),
         sa.Column("sessao_treino_id", sa.UUID(), nullable=False),
         sa.Column("exercicio_treino_id", sa.UUID(), nullable=False),
+        sa.Column("exercicio_treino_executado_id", sa.UUID(), nullable=True),
         sa.Column("numero_serie", sa.Integer(), nullable=False),
         sa.Column("peso_utilizado", sa.Float(), nullable=True),
         sa.Column("repeticoes_realizadas", sa.Integer(), nullable=True),
         sa.Column("concluida", sa.Boolean(), nullable=False),
         sa.Column("concluida_em", sa.DateTime(), nullable=True),
+        sa.ForeignKeyConstraint(["exercicio_treino_executado_id"], ["exercicios_treino.id"]),
         sa.ForeignKeyConstraint(["exercicio_treino_id"], ["exercicios_treino.id"]),
         sa.ForeignKeyConstraint(["sessao_treino_id"], ["sessoes_treino.id"]),
         sa.PrimaryKeyConstraint("id"),
@@ -252,6 +279,13 @@ def downgrade() -> None:
     op.drop_table("series_executadas")
     op.drop_table("registros_peso_aluno")
     op.drop_table("sessoes_treino")
+
+    op.drop_index(
+        "ix_exercicios_treino_equivalentes_exercicio_treino_id",
+        table_name="exercicios_treino_equivalentes",
+    )
+    op.drop_table("exercicios_treino_equivalentes")
+
     op.drop_table("exercicios_treino")
 
     op.drop_index(

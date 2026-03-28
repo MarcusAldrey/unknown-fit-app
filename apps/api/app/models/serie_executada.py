@@ -14,6 +14,10 @@ class SerieExecutada(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     sessao_treino_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("sessoes_treino.id"))
     exercicio_treino_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("exercicios_treino.id"))
+    exercicio_treino_executado_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("exercicios_treino.id"),
+        nullable=True,
+    )
     numero_serie: Mapped[int] = mapped_column(Integer)
     peso_utilizado: Mapped[float | None] = mapped_column(Float, nullable=True)
     repeticoes_realizadas: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -21,7 +25,14 @@ class SerieExecutada(Base):
     concluida_em: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     sessao: Mapped["SessaoTreino"] = relationship(back_populates="series")
-    exercicio_treino: Mapped["ExercicioTreino"] = relationship(back_populates="series_executadas")
+    exercicio_treino: Mapped["ExercicioTreino"] = relationship(
+        back_populates="series_executadas",
+        foreign_keys=[exercicio_treino_id],
+    )
+    exercicio_treino_executado: Mapped["ExercicioTreino | None"] = relationship(
+        back_populates="series_executadas_como_substituto",
+        foreign_keys=[exercicio_treino_executado_id],
+    )
 
 
 from app.models.sessao_treino import SessaoTreino  # noqa: E402

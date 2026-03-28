@@ -21,6 +21,8 @@ from app.schemas.exercicio import (  # noqa: F401
     ExercicioTreinoCreate,
     ExercicioTreinoUpdate,
     ExercicioTreinoOut,
+    ExercicioTreinoEquivalentesUpdate,
+    ExercicioTreinoEquivalenteOut,
     ExercicioBaseOut,
     ExercicioBaseUpdate,
     ExercicioObservacaoAlunoUpdate,

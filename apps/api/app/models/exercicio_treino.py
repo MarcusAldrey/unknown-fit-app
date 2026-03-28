@@ -48,7 +48,24 @@ class ExercicioTreino(Base):
 
     treino: Mapped["Treino"] = relationship(back_populates="exercicios")
     exercicio_base: Mapped["ExercicioBase"] = relationship(back_populates="usos_em_treinos", lazy="joined")
-    series_executadas: Mapped[list["SerieExecutada"]] = relationship(back_populates="exercicio_treino")
+    series_executadas: Mapped[list["SerieExecutada"]] = relationship(
+        back_populates="exercicio_treino",
+        foreign_keys="SerieExecutada.exercicio_treino_id",
+    )
+    series_executadas_como_substituto: Mapped[list["SerieExecutada"]] = relationship(
+        back_populates="exercicio_treino_executado",
+        foreign_keys="SerieExecutada.exercicio_treino_executado_id",
+    )
+    equivalentes: Mapped[list["ExercicioTreinoEquivalente"]] = relationship(
+        back_populates="exercicio_treino",
+        foreign_keys="ExercicioTreinoEquivalente.exercicio_treino_id",
+        cascade="all, delete-orphan",
+        order_by="ExercicioTreinoEquivalente.ordem",
+    )
+    equivalente_de: Mapped[list["ExercicioTreinoEquivalente"]] = relationship(
+        back_populates="exercicio_equivalente_treino",
+        foreign_keys="ExercicioTreinoEquivalente.exercicio_equivalente_treino_id",
+    )
 
     @property
     def nome_exercicio(self) -> str:
@@ -57,3 +74,4 @@ class ExercicioTreino(Base):
 
 from app.models.treino import Treino  # noqa: E402
 from app.models.serie_executada import SerieExecutada  # noqa: E402
+from app.models.exercicio_treino_equivalente import ExercicioTreinoEquivalente  # noqa: E402

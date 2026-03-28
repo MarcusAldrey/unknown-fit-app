@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -19,6 +19,13 @@ import type { ExercicioTreino } from "../../types";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
 
 type Props = NativeStackScreenProps<PersonalStackParamList, "Exercicios">;
+
+type GrupoEquivalenteMeta = {
+  groupId: number;
+  inicio: boolean;
+  fim: boolean;
+  tamanho: number;
+};
 
 function formatarAlvoCompacto(exercicio: ExercicioTreino) {
   if (exercicio.alvo_tipo === "OUTROS") {
@@ -46,6 +53,67 @@ function formatarRerRmCompacto(exercicio: ExercicioTreino) {
   return `${exercicio.rer_rm_tipo} ${exercicio.rer_rm_valor}`;
 }
 
+function montarMetadadosGrupoEquivalentes(
+  lista: ExercicioTreino[],
+): Map<string, GrupoEquivalenteMeta> {
+  const metadados = new Map<string, GrupoEquivalenteMeta>();
+
+  const idsNoTreino = new Set(lista.map((exercicio) => exercicio.id));
+  const adjacencia = new Map<string, Set<string>>();
+  lista.forEach((exercicio) => {
+    adjacencia.set(exercicio.id, new Set<string>());
+  });
+
+  lista.forEach((exercicio) => {
+    (exercicio.equivalentes ?? []).forEach((equivalente) => {
+      const equivalenteId = equivalente.exercicio_equivalente_treino_id;
+      if (!idsNoTreino.has(equivalenteId)) return;
+
+      adjacencia.get(exercicio.id)?.add(equivalenteId);
+      adjacencia.get(equivalenteId)?.add(exercicio.id);
+    });
+  });
+
+  const visitados = new Set<string>();
+  let proximoGroupId = 1;
+
+  for (const exercicio of lista) {
+    if (visitados.has(exercicio.id)) continue;
+
+    const fila = [exercicio.id];
+    const idsComponente = new Set<string>();
+
+    while (fila.length > 0) {
+      const atualId = fila.shift() as string;
+      if (idsComponente.has(atualId)) continue;
+
+      idsComponente.add(atualId);
+      visitados.add(atualId);
+
+      adjacencia.get(atualId)?.forEach((vizinhoId) => {
+        if (!idsComponente.has(vizinhoId)) fila.push(vizinhoId);
+      });
+    }
+
+    if (idsComponente.size <= 1) continue;
+
+    const ordenadosNoFluxo = lista.filter((item) => idsComponente.has(item.id));
+
+    ordenadosNoFluxo.forEach((item, indice) => {
+      metadados.set(item.id, {
+        groupId: proximoGroupId,
+        inicio: indice === 0,
+        fim: indice === ordenadosNoFluxo.length - 1,
+        tamanho: ordenadosNoFluxo.length,
+      });
+    });
+
+    proximoGroupId += 1;
+  }
+
+  return metadados;
+}
+
 export function ExerciciosScreen({ route, navigation }: Props) {
   const { alunoId, treinoId, treinoCodigo, treinoNome } = route.params;
   const queryClient = useQueryClient();
@@ -59,6 +127,12 @@ export function ExerciciosScreen({ route, navigation }: Props) {
   const [menuExercicio, setMenuExercicio] = useState<ExercicioTreino | null>(
     null,
   );
+  const [equivalentesVisible, setEquivalentesVisible] = useState(false);
+  const [equivalenteBase, setEquivalenteBase] =
+    useState<ExercicioTreino | null>(null);
+  const [equivalentesSelecionados, setEquivalentesSelecionados] = useState<
+    string[]
+  >([]);
 
   const [reorderMode, setReorderMode] = useState(false);
   const [localExercicios, setLocalExercicios] = useState<ExercicioTreino[]>([]);
@@ -155,20 +229,103 @@ export function ExerciciosScreen({ route, navigation }: Props) {
     },
   });
 
+  const equivalentesMutation = useMutation({
+    mutationFn: async (payload: {
+      exercicioId: string;
+      equivalentesIds: string[];
+    }) => {
+      const res = await api.put(
+        `/personal/exercicios/${payload.exercicioId}/equivalentes`,
+        {
+          exercicios_equivalentes_ids: payload.equivalentesIds,
+        },
+      );
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["personal", "treino", treinoId, "exercicios"],
+      });
+      setEquivalentesVisible(false);
+      setEquivalenteBase(null);
+      setEquivalentesSelecionados([]);
+      Alert.alert("Sucesso", "Equivalentes atualizados.");
+    },
+    onError: () => {
+      Alert.alert(
+        "Erro",
+        "Não foi possível salvar os exercícios equivalentes.",
+      );
+    },
+  });
+
   // --- Reorder helpers ---
   const moveItem = useCallback(
     (index: number, direction: "up" | "down") => {
-      const newIndex = direction === "up" ? index - 1 : index + 1;
-      if (newIndex < 0 || newIndex >= localExercicios.length) return;
-      const updated = [...localExercicios];
-      const temp = updated[index];
-      updated[index] = updated[newIndex];
-      updated[newIndex] = temp;
-      const renumbered = updated.map((ex, idx) => ({
-        ...ex,
-        ordem: idx + 1,
-      }));
-      setLocalExercicios(renumbered);
+      if (index < 0 || index >= localExercicios.length) return;
+
+      const metadados = montarMetadadosGrupoEquivalentes(localExercicios);
+
+      const obterSegmento = (idx: number) => {
+        const exercicio = localExercicios[idx];
+        const meta = metadados.get(exercicio.id);
+        if (!meta) return { start: idx, end: idx };
+
+        let start = idx;
+        while (start > 0) {
+          const anteriorMeta = metadados.get(localExercicios[start - 1].id);
+          if (anteriorMeta?.groupId !== meta.groupId) break;
+          start -= 1;
+        }
+
+        let end = idx;
+        while (end < localExercicios.length - 1) {
+          const proximoMeta = metadados.get(localExercicios[end + 1].id);
+          if (proximoMeta?.groupId !== meta.groupId) break;
+          end += 1;
+        }
+
+        return { start, end };
+      };
+
+      const segmentoAtual = obterSegmento(index);
+
+      if (direction === "up") {
+        if (segmentoAtual.start === 0) return;
+
+        const segmentoAnterior = obterSegmento(segmentoAtual.start - 1);
+        const reordenado = [
+          ...localExercicios.slice(0, segmentoAnterior.start),
+          ...localExercicios.slice(segmentoAtual.start, segmentoAtual.end + 1),
+          ...localExercicios.slice(segmentoAnterior.start, segmentoAtual.start),
+          ...localExercicios.slice(segmentoAtual.end + 1),
+        ];
+
+        setLocalExercicios(
+          reordenado.map((exercicio, idx) => ({
+            ...exercicio,
+            ordem: idx + 1,
+          })),
+        );
+        return;
+      }
+
+      if (segmentoAtual.end === localExercicios.length - 1) return;
+
+      const segmentoSeguinte = obterSegmento(segmentoAtual.end + 1);
+      const reordenado = [
+        ...localExercicios.slice(0, segmentoAtual.start),
+        ...localExercicios.slice(segmentoSeguinte.start, segmentoSeguinte.end + 1),
+        ...localExercicios.slice(segmentoAtual.start, segmentoAtual.end + 1),
+        ...localExercicios.slice(segmentoSeguinte.end + 1),
+      ];
+
+      setLocalExercicios(
+        reordenado.map((exercicio, idx) => ({
+          ...exercicio,
+          ordem: idx + 1,
+        })),
+      );
     },
     [localExercicios],
   );
@@ -206,6 +363,50 @@ export function ExerciciosScreen({ route, navigation }: Props) {
     setMenuExercicio(null);
   };
 
+  const abrirGerirEquivalentes = (exercicio: ExercicioTreino) => {
+    const selecionadosOrdenados = [...(exercicio.equivalentes ?? [])]
+      .sort((a, b) => a.ordem - b.ordem)
+      .map((equivalente) => equivalente.exercicio_equivalente_treino_id);
+
+    setEquivalenteBase(exercicio);
+    setEquivalentesSelecionados(selecionadosOrdenados);
+    setMenuVisible(false);
+    setMenuExercicio(null);
+  };
+
+  const handleGerirEquivalentes = () => {
+    if (!menuExercicio) return;
+    abrirGerirEquivalentes(menuExercicio);
+  };
+
+  const toggleEquivalenteSelecionado = (exercicioId: string) => {
+    setEquivalentesSelecionados((current) =>
+      current.includes(exercicioId)
+        ? current.filter((id) => id !== exercicioId)
+        : [...current, exercicioId],
+    );
+  };
+
+  const salvarEquivalentes = () => {
+    if (!equivalenteBase) return;
+    const idsOrdenados = (exercicios ?? [])
+      .filter((exercicio) => equivalentesSelecionados.includes(exercicio.id))
+      .map((exercicio) => exercicio.id);
+
+    equivalentesMutation.mutate({
+      exercicioId: equivalenteBase.id,
+      equivalentesIds: idsOrdenados,
+    });
+  };
+
+  useEffect(() => {
+    if (!equivalenteBase) {
+      setEquivalentesVisible(false);
+      return;
+    }
+    setEquivalentesVisible(true);
+  }, [equivalenteBase]);
+
   // --- Render ---
   if (isLoading) {
     return (
@@ -216,6 +417,10 @@ export function ExerciciosScreen({ route, navigation }: Props) {
   }
 
   const displayExercicios = reorderMode ? localExercicios : (exercicios ?? []);
+
+  const metadadosGrupoEquivalentes = useMemo(() => {
+    return montarMetadadosGrupoEquivalentes(displayExercicios);
+  }, [displayExercicios]);
 
   const renderHeader = () => (
     <>
@@ -310,85 +515,125 @@ export function ExerciciosScreen({ route, navigation }: Props) {
         }
         ListEmptyComponent={renderEmpty}
         contentContainerStyle={{ paddingBottom: 24 }}
-        renderItem={({ item, index }) => (
-          <TouchableOpacity
-            style={styles.card}
-            activeOpacity={reorderMode ? 1 : 0.7}
-            onLongPress={reorderMode ? undefined : () => setReorderMode(true)}
-            onPress={
-              reorderMode
-                ? undefined
-                : () =>
-                    navigation.navigate("CriarExercicio", {
-                      alunoId,
-                      treinoId,
-                      exercicioData: item,
-                    })
-            }
-          >
-            <Text style={styles.ordem}>{item.ordem}</Text>
-            <View style={styles.info}>
-              <Text style={styles.nome}>{item.nome_exercicio}</Text>
-              <View style={styles.detalhesChips}>
-                <View style={styles.detalheChip}>
-                  <Text style={styles.detalheChipText}>
-                    {`${item.numero_series_prescritas}x ${formatarAlvoCompacto(item)}`}
-                  </Text>
-                </View>
-                <View style={styles.detalheChip}>
-                  <Text style={styles.detalheChipText}>
-                    {`Descanso ${item.descanso_segundos ? `${item.descanso_segundos}s` : "—"}`}
-                  </Text>
-                </View>
-                {formatarRerRmCompacto(item) ? (
-                  <View style={styles.detalheChip}>
-                    <Text style={styles.detalheChipText}>
-                      {formatarRerRmCompacto(item)}
-                    </Text>
-                  </View>
-                ) : null}
-              </View>
-              {item.tecnica !== "PADRAO" && (
-                <Text style={styles.tecnica}>{item.tecnica}</Text>
-              )}
-              {item.observacoes && (
-                <Text style={styles.obs}>{`Obs: ${item.observacoes}`}</Text>
-              )}
-            </View>
-            {reorderMode ? (
-              <View style={styles.arrowContainer}>
-                <TouchableOpacity
-                  style={[styles.arrowBtn, index === 0 && styles.arrowDisabled]}
-                  onPress={() => moveItem(index, "up")}
-                  disabled={index === 0}
-                >
-                  <Text style={styles.arrowText}>↑</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.arrowBtn,
-                    index === displayExercicios.length - 1 &&
-                      styles.arrowDisabled,
-                  ]}
-                  onPress={() => moveItem(index, "down")}
-                  disabled={index === displayExercicios.length - 1}
-                >
-                  <Text style={styles.arrowText}>↓</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
+        renderItem={({ item, index }) => {
+          const proximoExercicio = displayExercicios[index + 1];
+          const metadadoAtual = metadadosGrupoEquivalentes.get(item.id);
+          const metadadoProximo = proximoExercicio
+            ? metadadosGrupoEquivalentes.get(proximoExercicio.id)
+            : undefined;
+          const mostrarOuEntreCards =
+            Boolean(proximoExercicio) &&
+            Boolean(metadadoAtual) &&
+            metadadoAtual.groupId === metadadoProximo?.groupId;
+
+          return (
+            <View
+              style={[
+                styles.itemGroup,
+                metadadoAtual ? styles.grupoEquivalenteItem : undefined,
+                metadadoAtual?.inicio
+                  ? styles.grupoEquivalenteInicio
+                  : undefined,
+                metadadoAtual?.fim ? styles.grupoEquivalenteFim : undefined,
+              ]}
+            >
               <TouchableOpacity
-                style={styles.menuBtn}
-                onPress={() => {
-                  setMenuExercicio(item);
-                  setMenuVisible(true);
-                }}
+                style={styles.card}
+                activeOpacity={reorderMode ? 1 : 0.7}
+                onLongPress={
+                  reorderMode ? undefined : () => setReorderMode(true)
+                }
+                onPress={
+                  reorderMode
+                    ? undefined
+                    : () =>
+                        navigation.navigate("CriarExercicio", {
+                          alunoId,
+                          treinoId,
+                          exercicioData: item,
+                        })
+                }
               >
-                <Text style={styles.menuDots}>⋮</Text>
+                <Text style={styles.ordem}>{item.ordem}</Text>
+                <View style={styles.info}>
+                  <Text style={styles.nome}>{item.nome_exercicio}</Text>
+                  <View style={styles.detalhesChips}>
+                    <View style={styles.detalheChip}>
+                      <Text style={styles.detalheChipText}>
+                        {`${item.numero_series_prescritas}x ${formatarAlvoCompacto(item)}`}
+                      </Text>
+                    </View>
+                    <View style={styles.detalheChip}>
+                      <Text style={styles.detalheChipText}>
+                        {`Descanso ${item.descanso_segundos ? `${item.descanso_segundos}s` : "—"}`}
+                      </Text>
+                    </View>
+                    {formatarRerRmCompacto(item) ? (
+                      <View style={styles.detalheChip}>
+                        <Text style={styles.detalheChipText}>
+                          {formatarRerRmCompacto(item)}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
+                  {item.tecnica !== "PADRAO" && (
+                    <Text style={styles.tecnica}>{item.tecnica}</Text>
+                  )}
+                  {item.observacoes && (
+                    <Text style={styles.obs}>{`Obs: ${item.observacoes}`}</Text>
+                  )}
+                </View>
+                {reorderMode ? (
+                  <View style={styles.arrowContainer}>
+                    <TouchableOpacity
+                      style={[
+                        styles.arrowBtn,
+                        index === 0 && styles.arrowDisabled,
+                      ]}
+                      onPress={() => moveItem(index, "up")}
+                      disabled={index === 0}
+                    >
+                      <Text style={styles.arrowText}>↑</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.arrowBtn,
+                        index === displayExercicios.length - 1 &&
+                          styles.arrowDisabled,
+                      ]}
+                      onPress={() => moveItem(index, "down")}
+                      disabled={index === displayExercicios.length - 1}
+                    >
+                      <Text style={styles.arrowText}>↓</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.menuBtn}
+                    onPress={() => {
+                      setMenuExercicio(item);
+                      setMenuVisible(true);
+                    }}
+                  >
+                    <Text style={styles.menuDots}>⋮</Text>
+                  </TouchableOpacity>
+                )}
               </TouchableOpacity>
-            )}
-          </TouchableOpacity>
-        )}
+
+              {mostrarOuEntreCards ? (
+                <View style={styles.ouEntreCardsWrap}>
+                  <TouchableOpacity
+                    style={styles.ouEntreCardsBtn}
+                    onPress={() => abrirGerirEquivalentes(item)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.ouEntreCardsText}>OU</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+            </View>
+          );
+        }}
       />
 
       {/* Modal: Editar Nome do Treino */}
@@ -465,6 +710,14 @@ export function ExerciciosScreen({ route, navigation }: Props) {
             </TouchableOpacity>
 
             <TouchableOpacity
+              style={styles.menuItem}
+              onPress={handleGerirEquivalentes}
+            >
+              <Text style={styles.menuItemIcon}>⇄</Text>
+              <Text style={styles.menuItemText}>Gerir equivalentes</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
               style={[styles.menuItem, styles.menuItemDanger]}
               onPress={handleDelete}
             >
@@ -473,6 +726,84 @@ export function ExerciciosScreen({ route, navigation }: Props) {
                 Deletar exercício
               </Text>
             </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal
+        visible={equivalentesVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          setEquivalentesVisible(false);
+          setEquivalenteBase(null);
+        }}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => {
+            setEquivalentesVisible(false);
+            setEquivalenteBase(null);
+          }}
+        >
+          <Pressable style={styles.modalContent} onPress={() => {}}>
+            <Text style={styles.modalTitle}>Gerir equivalentes</Text>
+            <Text style={styles.modalSubTitle}>
+              {equivalenteBase?.nome_exercicio}
+            </Text>
+
+            <View style={styles.equivalentesList}>
+              {(exercicios ?? [])
+                .filter((exercicio) => exercicio.id !== equivalenteBase?.id)
+                .map((exercicio) => {
+                  const selecionado = equivalentesSelecionados.includes(
+                    exercicio.id,
+                  );
+                  return (
+                    <TouchableOpacity
+                      key={exercicio.id}
+                      style={[
+                        styles.equivalenteRow,
+                        selecionado && styles.equivalenteRowSelecionado,
+                      ]}
+                      onPress={() => toggleEquivalenteSelecionado(exercicio.id)}
+                    >
+                      <Text style={styles.equivalenteNome}>
+                        {exercicio.nome_exercicio}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.equivalenteCheck,
+                          selecionado && styles.equivalenteCheckSelecionado,
+                        ]}
+                      >
+                        {selecionado ? "✓" : "+"}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+            </View>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalCancelBtn}
+                onPress={() => {
+                  setEquivalentesVisible(false);
+                  setEquivalenteBase(null);
+                }}
+              >
+                <Text style={styles.modalCancelText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalSaveBtn}
+                onPress={salvarEquivalentes}
+                disabled={equivalentesMutation.isPending}
+              >
+                <Text style={styles.modalSaveText}>
+                  {equivalentesMutation.isPending ? "Salvando..." : "Salvar"}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </Pressable>
         </Pressable>
       </Modal>
@@ -565,9 +896,35 @@ const styles = StyleSheet.create({
     backgroundColor: "#1a1a1a",
     borderRadius: 12,
     padding: 16,
-    marginBottom: 12,
+    marginBottom: 0,
     flexDirection: "row",
     gap: 12,
+  },
+  itemGroup: {
+    marginBottom: 12,
+  },
+  grupoEquivalenteItem: {
+    marginBottom: 0,
+    marginHorizontal: 0,
+    paddingHorizontal: 0,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: "#2d6a48",
+    backgroundColor: "#111111",
+  },
+  grupoEquivalenteInicio: {
+    borderTopWidth: 1,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    paddingTop: 0,
+    marginTop: 0,
+  },
+  grupoEquivalenteFim: {
+    borderBottomWidth: 1,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+    paddingBottom: 0,
+    marginBottom: 12,
   },
   ordem: {
     color: "#22c55e",
@@ -596,6 +953,24 @@ const styles = StyleSheet.create({
   detalheChipText: { color: "#b7b7b7", fontSize: 12, fontWeight: "600" },
   tecnica: { color: "#22c55e", fontSize: 12, marginTop: 4, fontWeight: "bold" },
   obs: { color: "#666", fontSize: 12, marginTop: 4, fontStyle: "italic" },
+  ouEntreCardsWrap: {
+    marginTop: 0,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  ouEntreCardsBtn: {
+    borderWidth: 1,
+    borderColor: "#2d6a48",
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    backgroundColor: "#13281d",
+  },
+  ouEntreCardsText: {
+    color: "#9fe6b4",
+    fontSize: 11,
+    fontWeight: "700",
+  },
   menuBtn: {
     alignSelf: "center",
     paddingHorizontal: 8,
@@ -666,6 +1041,11 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 16,
   },
+  modalSubTitle: {
+    color: "#9ca3af",
+    fontSize: 13,
+    marginBottom: 12,
+  },
   modalInput: {
     backgroundColor: "#0d0d0d",
     color: "#fff",
@@ -697,6 +1077,40 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   modalSaveText: { color: "#fff", fontSize: 14, fontWeight: "bold" },
+  equivalentesList: {
+    maxHeight: 300,
+    gap: 8,
+  },
+  equivalenteRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: "#121212",
+  },
+  equivalenteRowSelecionado: {
+    borderColor: "#2e7d4f",
+    backgroundColor: "#12281c",
+  },
+  equivalenteNome: {
+    color: "#e5e7eb",
+    fontSize: 14,
+    flex: 1,
+  },
+  equivalenteCheck: {
+    color: "#9ca3af",
+    fontSize: 18,
+    fontWeight: "700",
+    width: 20,
+    textAlign: "center",
+  },
+  equivalenteCheckSelecionado: {
+    color: "#22c55e",
+  },
 
   // --- Modal Menu ---
   menuContent: {

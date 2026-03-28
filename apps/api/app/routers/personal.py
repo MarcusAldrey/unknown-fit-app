@@ -4,7 +4,7 @@ from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import aliased, selectinload
 
 from app.database import get_db
 from app.deps import get_current_personal
@@ -17,6 +17,7 @@ from app.models import (
     SessaoTreino,
     SerieExecutada,
     ExercicioTreino,
+    ExercicioTreinoEquivalente,
     ExercicioBase,
     ExercicioRequisitoRecurso,
     AlunoRecursoDisponibilidade,
@@ -44,6 +45,8 @@ from app.schemas import (
     ExercicioTreinoCreate,
     ExercicioTreinoUpdate,
     ExercicioTreinoOut,
+    ExercicioTreinoEquivalentesUpdate,
+    ExercicioTreinoEquivalenteOut,
     RegistroPesoCreate,
     RegistroPesoOut,
 )
@@ -118,6 +121,50 @@ async def _get_conjunto_aluno_vinculado(
     return conjunto
 
 
+async def _get_exercicio_treino_vinculado(
+    personal: Personal,
+    exercicio_id: uuid.UUID,
+    db: AsyncSession,
+) -> ExercicioTreino:
+    exercicio = (
+        await db.execute(
+            select(ExercicioTreino)
+            .where(ExercicioTreino.id == exercicio_id)
+            .options(
+                selectinload(ExercicioTreino.treino).selectinload(Treino.conjunto),
+                selectinload(ExercicioTreino.equivalentes).selectinload(
+                    ExercicioTreinoEquivalente.exercicio_equivalente_treino
+                ),
+            )
+        )
+    ).scalar_one_or_none()
+    if exercicio is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Exercício não encontrado")
+
+    await _get_aluno_vinculado(personal, exercicio.treino.conjunto.aluno_id, db)
+    return exercicio
+
+
+async def _get_exercicio_treino_com_equivalentes(
+    exercicio_id: uuid.UUID,
+    db: AsyncSession,
+) -> ExercicioTreino:
+    exercicio = (
+        await db.execute(
+            select(ExercicioTreino)
+            .where(ExercicioTreino.id == exercicio_id)
+            .options(
+                selectinload(ExercicioTreino.equivalentes).selectinload(
+                    ExercicioTreinoEquivalente.exercicio_equivalente_treino
+                )
+            )
+        )
+    ).scalar_one_or_none()
+    if exercicio is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Exercício não encontrado")
+    return exercicio
+
+
 async def _exercicio_disponivel_para_aluno(
     exercicio_base_id: uuid.UUID,
     aluno_id: uuid.UUID,
@@ -144,6 +191,114 @@ async def _exercicio_disponivel_para_aluno(
         .limit(1)
     )
     return disponibilidade.scalar_one_or_none() is not None
+
+
+async def _reordenar_exercicios_para_manter_equivalentes_juntos(
+    treino_id: uuid.UUID,
+    exercicio_base_id: uuid.UUID,
+    equivalentes_ids: list[uuid.UUID],
+    db: AsyncSession,
+) -> None:
+    if not equivalentes_ids:
+        return
+
+    exercicios = (
+        await db.execute(
+            select(ExercicioTreino)
+            .where(ExercicioTreino.treino_id == treino_id)
+            .order_by(ExercicioTreino.ordem)
+        )
+    ).scalars().all()
+
+    por_id: dict[uuid.UUID, ExercicioTreino] = {
+        exercicio.id: exercicio for exercicio in exercicios
+    }
+    if exercicio_base_id not in por_id:
+        return
+
+    ids_equivalentes_validos: list[uuid.UUID] = []
+    ids_equivalentes_set: set[uuid.UUID] = set()
+    for equivalente_id in equivalentes_ids:
+        if equivalente_id == exercicio_base_id:
+            continue
+        if equivalente_id not in por_id:
+            continue
+        if equivalente_id in ids_equivalentes_set:
+            continue
+        ids_equivalentes_validos.append(equivalente_id)
+        ids_equivalentes_set.add(equivalente_id)
+
+    if not ids_equivalentes_validos:
+        return
+
+    ordem_atual_ids = [exercicio.id for exercicio in exercicios]
+    ordem_sem_equivalentes = [
+        exercicio_id
+        for exercicio_id in ordem_atual_ids
+        if exercicio_id not in ids_equivalentes_set
+    ]
+    indice_base = ordem_sem_equivalentes.index(exercicio_base_id)
+    nova_ordem_ids = [
+        *ordem_sem_equivalentes[: indice_base + 1],
+        *ids_equivalentes_validos,
+        *ordem_sem_equivalentes[indice_base + 1 :],
+    ]
+
+    for idx, exercicio_id in enumerate(nova_ordem_ids, start=1):
+        exercicio = por_id[exercicio_id]
+        if exercicio.ordem != idx:
+            exercicio.ordem = idx
+
+    await db.flush()
+
+
+async def _calcular_bloco_equivalencia_ids(
+    treino_id: uuid.UUID,
+    exercicio_base_id: uuid.UUID,
+    db: AsyncSession,
+) -> set[uuid.UUID]:
+    exercicios_ids = (
+        await db.execute(
+            select(ExercicioTreino.id).where(ExercicioTreino.treino_id == treino_id)
+        )
+    ).scalars().all()
+    exercicios_ids_set = set(exercicios_ids)
+    if exercicio_base_id not in exercicios_ids_set:
+        return {exercicio_base_id}
+
+    equivalencias = (
+        await db.execute(
+            select(
+                ExercicioTreinoEquivalente.exercicio_treino_id,
+                ExercicioTreinoEquivalente.exercicio_equivalente_treino_id,
+            ).where(
+                ExercicioTreinoEquivalente.exercicio_treino_id.in_(exercicios_ids),
+                ExercicioTreinoEquivalente.exercicio_equivalente_treino_id.in_(
+                    exercicios_ids
+                ),
+            )
+        )
+    ).all()
+
+    adjacencia: dict[uuid.UUID, set[uuid.UUID]] = {
+        exercicio_id: set() for exercicio_id in exercicios_ids
+    }
+    for origem_id, destino_id in equivalencias:
+        adjacencia[origem_id].add(destino_id)
+        adjacencia[destino_id].add(origem_id)
+
+    visitados: set[uuid.UUID] = set()
+    fila: list[uuid.UUID] = [exercicio_base_id]
+    while fila:
+        atual_id = fila.pop(0)
+        if atual_id in visitados:
+            continue
+        visitados.add(atual_id)
+        for vizinho_id in adjacencia.get(atual_id, set()):
+            if vizinho_id not in visitados:
+                fila.append(vizinho_id)
+
+    return visitados
 
 
 # --- Alunos ---
@@ -577,6 +732,7 @@ async def listar_series_sessao_aluno(
     db: AsyncSession = Depends(get_db),
 ):
     await _get_aluno_vinculado(personal, aluno_id, db)
+    exercicio_executado_alias = aliased(ExercicioTreino)
 
     sessao = (
         await db.execute(
@@ -595,8 +751,12 @@ async def listar_series_sessao_aluno(
 
     rows = (
         await db.execute(
-            select(SerieExecutada, ExercicioTreino)
+            select(SerieExecutada, ExercicioTreino, exercicio_executado_alias)
             .join(ExercicioTreino, SerieExecutada.exercicio_treino_id == ExercicioTreino.id)
+            .outerjoin(
+                exercicio_executado_alias,
+                SerieExecutada.exercicio_treino_executado_id == exercicio_executado_alias.id,
+            )
             .where(SerieExecutada.sessao_treino_id == sessao.id)
             .order_by(ExercicioTreino.ordem, SerieExecutada.numero_serie)
         )
@@ -606,14 +766,18 @@ async def listar_series_sessao_aluno(
         SerieDetalheOut(
             id=serie.id,
             exercicio_treino_id=serie.exercicio_treino_id,
+            exercicio_treino_executado_id=serie.exercicio_treino_executado_id,
             nome_exercicio=exercicio.nome_exercicio,
+            nome_exercicio_executado=(
+                exercicio_executado.nome_exercicio if exercicio_executado is not None else None
+            ),
             numero_serie=serie.numero_serie,
             peso_utilizado=serie.peso_utilizado,
             repeticoes_realizadas=serie.repeticoes_realizadas,
             concluida=serie.concluida,
             concluida_em=serie.concluida_em,
         )
-        for serie, exercicio in rows
+        for serie, exercicio, exercicio_executado in rows
     ]
 
 
@@ -686,6 +850,11 @@ async def listar_exercicios(
     result = await db.execute(
         select(ExercicioTreino)
         .where(ExercicioTreino.treino_id == treino_id)
+        .options(
+            selectinload(ExercicioTreino.equivalentes).selectinload(
+                ExercicioTreinoEquivalente.exercicio_equivalente_treino
+            )
+        )
         .order_by(ExercicioTreino.ordem)
     )
     return result.scalars().all()
@@ -748,8 +917,7 @@ async def criar_exercicio(
     )
     db.add(exercicio)
     await db.flush()
-    await db.refresh(exercicio)
-    return exercicio
+    return await _get_exercicio_treino_com_equivalentes(exercicio.id, db)
 
 
 @router.patch("/exercicios/{exercicio_id}", response_model=ExercicioTreinoOut)
@@ -759,24 +927,8 @@ async def editar_exercicio(
     personal: Personal = Depends(get_current_personal),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(
-        select(ExercicioTreino).where(ExercicioTreino.id == exercicio_id)
-    )
-    exercicio = result.scalar_one_or_none()
-    if exercicio is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Exercício não encontrado")
-
-    treino = (
-        await db.execute(
-            select(Treino)
-            .where(Treino.id == exercicio.treino_id)
-            .options(selectinload(Treino.conjunto))
-        )
-    ).scalar_one_or_none()
-    if treino is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Treino não encontrado")
-
-    await _get_aluno_vinculado(personal, treino.conjunto.aluno_id, db)
+    exercicio = await _get_exercicio_treino_vinculado(personal, exercicio_id, db)
+    treino = exercicio.treino
     await _garantir_disponibilidades_aluno(treino.conjunto.aluno_id, db)
 
     update_data = body.model_dump(exclude_unset=True)
@@ -812,8 +964,130 @@ async def editar_exercicio(
         setattr(exercicio, key, value)
 
     await db.flush()
-    await db.refresh(exercicio)
-    return exercicio
+    return await _get_exercicio_treino_com_equivalentes(exercicio.id, db)
+
+
+@router.put(
+    "/exercicios/{exercicio_id}/equivalentes",
+    response_model=list[ExercicioTreinoEquivalenteOut],
+)
+async def substituir_equivalentes_exercicio(
+    exercicio_id: uuid.UUID,
+    body: ExercicioTreinoEquivalentesUpdate,
+    personal: Personal = Depends(get_current_personal),
+    db: AsyncSession = Depends(get_db),
+):
+    exercicio = await _get_exercicio_treino_vinculado(personal, exercicio_id, db)
+    equivalentes_ids = body.exercicios_equivalentes_ids
+
+    if exercicio_id in equivalentes_ids:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Um exercício não pode ser equivalente de si mesmo",
+        )
+
+    if equivalentes_ids:
+        existentes_ids = (
+            await db.execute(
+                select(ExercicioTreino.id).where(
+                    ExercicioTreino.id.in_(equivalentes_ids),
+                    ExercicioTreino.treino_id == exercicio.treino_id,
+                )
+            )
+        ).scalars().all()
+
+        if len(existentes_ids) != len(equivalentes_ids):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Todos os equivalentes devem pertencer ao mesmo treino",
+            )
+
+    bloco_atual_ids = await _calcular_bloco_equivalencia_ids(
+        treino_id=exercicio.treino_id,
+        exercicio_base_id=exercicio.id,
+        db=db,
+    )
+    bloco_limpeza_ids = set(bloco_atual_ids)
+    for equivalente_id in equivalentes_ids:
+        bloco_limpeza_ids |= await _calcular_bloco_equivalencia_ids(
+            treino_id=exercicio.treino_id,
+            exercicio_base_id=equivalente_id,
+            db=db,
+        )
+
+    bloco_final_ids = {exercicio.id} | set(equivalentes_ids)
+
+    exercicios_ordenados = (
+        await db.execute(
+            select(ExercicioTreino)
+            .where(ExercicioTreino.treino_id == exercicio.treino_id)
+            .order_by(ExercicioTreino.ordem)
+        )
+    ).scalars().all()
+    bloco_final_ordenado_ids = [
+        ex.id for ex in exercicios_ordenados if ex.id in bloco_final_ids
+    ]
+
+    equivalencias_relacionadas = (
+        await db.execute(
+            select(ExercicioTreinoEquivalente).where(
+                or_(
+                    ExercicioTreinoEquivalente.exercicio_treino_id.in_(
+                        bloco_limpeza_ids
+                    ),
+                    ExercicioTreinoEquivalente.exercicio_equivalente_treino_id.in_(
+                        bloco_limpeza_ids
+                    ),
+                )
+            )
+        )
+    ).scalars().all()
+
+    for equivalente in equivalencias_relacionadas:
+        await db.delete(equivalente)
+
+    await db.flush()
+
+    if len(bloco_final_ordenado_ids) > 1:
+        for origem_id in bloco_final_ordenado_ids:
+            ordem = 1
+            for destino_id in bloco_final_ordenado_ids:
+                if destino_id == origem_id:
+                    continue
+                db.add(
+                    ExercicioTreinoEquivalente(
+                        exercicio_treino_id=origem_id,
+                        exercicio_equivalente_treino_id=destino_id,
+                        ordem=ordem,
+                    )
+                )
+                ordem += 1
+
+    await db.flush()
+
+    await _reordenar_exercicios_para_manter_equivalentes_juntos(
+        treino_id=exercicio.treino_id,
+        exercicio_base_id=exercicio.id,
+        equivalentes_ids=[
+            equivalente_id
+            for equivalente_id in bloco_final_ordenado_ids
+            if equivalente_id != exercicio.id
+        ],
+        db=db,
+    )
+
+    equivalentes = (
+        await db.execute(
+            select(ExercicioTreinoEquivalente)
+            .where(ExercicioTreinoEquivalente.exercicio_treino_id == exercicio.id)
+            .options(
+                selectinload(ExercicioTreinoEquivalente.exercicio_equivalente_treino)
+            )
+            .order_by(ExercicioTreinoEquivalente.ordem)
+        )
+    ).scalars().all()
+
+    return equivalentes
 
 
 @router.delete("/exercicios/{exercicio_id}", status_code=204)
@@ -828,6 +1102,19 @@ async def deletar_exercicio(
     exercicio = result.scalar_one_or_none()
     if exercicio is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Exercício não encontrado")
+
+    equivalencias_relacionadas = (
+        await db.execute(
+            select(ExercicioTreinoEquivalente).where(
+                or_(
+                    ExercicioTreinoEquivalente.exercicio_treino_id == exercicio_id,
+                    ExercicioTreinoEquivalente.exercicio_equivalente_treino_id == exercicio_id,
+                )
+            )
+        )
+    ).scalars().all()
+    for equivalencia in equivalencias_relacionadas:
+        await db.delete(equivalencia)
 
     treino_id = exercicio.treino_id
     await db.delete(exercicio)

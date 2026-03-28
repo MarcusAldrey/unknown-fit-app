@@ -10,6 +10,7 @@ from app.models.exercicio_treino import (  # noqa: F401
 	AlvoTipo,
 	RerRmTipo,
 )
+from app.models.exercicio_treino_equivalente import ExercicioTreinoEquivalente  # noqa: F401
 from app.models.exercicio_base import ExercicioBase, ImplementoExecucao  # noqa: F401
 from app.models.recurso_treino import (  # noqa: F401
 	RecursoTreino,

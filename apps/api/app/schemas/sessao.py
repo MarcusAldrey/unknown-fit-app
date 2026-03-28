@@ -30,6 +30,7 @@ class SessaoResumoOut(BaseModel):
 
 class SerieCreate(BaseModel):
     exercicio_treino_id: uuid.UUID
+    exercicio_treino_executado_id: uuid.UUID | None = None
     numero_serie: int
     peso_utilizado: float | None = None
     repeticoes_realizadas: int | None = None
@@ -40,6 +41,7 @@ class SerieOut(BaseModel):
     id: uuid.UUID
     sessao_treino_id: uuid.UUID
     exercicio_treino_id: uuid.UUID
+    exercicio_treino_executado_id: uuid.UUID | None = None
     numero_serie: int
     peso_utilizado: float | None = None
     repeticoes_realizadas: int | None = None
@@ -52,7 +54,9 @@ class SerieOut(BaseModel):
 class SerieDetalheOut(BaseModel):
     id: uuid.UUID
     exercicio_treino_id: uuid.UUID
+    exercicio_treino_executado_id: uuid.UUID | None = None
     nome_exercicio: str
+    nome_exercicio_executado: str | None = None
     numero_serie: int
     peso_utilizado: float | None = None
     repeticoes_realizadas: int | None = None

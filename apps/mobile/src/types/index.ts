@@ -137,6 +137,19 @@ export interface ExercicioTreino {
   tecnica: Tecnica;
   observacoes: string | null;
   observacoes_aluno: string | null;
+  equivalentes: ExercicioTreinoEquivalente[];
+}
+
+export interface ExercicioTreinoEquivalente {
+  id: string;
+  exercicio_treino_id: string;
+  exercicio_equivalente_treino_id: string;
+  nome_exercicio: string;
+  ordem: number;
+}
+
+export interface ExercicioTreinoEquivalentesUpdate {
+  exercicios_equivalentes_ids: string[];
 }
 
 export interface ExercicioTreinoCreate {
@@ -231,6 +244,7 @@ export interface SerieExecutada {
   id: string;
   sessao_treino_id: string;
   exercicio_treino_id: string;
+  exercicio_treino_executado_id?: string | null;
   numero_serie: number;
   peso_utilizado: number | null;
   repeticoes_realizadas: number | null;
@@ -240,7 +254,9 @@ export interface SerieExecutada {
 export interface SerieDetalhe {
   id: string;
   exercicio_treino_id: string;
+  exercicio_treino_executado_id?: string | null;
   nome_exercicio: string;
+  nome_exercicio_executado?: string | null;
   numero_serie: number;
   peso_utilizado: number | null;
   repeticoes_realizadas: number | null;
@@ -254,6 +270,7 @@ export interface UltimoPesoExercicio {
 
 export interface SerieCreate {
   exercicio_treino_id: string;
+  exercicio_treino_executado_id?: string;
   numero_serie: number;
   peso_utilizado?: number;
   repeticoes_realizadas?: number;

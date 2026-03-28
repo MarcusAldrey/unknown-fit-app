@@ -8,6 +8,8 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  Modal,
+  Pressable,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
@@ -33,6 +35,7 @@ interface SerieLocal {
   localId: string;
   serieId?: string;
   exercicio_treino_id: string;
+  exercicio_treino_executado_id?: string;
   numero_serie: number;
   peso: string;
   reps: string;
@@ -100,6 +103,22 @@ function formatarPrescricaoPrincipal(exercicio: ExercicioTreino) {
   return `${exercicio.numero_series_prescritas} séries de ${alvoTexto}`;
 }
 
+function criarSeriePendente(
+  exercicioId: string,
+  numeroSerie: number,
+  exercicioExecutadoId?: string,
+) {
+  return {
+    localId: `${exercicioId}-${numeroSerie}-${Date.now()}-${Math.random()}`,
+    exercicio_treino_id: exercicioId,
+    exercicio_treino_executado_id: exercicioExecutadoId,
+    numero_serie: numeroSerie,
+    peso: "",
+    reps: "",
+    concluida: false,
+  };
+}
+
 export function SessaoTreinoScreen({ route, navigation }: Props) {
   const { treinoId, treinoCodigo, treinoNome } = route.params;
   const sessaoAtivaParam = route.params.sessaoAtiva;
@@ -113,6 +132,11 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
   const [observacoesAbertas, setObservacoesAbertas] = useState<
     Record<string, boolean>
   >({});
+  const [substituicoesExercicio, setSubstituicoesExercicio] = useState<
+    Record<string, string>
+  >({});
+  const [exercicioSubstituicaoAbertoId, setExercicioSubstituicaoAbertoId] =
+    useState<string | null>(null);
   const [observacaoTreinoAluno, setObservacaoTreinoAluno] = useState("");
   const [observacoesAlunoExercicio, setObservacoesAlunoExercicio] = useState<
     Record<string, string>
@@ -158,6 +182,72 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
       return res.data;
     },
   });
+
+  const exerciciosPorId = useMemo(() => {
+    const mapa = new Map<string, ExercicioTreino>();
+    (exercicios ?? []).forEach((exercicio) => {
+      mapa.set(exercicio.id, exercicio);
+    });
+    return mapa;
+  }, [exercicios]);
+
+  function obterExercicioAtivo(
+    exercicioBase: ExercicioTreino,
+    exercicioExecutadoId?: string | null,
+  ) {
+    const idAtivo =
+      exercicioExecutadoId ??
+      substituicoesExercicio[exercicioBase.id] ??
+      exercicioBase.id;
+    return exerciciosPorId.get(idAtivo) ?? exercicioBase;
+  }
+
+  function ajustarSeriesParaExercicioAtivo(
+    seriesAtuais: SerieLocal[],
+    exercicioBaseId: string,
+    exercicioExecutadoId?: string,
+  ) {
+    const exercicioBase = exerciciosPorId.get(exercicioBaseId);
+    if (!exercicioBase) return seriesAtuais;
+
+    const exercicioAtivo =
+      exerciciosPorId.get(exercicioExecutadoId ?? exercicioBaseId) ??
+      exercicioBase;
+    const quantidadeDesejada = Math.max(
+      1,
+      exercicioAtivo.numero_series_prescritas,
+    );
+
+    const outrasSeries = seriesAtuais.filter(
+      (serie) => serie.exercicio_treino_id !== exercicioBaseId,
+    );
+    const seriesDoExercicio = seriesAtuais.filter(
+      (serie) => serie.exercicio_treino_id === exercicioBaseId,
+    );
+
+    const seriesPendentesOrdenadas = [...seriesDoExercicio]
+      .filter((serie) => !serie.concluida)
+      .sort((a, b) => a.numero_serie - b.numero_serie);
+
+    const novasSeriesDoExercicio: SerieLocal[] = [];
+    for (let i = 0; i < quantidadeDesejada; i += 1) {
+      const existente = seriesPendentesOrdenadas[i];
+      if (existente) {
+        novasSeriesDoExercicio.push({
+          ...existente,
+          numero_serie: i + 1,
+          exercicio_treino_executado_id: exercicioExecutadoId,
+        });
+        continue;
+      }
+
+      novasSeriesDoExercicio.push(
+        criarSeriePendente(exercicioBaseId, i + 1, exercicioExecutadoId),
+      );
+    }
+
+    return [...outrasSeries, ...novasSeriesDoExercicio];
+  }
 
   const { data: treinosAtivos } = useQuery<Treino[]>({
     queryKey: ["aluno", "conjunto-ativo", "treinos"],
@@ -228,6 +318,7 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
     },
     onSuccess: (data) => {
       setSessaoId(data.id);
+      setSubstituicoesExercicio({});
       const startedAt = parseApiDateToMs(data.iniciado_em);
       setSessionStartMs(startedAt);
       setSessionElapsedSeconds(
@@ -239,14 +330,7 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
         (exercicios ?? []).forEach((exercicio) => {
           const quantidade = Math.max(1, exercicio.numero_series_prescritas);
           for (let i = 0; i < quantidade; i += 1) {
-            iniciais.push({
-              localId: `${exercicio.id}-${i + 1}-${Date.now()}-${Math.random()}`,
-              exercicio_treino_id: exercicio.id,
-              numero_serie: i + 1,
-              peso: "",
-              reps: "",
-              concluida: false,
-            });
+            iniciais.push(criarSeriePendente(exercicio.id, i + 1));
           }
         });
 
@@ -355,23 +439,35 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
     // Restaurar séries já registradas e criar as pendentes
     const seriesLocal: SerieLocal[] = [];
     const seriesJaRegistradas = sessaoAtivaParam.series || [];
+    const substituicoesIniciais: Record<string, string> = {};
 
     (exercicios ?? []).forEach((exercicio) => {
       const registradas = seriesJaRegistradas.filter(
         (s) => s.exercicio_treino_id === exercicio.id,
       );
+      const exercicioExecutadoRestauradoId =
+        registradas.find((s) => s.exercicio_treino_executado_id)
+          ?.exercicio_treino_executado_id ?? exercicio.id;
+      const exercicioAtivo =
+        exerciciosPorId.get(exercicioExecutadoRestauradoId) ?? exercicio;
       const quantidade = Math.max(
-        exercicio.numero_series_prescritas,
+        exercicioAtivo.numero_series_prescritas,
         registradas.length,
       );
 
       for (let i = 0; i < quantidade; i += 1) {
         const registrada = registradas.find((s) => s.numero_serie === i + 1);
         if (registrada) {
+          if (registrada.exercicio_treino_executado_id) {
+            substituicoesIniciais[exercicio.id] =
+              registrada.exercicio_treino_executado_id;
+          }
           seriesLocal.push({
             localId: `${exercicio.id}-${i + 1}-restored-${Math.random()}`,
             serieId: registrada.id,
             exercicio_treino_id: exercicio.id,
+            exercicio_treino_executado_id:
+              registrada.exercicio_treino_executado_id ?? undefined,
             numero_serie: i + 1,
             peso:
               registrada.peso_utilizado != null
@@ -384,21 +480,21 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
             concluida: registrada.concluida,
           });
         } else {
-          seriesLocal.push({
-            localId: `${exercicio.id}-${i + 1}-${Date.now()}-${Math.random()}`,
-            exercicio_treino_id: exercicio.id,
-            numero_serie: i + 1,
-            peso: "",
-            reps: "",
-            concluida: false,
-          });
+          seriesLocal.push(
+            criarSeriePendente(
+              exercicio.id,
+              i + 1,
+              substituicoesIniciais[exercicio.id],
+            ),
+          );
         }
       }
     });
 
     setSeries(seriesLocal);
+    setSubstituicoesExercicio(substituicoesIniciais);
     setSessaoAtivaInicializada(true);
-  }, [sessaoAtivaParam, exercicios, sessaoAtivaInicializada]);
+  }, [sessaoAtivaParam, exercicios, exerciciosPorId, sessaoAtivaInicializada]);
 
   useEffect(() => {
     if (!sessaoId || !sessionStartMs) return;
@@ -434,17 +530,35 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
       const seriesDoExercicio = series.filter(
         (serie) => serie.exercicio_treino_id === exercicio.id,
       );
+      const exercicioExecutadoId =
+        substituicoesExercicio[exercicio.id] ??
+        seriesDoExercicio.find((serie) => serie.exercicio_treino_executado_id)
+          ?.exercicio_treino_executado_id ??
+        exercicio.id;
+      const exercicioAtivo = obterExercicioAtivo(
+        exercicio,
+        exercicioExecutadoId,
+      );
       const concluido =
         seriesDoExercicio.length > 0 &&
         seriesDoExercicio.every((serie) => serie.concluida);
 
       return {
         exercicio,
+        exercicioAtivo,
         seriesDoExercicio,
         concluido,
       };
     });
-  }, [exercicios, series]);
+  }, [exercicios, exerciciosPorId, series, substituicoesExercicio]);
+
+  const exercicioSubstituicaoAberto = useMemo(
+    () =>
+      (exercicios ?? []).find(
+        (exercicio) => exercicio.id === exercicioSubstituicaoAbertoId,
+      ) ?? null,
+    [exercicios, exercicioSubstituicaoAbertoId],
+  );
 
   function adicionarSerie(exercicioId: string) {
     const seriesDoExercicio = series.filter(
@@ -456,6 +570,7 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
       {
         localId: `${exercicioId}-${seriesDoExercicio.length + 1}-${Date.now()}-${Math.random()}`,
         exercicio_treino_id: exercicioId,
+        exercicio_treino_executado_id: substituicoesExercicio[exercicioId],
         numero_serie: seriesDoExercicio.length + 1,
         peso: "",
         reps: "",
@@ -477,6 +592,50 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
       ...current,
       [exercicioId]: !current[exercicioId],
     }));
+  }
+
+  function abrirSelecaoSubstituicao(exercicioId: string) {
+    const existeSerieConcluida = series.some(
+      (serie) => serie.exercicio_treino_id === exercicioId && serie.concluida,
+    );
+
+    if (existeSerieConcluida) {
+      Alert.alert(
+        "Substituição bloqueada",
+        "Não é possível alterar o exercício após concluir séries.",
+      );
+      return;
+    }
+
+    setExercicioSubstituicaoAbertoId(exercicioId);
+  }
+
+  function selecionarSubstituicaoExercicio(
+    exercicioId: string,
+    exercicioExecutadoId: string,
+  ) {
+    const idExecutadoNormalizado =
+      exercicioExecutadoId === exercicioId ? undefined : exercicioExecutadoId;
+
+    setSubstituicoesExercicio((current) => {
+      const next = { ...current };
+      if (!idExecutadoNormalizado) {
+        delete next[exercicioId];
+      } else {
+        next[exercicioId] = idExecutadoNormalizado;
+      }
+      return next;
+    });
+
+    setSeries((current) =>
+      ajustarSeriesParaExercicioAtivo(
+        current,
+        exercicioId,
+        idExecutadoNormalizado,
+      ),
+    );
+
+    setExercicioSubstituicaoAbertoId(null);
   }
 
   const serieMutation = useMutation({
@@ -558,6 +717,7 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
     serieMutation.mutate(
       {
         exercicio_treino_id: serie.exercicio_treino_id,
+        exercicio_treino_executado_id: serie.exercicio_treino_executado_id,
         numero_serie: serie.numero_serie,
         peso_utilizado: serie.peso ? Number(serie.peso) : undefined,
         repeticoes_realizadas: serie.reps ? Number(serie.reps) : undefined,
@@ -869,7 +1029,9 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
             }, 140);
           }}
           renderItem={({ item, index }) => {
-            const { exercicio, seriesDoExercicio, concluido } = item;
+            const { exercicio, exercicioAtivo, seriesDoExercicio, concluido } =
+              item;
+            const usandoEquivalente = exercicioAtivo.id !== exercicio.id;
 
             return (
               <View
@@ -880,7 +1042,7 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
               >
                 <View style={styles.exercicioHeader}>
                   <Text style={styles.exercicioNome}>
-                    {exercicio.nome_exercicio}
+                    {exercicioAtivo.nome_exercicio}
                   </Text>
                   <Text
                     style={concluido ? styles.badgeDone : styles.badgePending}
@@ -888,16 +1050,37 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
                     {concluido ? "Concluído" : "Pendente"}
                   </Text>
                 </View>
+                {usandoEquivalente ? (
+                  <Text style={styles.exercicioNomeSecundario}>
+                    {`Bloco do treino: ${exercicio.nome_exercicio}`}
+                  </Text>
+                ) : null}
                 <Text style={styles.exercicioDetalhe}>
-                  {formatarPrescricaoPrincipal(exercicio)}
+                  {formatarPrescricaoPrincipal(exercicioAtivo)}
                 </Text>
                 <Text style={styles.exercicioMetaSecundaria}>
-                  {`Descanso: ${formatarDescanso(exercicio.descanso_segundos)}`}
+                  {`Descanso: ${formatarDescanso(exercicioAtivo.descanso_segundos)}`}
                 </Text>
-                {exercicio.rer_rm_tipo && exercicio.rer_rm_valor ? (
+                {exercicioAtivo.rer_rm_tipo && exercicioAtivo.rer_rm_valor ? (
                   <Text style={styles.exercicioMetaTerciaria}>
-                    {`RER/RM: ${exercicio.rer_rm_tipo} ${exercicio.rer_rm_valor}`}
+                    {`RER/RM: ${exercicioAtivo.rer_rm_tipo} ${exercicioAtivo.rer_rm_valor}`}
                   </Text>
+                ) : null}
+
+                {exercicio.equivalentes.length > 0 ? (
+                  <View style={styles.substituicaoBox}>
+                    <TouchableOpacity
+                      style={styles.substituicaoBtn}
+                      onPress={() => abrirSelecaoSubstituicao(exercicio.id)}
+                    >
+                      <Text style={styles.substituicaoBtnText}>
+                        Trocar exercício do bloco
+                      </Text>
+                    </TouchableOpacity>
+                    <Text style={styles.substituicaoResumo}>
+                      {`Exercício ativo: ${exercicioAtivo.nome_exercicio}`}
+                    </Text>
+                  </View>
                 ) : null}
 
                 <View style={styles.alunoObsExercicioBox}>
@@ -931,7 +1114,7 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
                   </TouchableOpacity>
                 </View>
 
-                {exercicio.observacoes?.trim() ? (
+                {exercicioAtivo.observacoes?.trim() ? (
                   <View style={styles.observacoesBox}>
                     <TouchableOpacity
                       onPress={() => toggleObservacoes(exercicio.id)}
@@ -944,7 +1127,7 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
 
                     {observacoesAbertas[exercicio.id] ? (
                       <Text style={styles.observacoesTexto}>
-                        {`Obs: ${exercicio.observacoes}`}
+                        {`Obs: ${exercicioAtivo.observacoes}`}
                       </Text>
                     ) : null}
                   </View>
@@ -955,7 +1138,7 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
                   <Text
                     style={[styles.seriesHeaderTitle, styles.seriesHeaderInput]}
                   >
-                    {primeiraColunaTitulo(exercicio)}
+                    {primeiraColunaTitulo(exercicioAtivo)}
                   </Text>
                   <Text
                     style={[styles.seriesHeaderTitle, styles.seriesHeaderInput]}
@@ -965,7 +1148,7 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
                   <View style={styles.seriesHeaderActionsSpacer} />
                 </View>
 
-                {seriesDoExercicio.map((serie) => (
+                {seriesDoExercicio.map((serie: SerieLocal) => (
                   <View key={serie.localId} style={styles.serieRow}>
                     <Text style={styles.serieNum}>
                       SÉRIE {serie.numero_serie}
@@ -973,9 +1156,9 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
                     <TextInput
                       style={styles.serieInput}
                       placeholder={
-                        primeiraColunaTitulo(exercicio) === "Tempo (s)"
+                        primeiraColunaTitulo(exercicioAtivo) === "Tempo (s)"
                           ? "s"
-                          : primeiraColunaTitulo(exercicio) === "Passos"
+                          : primeiraColunaTitulo(exercicioAtivo) === "Passos"
                             ? "passos"
                             : "reps"
                       }
@@ -990,8 +1173,8 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
                     <TextInput
                       style={styles.serieInput}
                       placeholder={
-                        ultimosPesos[exercicio.id] != null
-                          ? String(ultimosPesos[exercicio.id])
+                        ultimosPesos[exercicioAtivo.id] != null
+                          ? String(ultimosPesos[exercicioAtivo.id])
                           : "kg"
                       }
                       placeholderTextColor="#666"
@@ -1075,6 +1258,84 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
             </TouchableOpacity>
           </View>
         ) : null}
+
+        <Modal
+          visible={Boolean(exercicioSubstituicaoAberto)}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setExercicioSubstituicaoAbertoId(null)}
+        >
+          <Pressable
+            style={styles.substituicaoModalOverlay}
+            onPress={() => setExercicioSubstituicaoAbertoId(null)}
+          >
+            <Pressable
+              style={styles.substituicaoModalContent}
+              onPress={() => {}}
+            >
+              <Text style={styles.substituicaoModalTitle}>
+                Selecionar exercício do bloco
+              </Text>
+              <Text style={styles.substituicaoModalSubTitle}>
+                {exercicioSubstituicaoAberto?.nome_exercicio}
+              </Text>
+
+              {exercicioSubstituicaoAberto ? (
+                <>
+                  <TouchableOpacity
+                    style={styles.substituicaoOpcao}
+                    onPress={() =>
+                      selecionarSubstituicaoExercicio(
+                        exercicioSubstituicaoAberto.id,
+                        exercicioSubstituicaoAberto.id,
+                      )
+                    }
+                  >
+                    <Text style={styles.substituicaoOpcaoNome}>
+                      {`Usar ${exercicioSubstituicaoAberto.nome_exercicio}`}
+                    </Text>
+                    <Text style={styles.substituicaoOpcaoHint}>
+                      Mesmo exercício do bloco
+                    </Text>
+                  </TouchableOpacity>
+
+                  {exercicioSubstituicaoAberto.equivalentes.map(
+                    (equivalente) => {
+                      const exercicioEquivalente = exerciciosPorId.get(
+                        equivalente.exercicio_equivalente_treino_id,
+                      );
+
+                      return (
+                        <TouchableOpacity
+                          key={equivalente.id}
+                          style={styles.substituicaoOpcao}
+                          onPress={() =>
+                            selecionarSubstituicaoExercicio(
+                              exercicioSubstituicaoAberto.id,
+                              equivalente.exercicio_equivalente_treino_id,
+                            )
+                          }
+                        >
+                          <Text style={styles.substituicaoOpcaoNome}>
+                            {exercicioEquivalente?.nome_exercicio ??
+                              equivalente.nome_exercicio}
+                          </Text>
+                          <Text style={styles.substituicaoOpcaoHint}>
+                            {exercicioEquivalente
+                              ? formatarPrescricaoPrincipal(
+                                  exercicioEquivalente,
+                                )
+                              : "Equivalente"}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    },
+                  )}
+                </>
+              ) : null}
+            </Pressable>
+          </Pressable>
+        </Modal>
       </View>
     </KeyboardAvoidingView>
   );
@@ -1231,6 +1492,11 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   exercicioNome: { color: "#fff", fontSize: 16, fontWeight: "bold", flex: 1 },
+  exercicioNomeSecundario: {
+    color: "#7d7d7d",
+    fontSize: 12,
+    marginTop: 2,
+  },
   exercicioDetalhe: {
     color: "#9ca3af",
     fontSize: 12,
@@ -1246,6 +1512,28 @@ const styles = StyleSheet.create({
     color: "#6b7280",
     fontSize: 12,
     marginBottom: 8,
+  },
+  substituicaoBox: {
+    marginBottom: 10,
+  },
+  substituicaoBtn: {
+    alignSelf: "flex-start",
+    borderWidth: 1,
+    borderColor: "#245132",
+    backgroundColor: "#1f2b22",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  substituicaoBtnText: {
+    color: "#9fe6b4",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  substituicaoResumo: {
+    color: "#86efac",
+    fontSize: 12,
+    marginTop: 6,
   },
   observacoesBox: {
     borderWidth: 1,
@@ -1370,6 +1658,53 @@ const styles = StyleSheet.create({
   },
   addSerie: { marginTop: 10, alignSelf: "flex-start" },
   addSerieText: { color: "#22c55e", fontSize: 14 },
+  substituicaoModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.72)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  substituicaoModalContent: {
+    width: "100%",
+    backgroundColor: "#171717",
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+    borderRadius: 12,
+    padding: 14,
+    gap: 8,
+  },
+  substituicaoModalTitle: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  substituicaoModalSubTitle: {
+    color: "#a3a3a3",
+    fontSize: 13,
+    marginBottom: 4,
+  },
+  substituicaoOpcao: {
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+    borderRadius: 9,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    backgroundColor: "#111111",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  substituicaoOpcaoNome: {
+    color: "#e5e7eb",
+    fontSize: 14,
+    flex: 1,
+  },
+  substituicaoOpcaoHint: {
+    color: "#86efac",
+    fontSize: 12,
+    fontWeight: "700",
+  },
   footer: { padding: 16 },
   button: {
     backgroundColor: "#22c55e",
