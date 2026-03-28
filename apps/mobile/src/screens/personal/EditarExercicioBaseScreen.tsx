@@ -13,6 +13,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import api from "../../api/client";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
+import type { ImplementoExecucao } from "../../types";
 
 type Props = NativeStackScreenProps<
   PersonalStackParamList,
@@ -22,8 +23,23 @@ type Props = NativeStackScreenProps<
 interface FormData {
   nome: string;
   grupo_muscular: string;
-  equipamento: string;
+  implemento_execucao: ImplementoExecucao;
+  pode_ser_feito_em_casa: boolean;
 }
+
+const IMPLEMENTOS: ImplementoExecucao[] = [
+  "BARRA",
+  "ELASTICO",
+  "HALTERE",
+  "KETTLEBELL",
+  "CABO",
+  "MAQUINA",
+  "PESO_CORPO",
+  "OUTRO",
+];
+
+const formatarImplemento = (valor: ImplementoExecucao) =>
+  valor.replace(/_/g, " ");
 
 export function EditarExercicioBaseScreen({ route, navigation }: Props) {
   const { exercicio } = route.params;
@@ -33,7 +49,8 @@ export function EditarExercicioBaseScreen({ route, navigation }: Props) {
     defaultValues: {
       nome: exercicio.nome,
       grupo_muscular: exercicio.grupo_muscular,
-      equipamento: exercicio.equipamento ?? "",
+      implemento_execucao: exercicio.implemento_execucao,
+      pode_ser_feito_em_casa: exercicio.pode_ser_feito_em_casa,
     },
   });
 
@@ -42,7 +59,8 @@ export function EditarExercicioBaseScreen({ route, navigation }: Props) {
       await api.patch(`/catalogo/exercicios-base/${exercicio.id}`, {
         nome: data.nome.trim(),
         grupo_muscular: data.grupo_muscular.trim(),
-        equipamento: data.equipamento.trim() || null,
+        implemento_execucao: data.implemento_execucao,
+        pode_ser_feito_em_casa: data.pode_ser_feito_em_casa,
       });
     },
     onSuccess: () => {
@@ -96,18 +114,46 @@ export function EditarExercicioBaseScreen({ route, navigation }: Props) {
         )}
       />
 
-      <Text style={styles.label}>Equipamento</Text>
+      <Text style={styles.label}>Implemento de execução</Text>
       <Controller
         control={control}
-        name="equipamento"
+        name="implemento_execucao"
         render={({ field: { onChange, value } }) => (
-          <TextInput
-            style={styles.input}
-            value={value}
-            onChangeText={onChange}
-            placeholder="Opcional"
-            placeholderTextColor="#666"
-          />
+          <View style={styles.row}>
+            {IMPLEMENTOS.map((implemento) => (
+              <TouchableOpacity
+                key={implemento}
+                style={[styles.chip, value === implemento && styles.chipActive]}
+                onPress={() => onChange(implemento)}
+              >
+                <Text
+                  style={[
+                    styles.chipText,
+                    value === implemento && styles.chipTextActive,
+                  ]}
+                >
+                  {formatarImplemento(implemento)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+      />
+
+      <Text style={styles.label}>Pode ser feito em casa</Text>
+      <Controller
+        control={control}
+        name="pode_ser_feito_em_casa"
+        render={({ field: { onChange, value } }) => (
+          <TouchableOpacity
+            style={[
+              styles.toggle,
+              value ? styles.toggleAtivo : styles.toggleInativo,
+            ]}
+            onPress={() => onChange(!value)}
+          >
+            <Text style={styles.toggleText}>{value ? "Sim" : "Não"}</Text>
+          </TouchableOpacity>
         )}
       />
 
@@ -148,6 +194,40 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#282828",
   },
+  row: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  chip: {
+    borderWidth: 1,
+    borderColor: "#2b2b2b",
+    borderRadius: 999,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: "#151515",
+  },
+  chipActive: {
+    backgroundColor: "#133120",
+    borderColor: "#245d3d",
+  },
+  chipText: { color: "#9aa0a6", fontSize: 12, fontWeight: "600" },
+  chipTextActive: { color: "#c8f2d7" },
+  toggle: {
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: "center",
+    borderWidth: 1,
+  },
+  toggleAtivo: {
+    backgroundColor: "#133120",
+    borderColor: "#245d3d",
+  },
+  toggleInativo: {
+    backgroundColor: "#171717",
+    borderColor: "#2b2b2b",
+  },
+  toggleText: { color: "#fff", fontSize: 14, fontWeight: "600" },
   button: {
     backgroundColor: "#22c55e",
     borderRadius: 10,

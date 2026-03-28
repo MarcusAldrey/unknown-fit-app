@@ -10,6 +10,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import type { AxiosError } from "axios";
 
 import api from "../../api/client";
 import { useAuth } from "../../contexts/AuthContext";
@@ -31,13 +32,30 @@ export function AlunosListScreen({ navigation }: Props) {
     },
   });
 
-  const { data: alunos, isLoading } = useQuery<AlunoResumo[]>({
+  const {
+    data: alunos,
+    isLoading,
+    isError,
+    error,
+  } = useQuery<AlunoResumo[], AxiosError<{ detail?: string }>>({
     queryKey: ["personal", "alunos"],
     queryFn: async () => {
       const res = await api.get("/personal/alunos");
       return res.data;
     },
   });
+
+  if (isError) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.errorTitle}>Erro ao carregar alunos</Text>
+        <Text style={styles.errorText}>
+          {error.response?.data?.detail ??
+            "Verifique conexão com a API e login."}
+        </Text>
+      </View>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -190,4 +208,16 @@ const styles = StyleSheet.create({
   nome: { color: "#fff", fontSize: 18, fontWeight: "bold" },
   email: { color: "#888", fontSize: 14, marginTop: 4 },
   empty: { color: "#888", textAlign: "center", marginTop: 32, fontSize: 16 },
+  errorTitle: {
+    color: "#fca5a5",
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+  errorText: {
+    color: "#aaa",
+    fontSize: 13,
+    textAlign: "center",
+    paddingHorizontal: 24,
+  },
 });

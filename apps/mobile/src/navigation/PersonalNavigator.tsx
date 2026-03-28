@@ -5,6 +5,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import { AlunosListScreen } from "../screens/personal/AlunosListScreen";
 import { AlunoFichaScreen } from "../screens/personal/AlunoFichaScreen";
+import { GerirRecursosAlunoScreen } from "../screens/personal/GerirRecursosAlunoScreen";
 import { CriarConjuntoScreen } from "../screens/personal/CriarConjuntoScreen";
 import { TreinosScreen } from "../screens/personal/TreinosScreen";
 import { CriarTreinoScreen } from "../screens/personal/CriarTreinoScreen";
@@ -19,11 +20,28 @@ export type PersonalStackParamList = {
   AlunosList: undefined;
   CatalogoExercicios: undefined;
   AlunoFicha: { alunoId: string };
+  GerirRecursosAluno: { alunoId: string; alunoNome: string };
   CriarConjunto: { alunoId: string; alunoNome: string };
-  Treinos: { conjuntoId: string; conjuntoNome: string; alunoNome: string };
-  CriarTreino: { conjuntoId: string; conjuntoNome: string; alunoNome: string };
-  Exercicios: { treinoId: string; treinoCodigo: string; treinoNome: string };
+  Treinos: {
+    alunoId: string;
+    conjuntoId: string;
+    conjuntoNome: string;
+    alunoNome: string;
+  };
+  CriarTreino: {
+    alunoId: string;
+    conjuntoId: string;
+    conjuntoNome: string;
+    alunoNome: string;
+  };
+  Exercicios: {
+    alunoId: string;
+    treinoId: string;
+    treinoCodigo: string;
+    treinoNome: string;
+  };
   CriarExercicio: {
+    alunoId: string;
     treinoId: string;
     exercicioData?: ExercicioTreino;
   };
@@ -67,6 +85,11 @@ function MeusAlunosStackNavigator() {
         name="AlunoFicha"
         component={AlunoFichaScreen}
         options={{ title: "Ficha do Aluno" }}
+      />
+      <AlunosStack.Screen
+        name="GerirRecursosAluno"
+        component={GerirRecursosAlunoScreen}
+        options={{ title: "Recursos do Aluno" }}
       />
       <AlunosStack.Screen
         name="CriarConjunto"

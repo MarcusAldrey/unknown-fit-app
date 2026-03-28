@@ -14,6 +14,18 @@ class Tecnica(str, enum.Enum):
     INSTABILIDADE = "INSTABILIDADE"
 
 
+class AlvoTipo(str, enum.Enum):
+    SEGUNDOS = "SEGUNDOS"
+    REPETICOES = "REPETICOES"
+    PASSOS = "PASSOS"
+    OUTROS = "OUTROS"
+
+
+class RerRmTipo(str, enum.Enum):
+    RER = "RER"
+    RM = "RM"
+
+
 class ExercicioTreino(Base):
     __tablename__ = "exercicios_treino"
 
@@ -23,7 +35,11 @@ class ExercicioTreino(Base):
     ordem: Mapped[int] = mapped_column(Integer)
     numero_series_prescritas: Mapped[int] = mapped_column(Integer, default=1)
     prescricao: Mapped[str | None] = mapped_column(Text, nullable=True)
-    repeticao_ou_tempo: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    alvo_tipo: Mapped[AlvoTipo] = mapped_column(SAEnum(AlvoTipo), nullable=False)
+    alvo_valor_min: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    alvo_valor_max: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    alvo_outros_texto: Mapped[str | None] = mapped_column(String(140), nullable=True)
+    rer_rm_tipo: Mapped[RerRmTipo | None] = mapped_column(SAEnum(RerRmTipo), nullable=True)
     rer_rm_valor: Mapped[str | None] = mapped_column(String(50), nullable=True)
     descanso_segundos: Mapped[int | None] = mapped_column(Integer, nullable=True)
     tecnica: Mapped[Tecnica] = mapped_column(SAEnum(Tecnica), default=Tecnica.PADRAO)

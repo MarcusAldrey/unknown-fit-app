@@ -49,6 +49,9 @@ python -m app.seed
 # Rodar migrações (quando houver)
 alembic upgrade head
 
+# Reset completo do banco dev (destrutivo)
+python reset_dev_db.py --force
+
 # Iniciar servidor
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
@@ -69,3 +72,8 @@ Escaneie o QR Code com o Expo Go ou rode em emulador.
 ## Documentação
 
 Consulte o [guide.md](guide.md) para detalhes sobre arquitetura, domínio, fluxos e endpoints.
+
+Guias para uso com IA:
+
+- [docs/ai/frontend-ai.md](docs/ai/frontend-ai.md)
+- [docs/ai/backend-ai.md](docs/ai/backend-ai.md)

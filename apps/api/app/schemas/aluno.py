@@ -10,6 +10,7 @@ class AlunoFicha(BaseModel):
     idade: int | None = None
     peso: float | None = None
     altura: float | None = None
+    treina_em_academia_condominio: bool = False
 
     model_config = {"from_attributes": True}
 

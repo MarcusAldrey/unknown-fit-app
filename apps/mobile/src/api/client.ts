@@ -10,7 +10,8 @@ const extraApiHost =
     ? Constants.expoConfig.extra.apiHost
     : undefined;
 
-const DEV_API_HOST = extraApiHost ?? hostFromExpo ?? "127.0.0.1";
+// Prioriza host detectado pelo Expo para evitar IP fixo stale em app.json.
+const DEV_API_HOST = hostFromExpo ?? extraApiHost ?? "127.0.0.1";
 const DEV_API_BASE_URL = `http://${DEV_API_HOST}:8000/api/v1`;
 const API_BASE_URL =
   envApiUrl || (__DEV__ ? DEV_API_BASE_URL : "https://api.ecg.com/api/v1");

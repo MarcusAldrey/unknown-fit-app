@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -7,12 +7,20 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  Modal,
+  Pressable,
+  TextInput,
 } from "react-native";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import api from "../../api/client";
-import type { AlunoFicha, ConjuntoTreino } from "../../types";
+import type {
+  AlunoFicha,
+  ConjuntoTreino,
+  RegistroPeso,
+  RegistroPesoCreate,
+} from "../../types";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
 
 type Props = NativeStackScreenProps<PersonalStackParamList, "AlunoFicha">;
@@ -20,6 +28,8 @@ type Props = NativeStackScreenProps<PersonalStackParamList, "AlunoFicha">;
 export function AlunoFichaScreen({ route, navigation }: Props) {
   const { alunoId } = route.params;
   const queryClient = useQueryClient();
+  const [novoPeso, setNovoPeso] = useState("");
+  const [modalPesoVisivel, setModalPesoVisivel] = useState(false);
 
   const { data: aluno, isLoading: loadingAluno } = useQuery<AlunoFicha>({
     queryKey: ["personal", "aluno", alunoId],
@@ -35,6 +45,16 @@ export function AlunoFichaScreen({ route, navigation }: Props) {
     queryKey: ["personal", "aluno", alunoId, "conjuntos"],
     queryFn: async () => {
       const res = await api.get(`/personal/alunos/${alunoId}/conjuntos`);
+      return res.data;
+    },
+  });
+
+  const { data: registrosPeso, isLoading: loadingPeso } = useQuery<
+    RegistroPeso[]
+  >({
+    queryKey: ["personal", "aluno", alunoId, "peso"],
+    queryFn: async () => {
+      const res = await api.get(`/personal/alunos/${alunoId}/peso`);
       return res.data;
     },
   });
@@ -64,6 +84,11 @@ export function AlunoFichaScreen({ route, navigation }: Props) {
     [conjuntos],
   );
 
+  const ultimoRegistroPeso = useMemo(
+    () => (registrosPeso && registrosPeso.length > 0 ? registrosPeso[0] : null),
+    [registrosPeso],
+  );
+
   const ativarMutation = useMutation({
     mutationFn: async (conjuntoId: string) => {
       await api.patch(
@@ -86,6 +111,31 @@ export function AlunoFichaScreen({ route, navigation }: Props) {
     },
   });
 
+  const registrarPesoMutation = useMutation({
+    mutationFn: async (payload: RegistroPesoCreate) => {
+      await api.post(`/personal/alunos/${alunoId}/peso`, payload);
+    },
+    onSuccess: () => {
+      setNovoPeso("");
+      setModalPesoVisivel(false);
+      queryClient.invalidateQueries({
+        queryKey: ["personal", "aluno", alunoId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["personal", "aluno", alunoId, "peso"],
+      });
+    },
+    onError: (error: any) => {
+      const detail = error?.response?.data?.detail;
+      Alert.alert(
+        "Erro",
+        typeof detail === "string"
+          ? detail
+          : "Não foi possível registrar o peso.",
+      );
+    },
+  });
+
   if (loadingAluno || !aluno) {
     return (
       <View style={styles.center}>
@@ -93,6 +143,22 @@ export function AlunoFichaScreen({ route, navigation }: Props) {
       </View>
     );
   }
+
+  const handleRegistrarNovoPeso = () => {
+    const normalizado = novoPeso.trim().replace(",", ".");
+    if (!normalizado) {
+      Alert.alert("Atenção", "Informe um peso para registrar.");
+      return;
+    }
+
+    const valor = Number(normalizado);
+    if (!Number.isFinite(valor) || valor <= 0) {
+      Alert.alert("Atenção", "Informe um valor válido de peso.");
+      return;
+    }
+
+    registrarPesoMutation.mutate({ peso: valor });
+  };
 
   const renderHeader = () => (
     <View>
@@ -106,16 +172,67 @@ export function AlunoFichaScreen({ route, navigation }: Props) {
           </View>
           <View style={styles.stat}>
             <Text style={styles.statValue}>
-              {aluno.peso ? `${aluno.peso}` : "—"}
-            </Text>
-            <Text style={styles.statLabel}>kg</Text>
-          </View>
-          <View style={styles.stat}>
-            <Text style={styles.statValue}>
               {aluno.altura ? `${aluno.altura}` : "—"}
             </Text>
             <Text style={styles.statLabel}>m</Text>
           </View>
+        </View>
+
+        <View style={styles.pesoBox}>
+          <View style={styles.pesoHeader}>
+            <Text style={styles.pesoTitulo}>Peso do aluno</Text>
+            <TouchableOpacity
+              style={styles.pesoAddButton}
+              onPress={() => setModalPesoVisivel(true)}
+            >
+              <Text style={styles.pesoAddButtonText}>+</Text>
+            </TouchableOpacity>
+          </View>
+          {loadingPeso ? (
+            <ActivityIndicator
+              size="small"
+              color="#22c55e"
+              style={{ marginTop: 8 }}
+            />
+          ) : (
+            <>
+              <Text style={styles.pesoAtual}>
+                {ultimoRegistroPeso?.peso ?? aluno.peso ?? "—"} kg
+              </Text>
+              <Text style={styles.pesoData}>
+                {ultimoRegistroPeso
+                  ? `Último registro em ${new Date(
+                      ultimoRegistroPeso.registrado_em,
+                    ).toLocaleDateString("pt-BR")}`
+                  : "Sem registro de peso até agora."}
+              </Text>
+            </>
+          )}
+        </View>
+
+        <View style={styles.recursosBox}>
+          <Text style={styles.recursosTitle}>
+            Disponibilidade de equipamentos
+          </Text>
+          <Text style={styles.condominioResumo}>
+            Este aluno{" "}
+            {aluno.treina_em_academia_condominio ? "TREINA" : "NÃO TREINA"} em
+            condomínio
+          </Text>
+
+          <TouchableOpacity
+            style={styles.gerirRecursosButton}
+            onPress={() =>
+              navigation.navigate("GerirRecursosAluno", {
+                alunoId,
+                alunoNome: aluno.nome,
+              })
+            }
+          >
+            <Text style={styles.gerirRecursosButtonText}>
+              Gerir disponibilidade de equipamentos
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
       <Text style={styles.sectionTitle}>Periodizações</Text>
@@ -174,6 +291,7 @@ export function AlunoFichaScreen({ route, navigation }: Props) {
                 style={styles.cardAtivo}
                 onPress={() =>
                   navigation.navigate("Treinos", {
+                    alunoId,
                     conjuntoId: item.id,
                     conjuntoNome: item.nome,
                     alunoNome: aluno.nome,
@@ -186,9 +304,6 @@ export function AlunoFichaScreen({ route, navigation }: Props) {
                     <View style={styles.datasContainer}>
                       <Text style={styles.ativoDatas}>
                         Início em: {formatDate(item.data_inicio)}
-                      </Text>
-                      <Text style={styles.ativoDatas}>
-                        Término em: {formatDate(item.data_fim)}
                       </Text>
                     </View>
                   </View>
@@ -205,6 +320,7 @@ export function AlunoFichaScreen({ route, navigation }: Props) {
                 style={styles.cardInativo}
                 onPress={() =>
                   navigation.navigate("Treinos", {
+                    alunoId,
                     conjuntoId: item.id,
                     conjuntoNome: item.nome,
                     alunoNome: aluno.nome,
@@ -258,6 +374,50 @@ export function AlunoFichaScreen({ route, navigation }: Props) {
           }
         />
       )}
+
+      <Modal
+        visible={modalPesoVisivel}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setModalPesoVisivel(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setModalPesoVisivel(false)}
+        >
+          <Pressable style={styles.modalContent} onPress={() => {}}>
+            <Text style={styles.modalTitle}>Novo registro de peso</Text>
+            <TextInput
+              value={novoPeso}
+              onChangeText={setNovoPeso}
+              placeholder="Peso em kg"
+              placeholderTextColor="#666"
+              keyboardType="decimal-pad"
+              style={styles.modalInput}
+              autoFocus
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalButtonSecondary}
+                onPress={() => setModalPesoVisivel(false)}
+              >
+                <Text style={styles.modalButtonSecondaryText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalButtonPrimary}
+                onPress={handleRegistrarNovoPeso}
+                disabled={registrarPesoMutation.isPending}
+              >
+                <Text style={styles.modalButtonPrimaryText}>
+                  {registrarPesoMutation.isPending
+                    ? "Salvando..."
+                    : "Registrar"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -282,6 +442,57 @@ const styles = StyleSheet.create({
   stat: { alignItems: "center" },
   statValue: { color: "#fff", fontSize: 20, fontWeight: "bold" },
   statLabel: { color: "#888", fontSize: 12, marginTop: 2 },
+  pesoBox: {
+    marginTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#2a2a2a",
+    paddingTop: 12,
+  },
+  pesoHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  pesoTitulo: { color: "#d4d4d4", fontSize: 13, fontWeight: "600" },
+  pesoAddButton: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#2f9f58",
+    backgroundColor: "#122818",
+  },
+  pesoAddButtonText: { color: "#7de3a2", fontSize: 16, fontWeight: "700" },
+  pesoAtual: { color: "#fff", fontSize: 19, fontWeight: "700", marginTop: 8 },
+  pesoData: { color: "#9aa0a6", fontSize: 12, marginTop: 4 },
+  recursosBox: {
+    marginTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#2a2a2a",
+    paddingTop: 12,
+  },
+  recursosTitle: { color: "#d4d4d4", fontSize: 13, fontWeight: "600" },
+  condominioResumo: {
+    color: "#9fe6b4",
+    fontSize: 13,
+    marginTop: 8,
+  },
+  gerirRecursosButton: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: "#22c55e",
+    borderRadius: 10,
+    backgroundColor: "#102217",
+    paddingVertical: 10,
+    alignItems: "center",
+  },
+  gerirRecursosButtonText: {
+    color: "#7de3a2",
+    fontWeight: "700",
+    fontSize: 13,
+  },
   sectionTitle: {
     color: "#fff",
     fontSize: 18,
@@ -374,4 +585,59 @@ const styles = StyleSheet.create({
   emptyContainer: { alignItems: "center", paddingVertical: 24 },
   emptyText: { color: "#888", fontSize: 16 },
   emptySub: { color: "#555", fontSize: 13, marginTop: 4 },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.65)",
+    justifyContent: "center",
+    paddingHorizontal: 20,
+  },
+  modalContent: {
+    backgroundColor: "#181818",
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+  },
+  modalTitle: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 12,
+  },
+  modalInput: {
+    backgroundColor: "#121212",
+    borderColor: "#2a2a2a",
+    borderWidth: 1,
+    borderRadius: 10,
+    color: "#fff",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+  },
+  modalActions: {
+    marginTop: 14,
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 8,
+  },
+  modalButtonSecondary: {
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    backgroundColor: "#141414",
+  },
+  modalButtonSecondaryText: {
+    color: "#b0b0b0",
+    fontWeight: "600",
+    fontSize: 13,
+  },
+  modalButtonPrimary: {
+    borderRadius: 10,
+    backgroundColor: "#22c55e",
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+  },
+  modalButtonPrimaryText: { color: "#fff", fontWeight: "700", fontSize: 13 },
 });

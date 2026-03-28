@@ -11,6 +11,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import type { AxiosError } from "axios";
 
 import api from "../../api/client";
 import { useAuth } from "../../contexts/AuthContext";
@@ -38,7 +39,12 @@ export function CatalogoExerciciosScreen({ navigation }: Props) {
     },
   });
 
-  const { data: exerciciosBase, isLoading } = useQuery<ExercicioBase[]>({
+  const {
+    data: exerciciosBase,
+    isLoading,
+    isError,
+    error,
+  } = useQuery<ExercicioBase[], AxiosError<{ detail?: string }>>({
     queryKey: ["catalogo", "exercicios-base"],
     queryFn: async () => {
       const res = await api.get("/catalogo/exercicios-base");
@@ -60,6 +66,11 @@ export function CatalogoExerciciosScreen({ navigation }: Props) {
     const base = exerciciosBase ?? [];
     const termo = searchText.trim().toLowerCase();
 
+    const recursosTexto = (ex: ExercicioBase) =>
+      ex.requisitos_alternativos_recurso
+        .map((recurso) => recurso.nome)
+        .join(", ");
+
     return base.filter((ex) => {
       const matchGrupo =
         grupoFiltro === "Todos" || ex.grupo_muscular === grupoFiltro;
@@ -67,7 +78,8 @@ export function CatalogoExerciciosScreen({ navigation }: Props) {
         !termo ||
         ex.nome.toLowerCase().includes(termo) ||
         ex.grupo_muscular.toLowerCase().includes(termo) ||
-        (ex.equipamento ?? "").toLowerCase().includes(termo);
+        ex.implemento_execucao.toLowerCase().includes(termo) ||
+        recursosTexto(ex).toLowerCase().includes(termo);
       return matchGrupo && matchBusca;
     });
   }, [exerciciosBase, searchText, grupoFiltro]);
@@ -76,6 +88,18 @@ export function CatalogoExerciciosScreen({ navigation }: Props) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#22c55e" />
+      </View>
+    );
+  }
+
+  if (isError) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.errorTitle}>Erro ao carregar exercícios</Text>
+        <Text style={styles.errorText}>
+          {error.response?.data?.detail ??
+            "Verifique conexão com a API e login."}
+        </Text>
       </View>
     );
   }
@@ -119,7 +143,7 @@ export function CatalogoExerciciosScreen({ navigation }: Props) {
         style={styles.searchInput}
         value={searchText}
         onChangeText={setSearchText}
-        placeholder="Buscar exercício, grupo ou equipamento"
+        placeholder="Buscar exercício, grupo, implemento ou recurso"
         placeholderTextColor="#666"
       />
 
@@ -167,10 +191,18 @@ export function CatalogoExerciciosScreen({ navigation }: Props) {
               })
             }
           >
+            {item.requisitos_alternativos_recurso.length > 0 ? (
+              <Text style={styles.resourceInfo}>
+                Requisitos:{" "}
+                {item.requisitos_alternativos_recurso
+                  .map((r) => r.nome)
+                  .join(" ou ")}
+              </Text>
+            ) : null}
             <Text style={styles.nome}>{item.nome}</Text>
             <Text style={styles.subInfo}>
               {item.grupo_muscular}
-              {item.equipamento ? ` · ${item.equipamento}` : ""}
+              {item.implemento_execucao ? ` · ${item.implemento_execucao}` : ""}
             </Text>
           </TouchableOpacity>
         )}
@@ -289,6 +321,23 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   nome: { color: "#fff", fontSize: 18, fontWeight: "bold" },
+  resourceInfo: {
+    color: "#9fe6b4",
+    fontSize: 12,
+    marginBottom: 6,
+  },
   subInfo: { color: "#888", fontSize: 14, marginTop: 4 },
   empty: { color: "#888", textAlign: "center", marginTop: 32, fontSize: 16 },
+  errorTitle: {
+    color: "#fca5a5",
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+  errorText: {
+    color: "#aaa",
+    fontSize: 13,
+    textAlign: "center",
+    paddingHorizontal: 24,
+  },
 });

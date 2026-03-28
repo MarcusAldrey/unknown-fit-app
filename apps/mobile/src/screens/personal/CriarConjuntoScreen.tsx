@@ -38,6 +38,7 @@ export function CriarConjuntoScreen({ route, navigation }: Props) {
         queryKey: ["personal", "aluno", alunoId, "conjuntos"],
       });
       navigation.replace("Treinos", {
+        alunoId,
         conjuntoId: conjuntoCriado.id,
         conjuntoNome: conjuntoCriado.nome,
         alunoNome,

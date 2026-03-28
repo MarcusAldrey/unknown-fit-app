@@ -23,7 +23,7 @@ interface FormData {
 }
 
 export function CriarTreinoScreen({ route, navigation }: Props) {
-  const { conjuntoId, conjuntoNome, alunoNome } = route.params;
+  const { alunoId, conjuntoId, conjuntoNome, alunoNome } = route.params;
   const queryClient = useQueryClient();
 
   const { data: treinos } = useQuery<Treino[]>({
@@ -54,6 +54,7 @@ export function CriarTreinoScreen({ route, navigation }: Props) {
         queryKey: ["personal", "conjunto", conjuntoId, "treinos"],
       });
       navigation.replace("Exercicios", {
+        alunoId,
         treinoId: treino.id,
         treinoCodigo: treino.codigo,
         treinoNome: treino.nome,

@@ -21,7 +21,7 @@ import type { PersonalStackParamList } from "../../navigation/PersonalNavigator"
 type Props = NativeStackScreenProps<PersonalStackParamList, "Treinos">;
 
 export function TreinosScreen({ route, navigation }: Props) {
-  const { conjuntoId, conjuntoNome, alunoNome } = route.params;
+  const { alunoId, conjuntoId, conjuntoNome, alunoNome } = route.params;
   const queryClient = useQueryClient();
   const [localConjuntoNome, setLocalConjuntoNome] = useState(conjuntoNome);
   const [editConjuntoVisible, setEditConjuntoVisible] = useState(false);
@@ -199,40 +199,38 @@ export function TreinosScreen({ route, navigation }: Props) {
         </View>
       </View>
 
-      {!reorderMode && displayTreinos.length > 1 && (
-        <TouchableOpacity
-          style={styles.reorderBtnAfterSeparator}
-          onPress={() => setReorderMode(true)}
-        >
-          <Text style={styles.reorderBtnText}>Reordenar treinos</Text>
-        </TouchableOpacity>
-      )}
-      {reorderMode && (
-        <View style={styles.reorderBar}>
-          <Text style={styles.reorderLabel}>
-            Segure e use as setas para reordenar os treinos
-          </Text>
-          <View style={styles.reorderActions}>
+      {displayTreinos.length > 1 ? (
+        <View style={styles.reorderControlsRow}>
+          {!reorderMode ? (
             <TouchableOpacity
-              style={styles.cancelBtn}
-              onPress={() => {
-                setLocalTreinos(treinos ?? []);
-                setReorderMode(false);
-              }}
+              style={styles.reorderBtnAfterSeparator}
+              onPress={() => setReorderMode(true)}
             >
-              <Text style={styles.cancelBtnText}>Cancelar</Text>
+              <Text style={styles.reorderBtnText}>Reordenar treinos</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.saveBtn}
-              onPress={() => reorderMutation.mutate(localTreinos)}
-            >
-              <Text style={styles.saveBtnText}>
-                {reorderMutation.isPending ? "Salvando..." : "Salvar"}
-              </Text>
-            </TouchableOpacity>
-          </View>
+          ) : (
+            <View style={styles.reorderActionsInline}>
+              <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={() => {
+                  setLocalTreinos(treinos ?? []);
+                  setReorderMode(false);
+                }}
+              >
+                <Text style={styles.cancelBtnText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.saveBtn}
+                onPress={() => reorderMutation.mutate(localTreinos)}
+              >
+                <Text style={styles.saveBtnText}>
+                  {reorderMutation.isPending ? "Salvando..." : "Salvar"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
-      )}
+      ) : null}
     </>
   );
 
@@ -242,6 +240,7 @@ export function TreinosScreen({ route, navigation }: Props) {
         style={styles.addCard}
         onPress={() =>
           navigation.navigate("CriarTreino", {
+            alunoId,
             conjuntoId,
             conjuntoNome: localConjuntoNome,
             alunoNome,
@@ -258,6 +257,7 @@ export function TreinosScreen({ route, navigation }: Props) {
       style={styles.emptyCard}
       onPress={() =>
         navigation.navigate("CriarTreino", {
+          alunoId,
           conjuntoId,
           conjuntoNome: localConjuntoNome,
           alunoNome,
@@ -290,6 +290,7 @@ export function TreinosScreen({ route, navigation }: Props) {
                 ? undefined
                 : () =>
                     navigation.navigate("Exercicios", {
+                      alunoId,
                       treinoId: item.id,
                       treinoCodigo: item.codigo,
                       treinoNome: item.nome,
@@ -523,11 +524,25 @@ const styles = StyleSheet.create({
   editIcon: { color: "#555", fontSize: 14 },
   reorderBtnAfterSeparator: {
     alignSelf: "flex-end",
-    marginBottom: 12,
+    marginBottom: 0,
+    minHeight: 34,
     backgroundColor: "#1a1a1a",
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 6,
+    justifyContent: "center",
+  },
+  reorderControlsRow: {
+    minHeight: 36,
+    marginBottom: 12,
+    justifyContent: "center",
+    alignItems: "flex-end",
+  },
+  reorderActionsInline: {
+    flexDirection: "row",
+    gap: 10,
+    alignItems: "center",
+    minHeight: 34,
   },
   reorderBtnText: { color: "#888", fontSize: 13 },
   reorderBar: {
@@ -546,14 +561,16 @@ const styles = StyleSheet.create({
     borderColor: "#333",
     borderRadius: 8,
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    minHeight: 34,
+    justifyContent: "center",
   },
   cancelBtnText: { color: "#888", fontSize: 14 },
   saveBtn: {
     backgroundColor: "#22c55e",
     borderRadius: 8,
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    minHeight: 34,
+    justifyContent: "center",
   },
   saveBtnText: { color: "#fff", fontSize: 14, fontWeight: "bold" },
   card: {

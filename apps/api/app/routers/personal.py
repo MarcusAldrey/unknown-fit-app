@@ -2,7 +2,7 @@ import uuid
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -16,18 +16,27 @@ from app.models import (
     Treino,
     ExercicioTreino,
     ExercicioBase,
+    ExercicioRequisitoRecurso,
+    AlunoRecursoDisponibilidade,
+    RecursoTreino,
+    AlvoTipo,
+    RerRmTipo,
     Tecnica,
     RegistroPesoAluno,
 )
 from app.schemas import (
     AlunoResumo,
     AlunoFicha,
+    AlunoRecursoDisponibilidadeOut,
+    AlunoRecursoDisponibilidadeUpdate,
+    AlunoRecursosDisponibilidadeBatchUpdate,
     ConjuntoTreinoCreate,
     ConjuntoTreinoUpdate,
     ConjuntoTreinoOut,
     TreinoCreate,
     TreinoUpdate,
     TreinoOut,
+    ExercicioBaseOut,
     ExercicioTreinoCreate,
     ExercicioTreinoUpdate,
     ExercicioTreinoOut,
@@ -60,6 +69,58 @@ async def _get_aluno_vinculado(
         .options(selectinload(Aluno.usuario))
     )
     return result.scalar_one()
+
+
+async def _garantir_disponibilidades_aluno(aluno_id: uuid.UUID, db: AsyncSession) -> None:
+    recursos_ids = (await db.execute(select(RecursoTreino.id))).scalars().all()
+    existentes = (
+        await db.execute(
+            select(AlunoRecursoDisponibilidade.recurso_treino_id).where(
+                AlunoRecursoDisponibilidade.aluno_id == aluno_id
+            )
+        )
+    ).scalars().all()
+    existentes_set = set(existentes)
+
+    for recurso_id in recursos_ids:
+        if recurso_id not in existentes_set:
+            db.add(
+                AlunoRecursoDisponibilidade(
+                    aluno_id=aluno_id,
+                    recurso_treino_id=recurso_id,
+                    disponivel_para_aluno=True,
+                )
+            )
+
+    await db.flush()
+
+
+async def _exercicio_disponivel_para_aluno(
+    exercicio_base_id: uuid.UUID,
+    aluno_id: uuid.UUID,
+    db: AsyncSession,
+) -> bool:
+    recurso_ids = (
+        await db.execute(
+            select(ExercicioRequisitoRecurso.recurso_treino_id).where(
+                ExercicioRequisitoRecurso.exercicio_base_id == exercicio_base_id
+            )
+        )
+    ).scalars().all()
+
+    if not recurso_ids:
+        return True
+
+    disponibilidade = await db.execute(
+        select(AlunoRecursoDisponibilidade.id)
+        .where(
+            AlunoRecursoDisponibilidade.aluno_id == aluno_id,
+            AlunoRecursoDisponibilidade.recurso_treino_id.in_(recurso_ids),
+            AlunoRecursoDisponibilidade.disponivel_para_aluno == True,  # noqa: E712
+        )
+        .limit(1)
+    )
+    return disponibilidade.scalar_one_or_none() is not None
 
 
 # --- Alunos ---
@@ -99,7 +160,173 @@ async def ficha_aluno(
         idade=aluno.idade,
         peso=aluno.peso,
         altura=aluno.altura,
+        treina_em_academia_condominio=aluno.treina_em_academia_condominio,
     )
+
+
+@router.get("/alunos/{aluno_id}/recursos-treino", response_model=list[AlunoRecursoDisponibilidadeOut])
+async def listar_recursos_treino_aluno(
+    aluno_id: uuid.UUID,
+    personal: Personal = Depends(get_current_personal),
+    db: AsyncSession = Depends(get_db),
+):
+    await _get_aluno_vinculado(personal, aluno_id, db)
+    await _garantir_disponibilidades_aluno(aluno_id, db)
+
+    rows = (
+        await db.execute(
+            select(AlunoRecursoDisponibilidade, RecursoTreino)
+            .join(RecursoTreino, AlunoRecursoDisponibilidade.recurso_treino_id == RecursoTreino.id)
+            .where(
+                AlunoRecursoDisponibilidade.aluno_id == aluno_id,
+                RecursoTreino.ativo == True,  # noqa: E712
+            )
+            .order_by(RecursoTreino.nome)
+        )
+    ).all()
+
+    return [
+        AlunoRecursoDisponibilidadeOut(
+            recurso_treino_id=recurso.id,
+            nome_recurso=recurso.nome,
+            disponivel_para_aluno=disponibilidade.disponivel_para_aluno,
+        )
+        for disponibilidade, recurso in rows
+    ]
+
+
+@router.patch(
+    "/alunos/{aluno_id}/recursos-treino",
+    response_model=list[AlunoRecursoDisponibilidadeOut],
+)
+async def atualizar_disponibilidade_recursos_aluno_em_lote(
+    aluno_id: uuid.UUID,
+    body: AlunoRecursosDisponibilidadeBatchUpdate,
+    personal: Personal = Depends(get_current_personal),
+    db: AsyncSession = Depends(get_db),
+):
+    await _get_aluno_vinculado(personal, aluno_id, db)
+    await _garantir_disponibilidades_aluno(aluno_id, db)
+
+    rows = (
+        await db.execute(
+            select(AlunoRecursoDisponibilidade, RecursoTreino)
+            .join(RecursoTreino, AlunoRecursoDisponibilidade.recurso_treino_id == RecursoTreino.id)
+            .where(
+                AlunoRecursoDisponibilidade.aluno_id == aluno_id,
+                RecursoTreino.ativo == True,  # noqa: E712
+            )
+            .order_by(RecursoTreino.nome)
+        )
+    ).all()
+
+    for disponibilidade, _ in rows:
+        disponibilidade.disponivel_para_aluno = body.disponivel_para_aluno
+
+    await db.flush()
+
+    return [
+        AlunoRecursoDisponibilidadeOut(
+            recurso_treino_id=recurso.id,
+            nome_recurso=recurso.nome,
+            disponivel_para_aluno=disponibilidade.disponivel_para_aluno,
+        )
+        for disponibilidade, recurso in rows
+    ]
+
+
+@router.patch(
+    "/alunos/{aluno_id}/recursos-treino/{recurso_id}",
+    response_model=AlunoRecursoDisponibilidadeOut,
+)
+async def atualizar_disponibilidade_recurso_aluno(
+    aluno_id: uuid.UUID,
+    recurso_id: uuid.UUID,
+    body: AlunoRecursoDisponibilidadeUpdate,
+    personal: Personal = Depends(get_current_personal),
+    db: AsyncSession = Depends(get_db),
+):
+    await _get_aluno_vinculado(personal, aluno_id, db)
+
+    recurso = (
+        await db.execute(
+            select(RecursoTreino).where(
+                RecursoTreino.id == recurso_id,
+                RecursoTreino.ativo == True,  # noqa: E712
+            )
+        )
+    ).scalar_one_or_none()
+    if recurso is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recurso não encontrado")
+
+    disponibilidade = (
+        await db.execute(
+            select(AlunoRecursoDisponibilidade).where(
+                AlunoRecursoDisponibilidade.aluno_id == aluno_id,
+                AlunoRecursoDisponibilidade.recurso_treino_id == recurso_id,
+            )
+        )
+    ).scalar_one_or_none()
+
+    if disponibilidade is None:
+        disponibilidade = AlunoRecursoDisponibilidade(
+            aluno_id=aluno_id,
+            recurso_treino_id=recurso_id,
+            disponivel_para_aluno=body.disponivel_para_aluno,
+        )
+        db.add(disponibilidade)
+    else:
+        disponibilidade.disponivel_para_aluno = body.disponivel_para_aluno
+
+    await db.flush()
+
+    return AlunoRecursoDisponibilidadeOut(
+        recurso_treino_id=recurso.id,
+        nome_recurso=recurso.nome,
+        disponivel_para_aluno=disponibilidade.disponivel_para_aluno,
+    )
+
+
+@router.get("/alunos/{aluno_id}/exercicios-base-disponiveis", response_model=list[ExercicioBaseOut])
+async def listar_exercicios_base_disponiveis_aluno(
+    aluno_id: uuid.UUID,
+    personal: Personal = Depends(get_current_personal),
+    db: AsyncSession = Depends(get_db),
+):
+    await _get_aluno_vinculado(personal, aluno_id, db)
+    await _garantir_disponibilidades_aluno(aluno_id, db)
+
+    result = await db.execute(
+        select(ExercicioBase)
+        .outerjoin(
+            ExercicioRequisitoRecurso,
+            ExercicioRequisitoRecurso.exercicio_base_id == ExercicioBase.id,
+        )
+        .outerjoin(
+            AlunoRecursoDisponibilidade,
+            and_(
+                AlunoRecursoDisponibilidade.recurso_treino_id
+                == ExercicioRequisitoRecurso.recurso_treino_id,
+                AlunoRecursoDisponibilidade.aluno_id == aluno_id,
+                AlunoRecursoDisponibilidade.disponivel_para_aluno == True,  # noqa: E712
+            ),
+        )
+        .where(ExercicioBase.ativo == True)  # noqa: E712
+        .where(
+            or_(
+                ExercicioRequisitoRecurso.id.is_(None),
+                AlunoRecursoDisponibilidade.id.is_not(None),
+            )
+        )
+        .options(
+            selectinload(ExercicioBase.requisitos_recurso_links).selectinload(
+                ExercicioRequisitoRecurso.recurso_treino
+            )
+        )
+        .order_by(ExercicioBase.grupo_muscular, ExercicioBase.nome)
+        .distinct()
+    )
+    return result.scalars().all()
 
 
 @router.get("/alunos/{aluno_id}/peso", response_model=list[RegistroPesoOut])
@@ -366,13 +593,41 @@ async def criar_exercicio(
     if exercicio_base is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Exercício base não encontrado")
 
+    treino = (
+        await db.execute(
+            select(Treino)
+            .where(Treino.id == treino_id)
+            .options(selectinload(Treino.conjunto))
+        )
+    ).scalar_one_or_none()
+    if treino is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Treino não encontrado")
+
+    await _get_aluno_vinculado(personal, treino.conjunto.aluno_id, db)
+    await _garantir_disponibilidades_aluno(treino.conjunto.aluno_id, db)
+
+    disponivel = await _exercicio_disponivel_para_aluno(
+        exercicio_base_id=body.exercicio_base_id,
+        aluno_id=treino.conjunto.aluno_id,
+        db=db,
+    )
+    if not disponivel:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Exercício indisponível para o aluno: nenhum requisito alternativo de recurso está disponível.",
+        )
+
     exercicio = ExercicioTreino(
         treino_id=treino_id,
         exercicio_base_id=body.exercicio_base_id,
         ordem=body.ordem,
         numero_series_prescritas=body.numero_series_prescritas,
         prescricao=body.prescricao,
-        repeticao_ou_tempo=body.repeticao_ou_tempo,
+        alvo_tipo=AlvoTipo(body.alvo_tipo.value),
+        alvo_valor_min=body.alvo_valor_min,
+        alvo_valor_max=body.alvo_valor_max,
+        alvo_outros_texto=body.alvo_outros_texto,
+        rer_rm_tipo=RerRmTipo(body.rer_rm_tipo.value) if body.rer_rm_tipo is not None else None,
         rer_rm_valor=body.rer_rm_valor,
         descanso_segundos=body.descanso_segundos,
         tecnica=Tecnica(body.tecnica),
@@ -399,15 +654,48 @@ async def editar_exercicio(
     if exercicio is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Exercício não encontrado")
 
+    treino = (
+        await db.execute(
+            select(Treino)
+            .where(Treino.id == exercicio.treino_id)
+            .options(selectinload(Treino.conjunto))
+        )
+    ).scalar_one_or_none()
+    if treino is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Treino não encontrado")
+
+    await _get_aluno_vinculado(personal, treino.conjunto.aluno_id, db)
+    await _garantir_disponibilidades_aluno(treino.conjunto.aluno_id, db)
+
     update_data = body.model_dump(exclude_unset=True)
     if "tecnica" in update_data:
         update_data["tecnica"] = Tecnica(update_data["tecnica"])
+    if "alvo_tipo" in update_data and update_data["alvo_tipo"] is not None:
+        update_data["alvo_tipo"] = AlvoTipo(update_data["alvo_tipo"].value)
+    if "rer_rm_tipo" in update_data:
+        update_data["rer_rm_tipo"] = (
+            RerRmTipo(update_data["rer_rm_tipo"].value)
+            if update_data["rer_rm_tipo"] is not None
+            else None
+        )
     if "exercicio_base_id" in update_data:
         result = await db.execute(
             select(ExercicioBase).where(ExercicioBase.id == update_data["exercicio_base_id"])
         )
         if result.scalar_one_or_none() is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Exercício base não encontrado")
+
+        disponivel = await _exercicio_disponivel_para_aluno(
+            exercicio_base_id=update_data["exercicio_base_id"],
+            aluno_id=treino.conjunto.aluno_id,
+            db=db,
+        )
+        if not disponivel:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Exercício indisponível para o aluno: nenhum requisito alternativo de recurso está disponível.",
+            )
+
     for key, value in update_data.items():
         setattr(exercicio, key, value)
 

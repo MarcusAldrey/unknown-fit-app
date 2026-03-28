@@ -20,8 +20,34 @@ import type { PersonalStackParamList } from "../../navigation/PersonalNavigator"
 
 type Props = NativeStackScreenProps<PersonalStackParamList, "Exercicios">;
 
+function formatarAlvoCompacto(exercicio: ExercicioTreino) {
+  if (exercicio.alvo_tipo === "OUTROS") {
+    return exercicio.alvo_outros_texto ?? "sem alvo";
+  }
+
+  const minimo = exercicio.alvo_valor_min;
+  const maximo = exercicio.alvo_valor_max;
+  if (minimo == null || maximo == null) return "sem alvo";
+
+  const unidade =
+    exercicio.alvo_tipo === "SEGUNDOS"
+      ? "s"
+      : exercicio.alvo_tipo === "PASSOS"
+        ? " passos"
+        : " reps";
+
+  return minimo === maximo
+    ? `${minimo}${unidade}`
+    : `${minimo}-${maximo}${unidade}`;
+}
+
+function formatarRerRmCompacto(exercicio: ExercicioTreino) {
+  if (!exercicio.rer_rm_tipo || !exercicio.rer_rm_valor) return null;
+  return `${exercicio.rer_rm_tipo} ${exercicio.rer_rm_valor}`;
+}
+
 export function ExerciciosScreen({ route, navigation }: Props) {
-  const { treinoId, treinoCodigo, treinoNome } = route.params;
+  const { alunoId, treinoId, treinoCodigo, treinoNome } = route.params;
   const queryClient = useQueryClient();
 
   // --- State ---
@@ -90,7 +116,11 @@ export function ExerciciosScreen({ route, navigation }: Props) {
         exercicio_base_id: ex.exercicio_base_id,
         ordem: nextOrdem,
         numero_series_prescritas: ex.numero_series_prescritas,
-        repeticao_ou_tempo: ex.repeticao_ou_tempo,
+        alvo_tipo: ex.alvo_tipo,
+        alvo_valor_min: ex.alvo_valor_min,
+        alvo_valor_max: ex.alvo_valor_max,
+        alvo_outros_texto: ex.alvo_outros_texto,
+        rer_rm_tipo: ex.rer_rm_tipo,
         rer_rm_valor: ex.rer_rm_valor,
         descanso_segundos: ex.descanso_segundos,
         tecnica: ex.tecnica,
@@ -169,6 +199,7 @@ export function ExerciciosScreen({ route, navigation }: Props) {
     if (!menuExercicio) return;
     setMenuVisible(false);
     navigation.navigate("CriarExercicio", {
+      alunoId,
       treinoId,
       exercicioData: menuExercicio,
     });
@@ -206,40 +237,38 @@ export function ExerciciosScreen({ route, navigation }: Props) {
         </View>
       </View>
 
-      {!reorderMode && displayExercicios.length > 1 && (
-        <TouchableOpacity
-          style={styles.reorderBtnAfterSeparator}
-          onPress={() => setReorderMode(true)}
-        >
-          <Text style={styles.reorderBtnText}>Reordenar exercícios</Text>
-        </TouchableOpacity>
-      )}
-      {reorderMode && (
-        <View style={styles.reorderBar}>
-          <Text style={styles.reorderLabel}>
-            Segure e use as setas para reordenar os exercícios
-          </Text>
-          <View style={styles.reorderActions}>
+      {displayExercicios.length > 1 ? (
+        <View style={styles.reorderControlsRow}>
+          {!reorderMode ? (
             <TouchableOpacity
-              style={styles.cancelBtn}
-              onPress={() => {
-                setLocalExercicios(exercicios ?? []);
-                setReorderMode(false);
-              }}
+              style={styles.reorderBtnAfterSeparator}
+              onPress={() => setReorderMode(true)}
             >
-              <Text style={styles.cancelBtnText}>Cancelar</Text>
+              <Text style={styles.reorderBtnText}>Reordenar exercícios</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.saveBtn}
-              onPress={() => reorderMutation.mutate(localExercicios)}
-            >
-              <Text style={styles.saveBtnText}>
-                {reorderMutation.isPending ? "Salvando..." : "Salvar"}
-              </Text>
-            </TouchableOpacity>
-          </View>
+          ) : (
+            <View style={styles.reorderActionsInline}>
+              <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={() => {
+                  setLocalExercicios(exercicios ?? []);
+                  setReorderMode(false);
+                }}
+              >
+                <Text style={styles.cancelBtnText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.saveBtn}
+                onPress={() => reorderMutation.mutate(localExercicios)}
+              >
+                <Text style={styles.saveBtnText}>
+                  {reorderMutation.isPending ? "Salvando..." : "Salvar"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
-      )}
+      ) : null}
     </>
   );
 
@@ -247,7 +276,9 @@ export function ExerciciosScreen({ route, navigation }: Props) {
     !reorderMode ? (
       <TouchableOpacity
         style={styles.addCard}
-        onPress={() => navigation.navigate("CriarExercicio", { treinoId })}
+        onPress={() =>
+          navigation.navigate("CriarExercicio", { alunoId, treinoId })
+        }
       >
         <Text style={styles.addIcon}>+</Text>
         <Text style={styles.addText}>Novo Exercício</Text>
@@ -257,7 +288,9 @@ export function ExerciciosScreen({ route, navigation }: Props) {
   const renderEmpty = () => (
     <TouchableOpacity
       style={styles.emptyCard}
-      onPress={() => navigation.navigate("CriarExercicio", { treinoId })}
+      onPress={() =>
+        navigation.navigate("CriarExercicio", { alunoId, treinoId })
+      }
     >
       <Text style={styles.emptyIcon}>+</Text>
       <Text style={styles.emptyText}>
@@ -287,6 +320,7 @@ export function ExerciciosScreen({ route, navigation }: Props) {
                 ? undefined
                 : () =>
                     navigation.navigate("CriarExercicio", {
+                      alunoId,
                       treinoId,
                       exercicioData: item,
                     })
@@ -295,26 +329,30 @@ export function ExerciciosScreen({ route, navigation }: Props) {
             <Text style={styles.ordem}>{item.ordem}</Text>
             <View style={styles.info}>
               <Text style={styles.nome}>{item.nome_exercicio}</Text>
-              <View style={styles.detalhesContainer}>
-                <Text style={styles.detalhe}>
-                  Séries: {item.numero_series_prescritas}
-                </Text>
-                <Text style={styles.detalhe}>
-                  Repetição/Tempo: {item.repeticao_ou_tempo ?? "—"}
-                </Text>
-                <Text style={styles.detalhe}>
-                  Descanso:{" "}
-                  {item.descanso_segundos ? `${item.descanso_segundos}s` : "—"}
-                </Text>
-                <Text style={styles.detalhe}>
-                  RER/RM: {item.rer_rm_valor ?? "—"}
-                </Text>
+              <View style={styles.detalhesChips}>
+                <View style={styles.detalheChip}>
+                  <Text style={styles.detalheChipText}>
+                    {`${item.numero_series_prescritas}x ${formatarAlvoCompacto(item)}`}
+                  </Text>
+                </View>
+                <View style={styles.detalheChip}>
+                  <Text style={styles.detalheChipText}>
+                    {`Descanso ${item.descanso_segundos ? `${item.descanso_segundos}s` : "—"}`}
+                  </Text>
+                </View>
+                {formatarRerRmCompacto(item) ? (
+                  <View style={styles.detalheChip}>
+                    <Text style={styles.detalheChipText}>
+                      {formatarRerRmCompacto(item)}
+                    </Text>
+                  </View>
+                ) : null}
               </View>
               {item.tecnica !== "PADRAO" && (
                 <Text style={styles.tecnica}>{item.tecnica}</Text>
               )}
               {item.observacoes && (
-                <Text style={styles.obs}>{item.observacoes}</Text>
+                <Text style={styles.obs}>{`Obs: ${item.observacoes}`}</Text>
               )}
             </View>
             {reorderMode ? (
@@ -472,11 +510,25 @@ const styles = StyleSheet.create({
   // --- Reorder bar ---
   reorderBtnAfterSeparator: {
     alignSelf: "flex-end",
-    marginBottom: 12,
+    marginBottom: 0,
+    minHeight: 34,
     backgroundColor: "#1a1a1a",
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 6,
+    justifyContent: "center",
+  },
+  reorderControlsRow: {
+    minHeight: 36,
+    marginBottom: 12,
+    justifyContent: "center",
+    alignItems: "flex-end",
+  },
+  reorderActionsInline: {
+    flexDirection: "row",
+    gap: 10,
+    alignItems: "center",
+    minHeight: 34,
   },
   reorderBtnText: { color: "#888", fontSize: 13 },
   reorderBar: {
@@ -495,14 +547,16 @@ const styles = StyleSheet.create({
     borderColor: "#333",
     borderRadius: 8,
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    minHeight: 34,
+    justifyContent: "center",
   },
   cancelBtnText: { color: "#888", fontSize: 14 },
   saveBtn: {
     backgroundColor: "#22c55e",
     borderRadius: 8,
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    minHeight: 34,
+    justifyContent: "center",
   },
   saveBtnText: { color: "#fff", fontSize: 14, fontWeight: "bold" },
 
@@ -525,8 +579,21 @@ const styles = StyleSheet.create({
   },
   info: { flex: 1 },
   nome: { color: "#fff", fontSize: 16, fontWeight: "bold" },
-  detalhesContainer: { marginTop: 6, gap: 2 },
-  detalhe: { color: "#aaa", fontSize: 13 },
+  detalhesChips: {
+    marginTop: 8,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  detalheChip: {
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+    backgroundColor: "#141414",
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  detalheChipText: { color: "#b7b7b7", fontSize: 12, fontWeight: "600" },
   tecnica: { color: "#22c55e", fontSize: 12, marginTop: 4, fontWeight: "bold" },
   obs: { color: "#666", fontSize: 12, marginTop: 4, fontStyle: "italic" },
   menuBtn: {

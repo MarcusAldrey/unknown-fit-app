@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,9 @@ import {
   ActivityIndicator,
   Alert,
   ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  Keyboard,
 } from "react-native";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -58,9 +61,9 @@ function parseApiDateToMs(value: string) {
 }
 
 function primeiraColunaTitulo(exercicio: ExercicioTreino) {
-  const valor = (exercicio.repeticao_ou_tempo ?? "").toLowerCase();
-  const ehTempo = /tempo|seg|segundo|sec|min|\d+\s*s\b/.test(valor);
-  return ehTempo ? "Tempo (s)" : "Reps";
+  if (exercicio.alvo_tipo === "SEGUNDOS") return "Tempo (s)";
+  if (exercicio.alvo_tipo === "PASSOS") return "Passos";
+  return "Reps";
 }
 
 function formatarDescanso(descansoSegundos: number | null) {
@@ -73,27 +76,28 @@ function formatarDescanso(descansoSegundos: number | null) {
 }
 
 function formatarPrescricaoPrincipal(exercicio: ExercicioTreino) {
-  const prescricaoBruta = exercicio.repeticao_ou_tempo?.trim();
-  if (!prescricaoBruta) {
+  if (exercicio.alvo_tipo === "OUTROS") {
+    const descricao = exercicio.alvo_outros_texto?.trim() || "sem alvo";
+    return `${exercicio.numero_series_prescritas} séries · ${descricao}`;
+  }
+
+  if (exercicio.alvo_valor_min == null || exercicio.alvo_valor_max == null) {
     return `${exercicio.numero_series_prescritas} séries · sem prescrição`;
   }
 
-  const tituloPrimeiraColuna = primeiraColunaTitulo(exercicio);
-  const contemUnidadeTempo = /(s\b|min|tempo|seg|segundo|sec)/i.test(
-    prescricaoBruta,
-  );
-  const somenteNumero = /^\d+(?:[.,]\d+)?$/.test(prescricaoBruta);
+  const unidade =
+    exercicio.alvo_tipo === "SEGUNDOS"
+      ? "s"
+      : exercicio.alvo_tipo === "PASSOS"
+        ? " passos"
+        : " reps";
 
-  if (tituloPrimeiraColuna === "Tempo (s)") {
-    const valorTempo = somenteNumero ? `${prescricaoBruta}s` : prescricaoBruta;
-    return `${exercicio.numero_series_prescritas} séries de ${valorTempo}`;
-  }
+  const alvoTexto =
+    exercicio.alvo_valor_min === exercicio.alvo_valor_max
+      ? `${exercicio.alvo_valor_min}${unidade}`
+      : `${exercicio.alvo_valor_min}-${exercicio.alvo_valor_max}${unidade}`;
 
-  const valorReps =
-    somenteNumero && !contemUnidadeTempo
-      ? `${prescricaoBruta} reps`
-      : prescricaoBruta;
-  return `${exercicio.numero_series_prescritas} séries de ${valorReps}`;
+  return `${exercicio.numero_series_prescritas} séries de ${alvoTexto}`;
 }
 
 export function SessaoTreinoScreen({ route, navigation }: Props) {
@@ -113,6 +117,39 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
   const [observacoesAlunoExercicio, setObservacoesAlunoExercicio] = useState<
     Record<string, string>
   >({});
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const listaExerciciosRef = useRef<FlatList<any>>(null);
+
+  function focarObservacaoExercicio(index: number) {
+    // Aguarda um frame para o teclado iniciar a animacao antes do scroll.
+    setTimeout(() => {
+      listaExerciciosRef.current?.scrollToIndex({
+        index,
+        animated: true,
+        viewPosition: 0.15,
+      });
+    }, 120);
+  }
+
+  useEffect(() => {
+    const showEvent =
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent =
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+
+    const showSub = Keyboard.addListener(showEvent, (event) => {
+      setKeyboardHeight(event.endCoordinates?.height ?? 0);
+    });
+
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const { data: exercicios, isLoading } = useQuery<ExercicioTreino[]>({
     queryKey: ["aluno", "treino", treinoId, "exercicios"],
@@ -667,323 +704,379 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
 
   if (!sessaoId) {
     return (
-      <ScrollView
-        style={{ flex: 1, backgroundColor: "#0d0d0d" }}
-        contentContainerStyle={styles.preStartContainer}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={0}
       >
-        <Text style={styles.iniciarTitle}>Treino {treinoCodigo}</Text>
-        {!!(treinoNome ?? sessaoAtivaParam?.treino_nome) && (
-          <Text style={styles.iniciarNomeTreino}>
-            {treinoNome ?? sessaoAtivaParam?.treino_nome}
-          </Text>
-        )}
-        <Text style={styles.iniciarSub}>
-          {exercicios?.length ?? 0} exercícios
-        </Text>
-
-        <View style={styles.alunoObsCardPreStart}>
-          <Text style={styles.alunoObsLabel}>Observação do aluno (treino)</Text>
-          <TextInput
-            style={styles.alunoObsInput}
-            multiline
-            placeholder="Escreva uma observação sobre este treino"
-            placeholderTextColor="#666"
-            value={observacaoTreinoAluno}
-            onChangeText={setObservacaoTreinoAluno}
-          />
-          <TouchableOpacity
-            style={styles.alunoObsSaveBtn}
-            onPress={() => salvarObservacaoTreinoMutation.mutate()}
-            disabled={salvarObservacaoTreinoMutation.isPending}
-          >
-            <Text style={styles.alunoObsSaveText}>
-              {salvarObservacaoTreinoMutation.isPending
-                ? "Salvando..."
-                : "Salvar observação"}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Preview de exercícios */}
-        {exercicios && exercicios.length > 0 && (
-          <View style={styles.previewContainer}>
-            {exercicios.map((ex, idx) => (
-              <View key={ex.id} style={styles.previewItem}>
-                <Text style={styles.previewOrder}>{idx + 1}</Text>
-                <View style={styles.previewInfo}>
-                  <Text style={styles.previewName}>{ex.nome_exercicio}</Text>
-                  <Text style={styles.previewDetail}>
-                    {formatarPrescricaoPrincipal(ex)}
-                    {ex.tecnica && ex.tecnica !== "PADRAO"
-                      ? ` · ${ex.tecnica}`
-                      : ""}
-                  </Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
-
-        <TouchableOpacity
-          style={[
-            styles.button,
-            { marginTop: 24, alignSelf: "stretch", marginHorizontal: 16 },
+        <ScrollView
+          style={{ flex: 1, backgroundColor: "#0d0d0d" }}
+          contentContainerStyle={[
+            styles.preStartContainer,
+            { paddingBottom: 32 + keyboardHeight },
           ]}
-          onPress={iniciarTreinoComValidacao}
-          disabled={
-            iniciarMutation.isPending ||
-            finalizarSessaoConflitanteMutation.isPending ||
-            descartarSessaoConflitanteMutation.isPending
-          }
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          automaticallyAdjustKeyboardInsets={Platform.OS === "ios"}
         >
-          {iniciarMutation.isPending ||
-          finalizarSessaoConflitanteMutation.isPending ||
-          descartarSessaoConflitanteMutation.isPending ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Iniciar Treino</Text>
+          <Text style={styles.iniciarTitle}>Treino {treinoCodigo}</Text>
+          {!!(treinoNome ?? sessaoAtivaParam?.treino_nome) && (
+            <Text style={styles.iniciarNomeTreino}>
+              {treinoNome ?? sessaoAtivaParam?.treino_nome}
+            </Text>
           )}
-        </TouchableOpacity>
-      </ScrollView>
+          <Text style={styles.iniciarSub}>
+            {exercicios?.length ?? 0} exercícios
+          </Text>
+
+          <View style={styles.alunoObsCardPreStart}>
+            <Text style={styles.alunoObsLabel}>
+              Observação do aluno (treino)
+            </Text>
+            <TextInput
+              style={styles.alunoObsInput}
+              multiline
+              placeholder="Escreva uma observação sobre este treino"
+              placeholderTextColor="#666"
+              value={observacaoTreinoAluno}
+              onChangeText={setObservacaoTreinoAluno}
+            />
+            <TouchableOpacity
+              style={styles.alunoObsSaveBtn}
+              onPress={() => salvarObservacaoTreinoMutation.mutate()}
+              disabled={salvarObservacaoTreinoMutation.isPending}
+            >
+              <Text style={styles.alunoObsSaveText}>
+                {salvarObservacaoTreinoMutation.isPending
+                  ? "Salvando..."
+                  : "Salvar observação"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Preview de exercícios */}
+          {exercicios && exercicios.length > 0 && (
+            <View style={styles.previewContainer}>
+              {exercicios.map((ex, idx) => (
+                <View key={ex.id} style={styles.previewItem}>
+                  <Text style={styles.previewOrder}>{idx + 1}</Text>
+                  <View style={styles.previewInfo}>
+                    <Text style={styles.previewName}>{ex.nome_exercicio}</Text>
+                    <Text style={styles.previewDetail}>
+                      {formatarPrescricaoPrincipal(ex)}
+                      {ex.tecnica && ex.tecnica !== "PADRAO"
+                        ? ` · ${ex.tecnica}`
+                        : ""}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
+
+          <TouchableOpacity
+            style={[
+              styles.button,
+              { marginTop: 24, alignSelf: "stretch", marginHorizontal: 16 },
+            ]}
+            onPress={iniciarTreinoComValidacao}
+            disabled={
+              iniciarMutation.isPending ||
+              finalizarSessaoConflitanteMutation.isPending ||
+              descartarSessaoConflitanteMutation.isPending
+            }
+          >
+            {iniciarMutation.isPending ||
+            finalizarSessaoConflitanteMutation.isPending ||
+            descartarSessaoConflitanteMutation.isPending ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Iniciar Treino</Text>
+            )}
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.timerHeader}>
-        <View style={styles.timerCard}>
-          <Text style={styles.timerLabel}>Duração da sessão</Text>
-          <Text style={styles.timerValue}>
-            {formatTime(sessionElapsedSeconds)}
-          </Text>
-        </View>
-        <View style={styles.alunoObsCardSessao}>
-          <Text style={styles.alunoObsLabel}>Observação do aluno (treino)</Text>
-          <TextInput
-            style={styles.alunoObsInput}
-            multiline
-            placeholder="Escreva uma observação sobre este treino"
-            placeholderTextColor="#666"
-            value={observacaoTreinoAluno}
-            onChangeText={setObservacaoTreinoAluno}
-          />
-          <TouchableOpacity
-            style={styles.alunoObsSaveBtn}
-            onPress={() => salvarObservacaoTreinoMutation.mutate()}
-            disabled={salvarObservacaoTreinoMutation.isPending}
-          >
-            <Text style={styles.alunoObsSaveText}>
-              {salvarObservacaoTreinoMutation.isPending
-                ? "Salvando..."
-                : "Salvar observação"}
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={0}
+    >
+      <View style={styles.container}>
+        <View style={styles.timerHeader}>
+          <View style={styles.timerCard}>
+            <Text style={styles.timerLabel}>Duração da sessão</Text>
+            <Text style={styles.timerValue}>
+              {formatTime(sessionElapsedSeconds)}
             </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <FlatList
-        data={exerciciosComEstado}
-        keyExtractor={(item) => item.exercicio.id}
-        contentContainerStyle={styles.content}
-        renderItem={({ item }) => {
-          const { exercicio, seriesDoExercicio, concluido } = item;
-
-          return (
-            <View
-              style={[
-                styles.exercicioCard,
-                concluido ? styles.exercicioCardDone : undefined,
-              ]}
+          </View>
+          <View style={styles.alunoObsCardSessao}>
+            <Text style={styles.alunoObsLabel}>
+              Observação do aluno (treino)
+            </Text>
+            <TextInput
+              style={styles.alunoObsInput}
+              multiline
+              placeholder="Escreva uma observação sobre este treino"
+              placeholderTextColor="#666"
+              value={observacaoTreinoAluno}
+              onChangeText={setObservacaoTreinoAluno}
+            />
+            <TouchableOpacity
+              style={styles.alunoObsSaveBtn}
+              onPress={() => salvarObservacaoTreinoMutation.mutate()}
+              disabled={salvarObservacaoTreinoMutation.isPending}
             >
-              <View style={styles.exercicioHeader}>
-                <Text style={styles.exercicioNome}>
-                  {exercicio.nome_exercicio}
-                </Text>
-                <Text
-                  style={concluido ? styles.badgeDone : styles.badgePending}
-                >
-                  {concluido ? "Concluído" : "Pendente"}
-                </Text>
-              </View>
-              <Text style={styles.exercicioDetalhe}>
-                {formatarPrescricaoPrincipal(exercicio)}
+              <Text style={styles.alunoObsSaveText}>
+                {salvarObservacaoTreinoMutation.isPending
+                  ? "Salvando..."
+                  : "Salvar observação"}
               </Text>
-              <Text style={styles.exercicioMetaSecundaria}>
-                {`Descanso: ${formatarDescanso(exercicio.descanso_segundos)}`}
-              </Text>
-              {exercicio.rer_rm_valor ? (
-                <Text style={styles.exercicioMetaTerciaria}>
-                  {`ROR/RM: ${exercicio.rer_rm_valor}`}
-                </Text>
-              ) : null}
+            </TouchableOpacity>
+          </View>
+        </View>
 
-              <View style={styles.alunoObsExercicioBox}>
-                <Text style={styles.alunoObsLabel}>Sua observação</Text>
-                <TextInput
-                  style={styles.alunoObsInput}
-                  multiline
-                  placeholder="Escreva uma observação sobre este exercício"
-                  placeholderTextColor="#666"
-                  value={observacoesAlunoExercicio[exercicio.id] ?? ""}
-                  onChangeText={(texto) =>
-                    setObservacoesAlunoExercicio((current) => ({
-                      ...current,
-                      [exercicio.id]: texto,
-                    }))
-                  }
-                />
-                <TouchableOpacity
-                  style={styles.alunoObsSaveBtn}
-                  onPress={() =>
-                    salvarObservacaoExercicioMutation.mutate(exercicio.id)
-                  }
-                  disabled={salvarObservacaoExercicioMutation.isPending}
-                >
-                  <Text style={styles.alunoObsSaveText}>
-                    {salvarObservacaoExercicioMutation.isPending
-                      ? "Salvando..."
-                      : "Salvar observação"}
+        <FlatList
+          ref={listaExerciciosRef}
+          data={exerciciosComEstado}
+          keyExtractor={(item) => item.exercicio.id}
+          contentContainerStyle={[
+            styles.content,
+            { paddingBottom: keyboardHeight > 0 ? keyboardHeight + 180 : 100 },
+          ]}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          automaticallyAdjustKeyboardInsets={Platform.OS === "ios"}
+          onScrollToIndexFailed={(info) => {
+            const fallbackOffset = Math.max(
+              0,
+              info.index * info.averageItemLength - info.averageItemLength,
+            );
+            listaExerciciosRef.current?.scrollToOffset({
+              offset: fallbackOffset,
+              animated: true,
+            });
+
+            setTimeout(() => {
+              listaExerciciosRef.current?.scrollToIndex({
+                index: info.index,
+                animated: true,
+                viewPosition: 0.15,
+              });
+            }, 140);
+          }}
+          renderItem={({ item, index }) => {
+            const { exercicio, seriesDoExercicio, concluido } = item;
+
+            return (
+              <View
+                style={[
+                  styles.exercicioCard,
+                  concluido ? styles.exercicioCardDone : undefined,
+                ]}
+              >
+                <View style={styles.exercicioHeader}>
+                  <Text style={styles.exercicioNome}>
+                    {exercicio.nome_exercicio}
                   </Text>
-                </TouchableOpacity>
-              </View>
-
-              {exercicio.observacoes?.trim() ? (
-                <View style={styles.observacoesBox}>
-                  <TouchableOpacity
-                    onPress={() => toggleObservacoes(exercicio.id)}
-                    style={styles.observacoesToggle}
-                    activeOpacity={0.8}
+                  <Text
+                    style={concluido ? styles.badgeDone : styles.badgePending}
                   >
-                    <Text style={styles.observacoesTitulo}>Observações</Text>
-                    <Text style={styles.observacoesAcao}>+</Text>
-                  </TouchableOpacity>
-
-                  {observacoesAbertas[exercicio.id] ? (
-                    <Text style={styles.observacoesTexto}>
-                      {exercicio.observacoes}
-                    </Text>
-                  ) : null}
-                </View>
-              ) : null}
-
-              <View style={styles.seriesHeaderRow}>
-                <Text style={styles.serieNumHeaderSpacer}> </Text>
-                <Text
-                  style={[styles.seriesHeaderTitle, styles.seriesHeaderInput]}
-                >
-                  {primeiraColunaTitulo(exercicio)}
-                </Text>
-                <Text
-                  style={[styles.seriesHeaderTitle, styles.seriesHeaderInput]}
-                >
-                  Carga (kg)
-                </Text>
-                <View style={styles.seriesHeaderActionsSpacer} />
-              </View>
-
-              {seriesDoExercicio.map((serie) => (
-                <View key={serie.localId} style={styles.serieRow}>
-                  <Text style={styles.serieNum}>
-                    SÉRIE {serie.numero_serie}
+                    {concluido ? "Concluído" : "Pendente"}
                   </Text>
+                </View>
+                <Text style={styles.exercicioDetalhe}>
+                  {formatarPrescricaoPrincipal(exercicio)}
+                </Text>
+                <Text style={styles.exercicioMetaSecundaria}>
+                  {`Descanso: ${formatarDescanso(exercicio.descanso_segundos)}`}
+                </Text>
+                {exercicio.rer_rm_tipo && exercicio.rer_rm_valor ? (
+                  <Text style={styles.exercicioMetaTerciaria}>
+                    {`RER/RM: ${exercicio.rer_rm_tipo} ${exercicio.rer_rm_valor}`}
+                  </Text>
+                ) : null}
+
+                <View style={styles.alunoObsExercicioBox}>
+                  <Text style={styles.alunoObsLabel}>Sua observação</Text>
                   <TextInput
-                    style={styles.serieInput}
-                    placeholder={
-                      primeiraColunaTitulo(exercicio) === "Tempo (s)"
-                        ? "s"
-                        : "reps"
-                    }
+                    style={styles.alunoObsInput}
+                    multiline
+                    placeholder="Escreva uma observação sobre este exercício"
                     placeholderTextColor="#666"
-                    keyboardType="numeric"
-                    value={serie.reps}
-                    onChangeText={(v) => updateSerie(serie.localId, "reps", v)}
-                    editable={!serie.concluida && !serie.deleting}
-                  />
-                  <TextInput
-                    style={styles.serieInput}
-                    placeholder={
-                      ultimosPesos[exercicio.id] != null
-                        ? String(ultimosPesos[exercicio.id])
-                        : "kg"
+                    value={observacoesAlunoExercicio[exercicio.id] ?? ""}
+                    onFocus={() => focarObservacaoExercicio(index)}
+                    onChangeText={(texto) =>
+                      setObservacoesAlunoExercicio((current) => ({
+                        ...current,
+                        [exercicio.id]: texto,
+                      }))
                     }
-                    placeholderTextColor="#666"
-                    keyboardType="numeric"
-                    value={serie.peso}
-                    onChangeText={(v) => updateSerie(serie.localId, "peso", v)}
-                    editable={!serie.concluida && !serie.deleting}
                   />
-                  <View style={styles.serieActions}>
+                  <TouchableOpacity
+                    style={styles.alunoObsSaveBtn}
+                    onPress={() =>
+                      salvarObservacaoExercicioMutation.mutate(exercicio.id)
+                    }
+                    disabled={salvarObservacaoExercicioMutation.isPending}
+                  >
+                    <Text style={styles.alunoObsSaveText}>
+                      {salvarObservacaoExercicioMutation.isPending
+                        ? "Salvando..."
+                        : "Salvar observação"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {exercicio.observacoes?.trim() ? (
+                  <View style={styles.observacoesBox}>
                     <TouchableOpacity
-                      onPress={() => toggleSerieConcluida(serie)}
-                      disabled={Boolean(serie.deleting)}
-                      hitSlop={{ top: 6, right: 6, bottom: 6, left: 6 }}
-                      style={[
-                        styles.checkbox,
-                        serie.concluida ? styles.checkboxChecked : undefined,
-                        serie.deleting ? styles.checkboxBusy : undefined,
-                      ]}
+                      onPress={() => toggleObservacoes(exercicio.id)}
+                      style={styles.observacoesToggle}
+                      activeOpacity={0.8}
                     >
-                      <Text
+                      <Text style={styles.observacoesTitulo}>Observações</Text>
+                      <Text style={styles.observacoesAcao}>+</Text>
+                    </TouchableOpacity>
+
+                    {observacoesAbertas[exercicio.id] ? (
+                      <Text style={styles.observacoesTexto}>
+                        {`Obs: ${exercicio.observacoes}`}
+                      </Text>
+                    ) : null}
+                  </View>
+                ) : null}
+
+                <View style={styles.seriesHeaderRow}>
+                  <Text style={styles.serieNumHeaderSpacer}> </Text>
+                  <Text
+                    style={[styles.seriesHeaderTitle, styles.seriesHeaderInput]}
+                  >
+                    {primeiraColunaTitulo(exercicio)}
+                  </Text>
+                  <Text
+                    style={[styles.seriesHeaderTitle, styles.seriesHeaderInput]}
+                  >
+                    Carga (kg)
+                  </Text>
+                  <View style={styles.seriesHeaderActionsSpacer} />
+                </View>
+
+                {seriesDoExercicio.map((serie) => (
+                  <View key={serie.localId} style={styles.serieRow}>
+                    <Text style={styles.serieNum}>
+                      SÉRIE {serie.numero_serie}
+                    </Text>
+                    <TextInput
+                      style={styles.serieInput}
+                      placeholder={
+                        primeiraColunaTitulo(exercicio) === "Tempo (s)"
+                          ? "s"
+                          : primeiraColunaTitulo(exercicio) === "Passos"
+                            ? "passos"
+                            : "reps"
+                      }
+                      placeholderTextColor="#666"
+                      keyboardType="numeric"
+                      value={serie.reps}
+                      onChangeText={(v) =>
+                        updateSerie(serie.localId, "reps", v)
+                      }
+                      editable={!serie.concluida && !serie.deleting}
+                    />
+                    <TextInput
+                      style={styles.serieInput}
+                      placeholder={
+                        ultimosPesos[exercicio.id] != null
+                          ? String(ultimosPesos[exercicio.id])
+                          : "kg"
+                      }
+                      placeholderTextColor="#666"
+                      keyboardType="numeric"
+                      value={serie.peso}
+                      onChangeText={(v) =>
+                        updateSerie(serie.localId, "peso", v)
+                      }
+                      editable={!serie.concluida && !serie.deleting}
+                    />
+                    <View style={styles.serieActions}>
+                      <TouchableOpacity
+                        onPress={() => toggleSerieConcluida(serie)}
+                        disabled={Boolean(serie.deleting)}
+                        hitSlop={{ top: 6, right: 6, bottom: 6, left: 6 }}
                         style={[
-                          styles.checkboxIcon,
-                          serie.concluida
-                            ? styles.checkboxIconChecked
-                            : undefined,
+                          styles.checkbox,
+                          serie.concluida ? styles.checkboxChecked : undefined,
+                          serie.deleting ? styles.checkboxBusy : undefined,
                         ]}
                       >
-                        ✓
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => excluirSerie(serie)}
-                      disabled={Boolean(serie.deleting)}
-                      style={styles.deleteButton}
-                    >
-                      <Text style={styles.deleteButtonText}>
-                        {serie.deleting ? "..." : "X"}
-                      </Text>
-                    </TouchableOpacity>
+                        <Text
+                          style={[
+                            styles.checkboxIcon,
+                            serie.concluida
+                              ? styles.checkboxIconChecked
+                              : undefined,
+                          ]}
+                        >
+                          ✓
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => excluirSerie(serie)}
+                        disabled={Boolean(serie.deleting)}
+                        style={styles.deleteButton}
+                      >
+                        <Text style={styles.deleteButtonText}>
+                          {serie.deleting ? "..." : "X"}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
-                </View>
-              ))}
+                ))}
 
-              <TouchableOpacity
-                onPress={() => adicionarSerie(exercicio.id)}
-                style={styles.addSerie}
-              >
-                <Text style={styles.addSerieText}>+ Série</Text>
-              </TouchableOpacity>
-            </View>
-          );
-        }}
-      />
+                <TouchableOpacity
+                  onPress={() => adicionarSerie(exercicio.id)}
+                  style={styles.addSerie}
+                >
+                  <Text style={styles.addSerieText}>+ Série</Text>
+                </TouchableOpacity>
+              </View>
+            );
+          }}
+        />
 
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={[styles.button, { backgroundColor: "#166534" }]}
-          disabled={finalizarMutation.isPending}
-          onPress={() =>
-            Alert.alert(
-              "Finalizar?",
-              "Deseja encerrar esta sessão de treino?",
-              [
-                { text: "Cancelar" },
-                {
-                  text: "Finalizar",
-                  onPress: () => finalizarMutation.mutate(),
-                },
-              ],
-            )
-          }
-        >
-          {finalizarMutation.isPending ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Finalizar Sessão</Text>
-          )}
-        </TouchableOpacity>
+        {keyboardHeight === 0 ? (
+          <View style={styles.footer}>
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: "#166534" }]}
+              disabled={finalizarMutation.isPending}
+              onPress={() =>
+                Alert.alert(
+                  "Finalizar?",
+                  "Deseja encerrar esta sessão de treino?",
+                  [
+                    { text: "Cancelar" },
+                    {
+                      text: "Finalizar",
+                      onPress: () => finalizarMutation.mutate(),
+                    },
+                  ],
+                )
+              }
+            >
+              {finalizarMutation.isPending ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>Finalizar Sessão</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        ) : null}
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

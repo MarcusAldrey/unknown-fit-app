@@ -3,72 +3,176 @@ Seed idempotente para ExercicioBase.
 Executar: python -m app.seed
 """
 import asyncio
+import re
 from datetime import date
 
 from sqlalchemy import select
 
 from app.database import engine, async_session, Base
-from app.models import ExercicioBase
+from app.models import (
+    AlunoRecursoDisponibilidade,
+    ExercicioBase,
+    ExercicioRequisitoRecurso,
+    ImplementoExecucao,
+    RecursoTreino,
+)
 from app.models.usuario import Usuario, Role
 from app.models.personal import Personal
 from app.models.aluno import Aluno
 from app.models.vinculo import VinculoPersonalAluno
 from app.models.conjunto_treino import ConjuntoTreino
 from app.models.treino import Treino
-from app.models.exercicio_treino import ExercicioTreino, Tecnica
+from app.models.exercicio_treino import ExercicioTreino, Tecnica, AlvoTipo, RerRmTipo
 from app.services.auth import hash_senha
 
 EXERCICIOS_BASE = [
     # Peito
-    {"nome": "Supino Reto com Barra", "grupo_muscular": "Peito", "equipamento": "Barra"},
-    {"nome": "Supino Inclinado com Halteres", "grupo_muscular": "Peito", "equipamento": "Halteres"},
-    {"nome": "Supino Declinado", "grupo_muscular": "Peito", "equipamento": "Barra"},
-    {"nome": "Crucifixo com Halteres", "grupo_muscular": "Peito", "equipamento": "Halteres"},
-    {"nome": "Crossover", "grupo_muscular": "Peito", "equipamento": "Cabo"},
-    {"nome": "Flexão de Braço", "grupo_muscular": "Peito", "equipamento": None},
+    {"nome": "Supino Reto com Barra", "grupo_muscular": "Peito", "implemento_execucao": ImplementoExecucao.BARRA},
+    {"nome": "Supino Inclinado com Halteres", "grupo_muscular": "Peito", "implemento_execucao": ImplementoExecucao.HALTERE},
+    {"nome": "Supino Declinado", "grupo_muscular": "Peito", "implemento_execucao": ImplementoExecucao.BARRA},
+    {"nome": "Crucifixo com Halteres", "grupo_muscular": "Peito", "implemento_execucao": ImplementoExecucao.HALTERE},
+    {"nome": "Crossover", "grupo_muscular": "Peito", "implemento_execucao": ImplementoExecucao.CABO},
+    {"nome": "Flexão de Braço", "grupo_muscular": "Peito", "implemento_execucao": ImplementoExecucao.PESO_CORPO},
     # Costas
-    {"nome": "Puxada Frontal", "grupo_muscular": "Costas", "equipamento": "Cabo"},
-    {"nome": "Remada Curvada com Barra", "grupo_muscular": "Costas", "equipamento": "Barra"},
-    {"nome": "Remada Unilateral com Halter", "grupo_muscular": "Costas", "equipamento": "Halter"},
-    {"nome": "Pulldown", "grupo_muscular": "Costas", "equipamento": "Cabo"},
-    {"nome": "Barra Fixa", "grupo_muscular": "Costas", "equipamento": None},
-    {"nome": "Remada Baixa no Cabo", "grupo_muscular": "Costas", "equipamento": "Cabo"},
+    {"nome": "Puxada Frontal", "grupo_muscular": "Costas", "implemento_execucao": ImplementoExecucao.CABO},
+    {"nome": "Remada Curvada com Barra", "grupo_muscular": "Costas", "implemento_execucao": ImplementoExecucao.BARRA},
+    {"nome": "Remada Unilateral com Halter", "grupo_muscular": "Costas", "implemento_execucao": ImplementoExecucao.HALTERE},
+    {"nome": "Pulldown", "grupo_muscular": "Costas", "implemento_execucao": ImplementoExecucao.CABO},
+    {"nome": "Barra Fixa", "grupo_muscular": "Costas", "implemento_execucao": ImplementoExecucao.PESO_CORPO},
+    {"nome": "Remada Baixa no Cabo", "grupo_muscular": "Costas", "implemento_execucao": ImplementoExecucao.CABO},
     # Pernas
-    {"nome": "Agachamento Livre", "grupo_muscular": "Pernas", "equipamento": "Barra"},
-    {"nome": "Leg Press 45°", "grupo_muscular": "Pernas", "equipamento": "Máquina"},
-    {"nome": "Cadeira Extensora", "grupo_muscular": "Pernas", "equipamento": "Máquina"},
-    {"nome": "Mesa Flexora", "grupo_muscular": "Pernas", "equipamento": "Máquina"},
-    {"nome": "Agachamento Búlgaro", "grupo_muscular": "Pernas", "equipamento": "Halteres"},
-    {"nome": "Afundo no Smith", "grupo_muscular": "Pernas", "equipamento": "Smith"},
-    {"nome": "Stiff", "grupo_muscular": "Pernas", "equipamento": "Barra"},
-    {"nome": "Panturrilha em Pé", "grupo_muscular": "Pernas", "equipamento": "Máquina"},
-    {"nome": "Panturrilha Sentado", "grupo_muscular": "Pernas", "equipamento": "Máquina"},
+    {"nome": "Agachamento Livre", "grupo_muscular": "Pernas", "implemento_execucao": ImplementoExecucao.BARRA},
+    {"nome": "Leg Press 45°", "grupo_muscular": "Pernas", "implemento_execucao": ImplementoExecucao.MAQUINA},
+    {"nome": "Cadeira Extensora", "grupo_muscular": "Pernas", "implemento_execucao": ImplementoExecucao.MAQUINA},
+    {"nome": "Mesa Flexora", "grupo_muscular": "Pernas", "implemento_execucao": ImplementoExecucao.MAQUINA},
+    {"nome": "Agachamento Búlgaro", "grupo_muscular": "Pernas", "implemento_execucao": ImplementoExecucao.HALTERE},
+    {"nome": "Afundo no Smith", "grupo_muscular": "Pernas", "implemento_execucao": ImplementoExecucao.MAQUINA},
+    {"nome": "Stiff", "grupo_muscular": "Pernas", "implemento_execucao": ImplementoExecucao.BARRA},
+    {"nome": "Panturrilha em Pé", "grupo_muscular": "Pernas", "implemento_execucao": ImplementoExecucao.MAQUINA},
+    {"nome": "Panturrilha Sentado", "grupo_muscular": "Pernas", "implemento_execucao": ImplementoExecucao.MAQUINA},
     # Ombros
-    {"nome": "Desenvolvimento com Halteres", "grupo_muscular": "Ombros", "equipamento": "Halteres"},
-    {"nome": "Elevação Lateral", "grupo_muscular": "Ombros", "equipamento": "Halteres"},
-    {"nome": "Elevação Frontal", "grupo_muscular": "Ombros", "equipamento": "Halteres"},
-    {"nome": "Face Pull", "grupo_muscular": "Ombros", "equipamento": "Cabo"},
-    {"nome": "Encolhimento com Barra", "grupo_muscular": "Ombros", "equipamento": "Barra"},
+    {"nome": "Desenvolvimento com Halteres", "grupo_muscular": "Ombros", "implemento_execucao": ImplementoExecucao.HALTERE},
+    {"nome": "Elevação Lateral", "grupo_muscular": "Ombros", "implemento_execucao": ImplementoExecucao.HALTERE},
+    {"nome": "Elevação Frontal", "grupo_muscular": "Ombros", "implemento_execucao": ImplementoExecucao.HALTERE},
+    {"nome": "Face Pull", "grupo_muscular": "Ombros", "implemento_execucao": ImplementoExecucao.CABO},
+    {"nome": "Encolhimento com Barra", "grupo_muscular": "Ombros", "implemento_execucao": ImplementoExecucao.BARRA},
     # Bíceps
-    {"nome": "Rosca Direta com Barra", "grupo_muscular": "Bíceps", "equipamento": "Barra"},
-    {"nome": "Rosca Alternada com Halteres", "grupo_muscular": "Bíceps", "equipamento": "Halteres"},
-    {"nome": "Rosca Martelo", "grupo_muscular": "Bíceps", "equipamento": "Halteres"},
-    {"nome": "Rosca Scott", "grupo_muscular": "Bíceps", "equipamento": "Barra W"},
+    {"nome": "Rosca Direta com Barra", "grupo_muscular": "Bíceps", "implemento_execucao": ImplementoExecucao.BARRA},
+    {"nome": "Rosca Alternada com Halteres", "grupo_muscular": "Bíceps", "implemento_execucao": ImplementoExecucao.HALTERE},
+    {"nome": "Rosca Martelo", "grupo_muscular": "Bíceps", "implemento_execucao": ImplementoExecucao.HALTERE},
+    {"nome": "Rosca Scott", "grupo_muscular": "Bíceps", "implemento_execucao": ImplementoExecucao.BARRA},
     # Tríceps
-    {"nome": "Tríceps Pulley", "grupo_muscular": "Tríceps", "equipamento": "Cabo"},
-    {"nome": "Tríceps Testa com Barra", "grupo_muscular": "Tríceps", "equipamento": "Barra W"},
-    {"nome": "Tríceps Francês com Halter", "grupo_muscular": "Tríceps", "equipamento": "Halter"},
-    {"nome": "Mergulho em Paralelas", "grupo_muscular": "Tríceps", "equipamento": None},
+    {"nome": "Tríceps Pulley", "grupo_muscular": "Tríceps", "implemento_execucao": ImplementoExecucao.CABO},
+    {"nome": "Tríceps Testa com Barra", "grupo_muscular": "Tríceps", "implemento_execucao": ImplementoExecucao.BARRA},
+    {"nome": "Tríceps Francês com Halter", "grupo_muscular": "Tríceps", "implemento_execucao": ImplementoExecucao.HALTERE},
+    {"nome": "Mergulho em Paralelas", "grupo_muscular": "Tríceps", "implemento_execucao": ImplementoExecucao.PESO_CORPO},
     # Core
-    {"nome": "Abdominal Crunch", "grupo_muscular": "Core", "equipamento": None},
-    {"nome": "Prancha", "grupo_muscular": "Core", "equipamento": None},
-    {"nome": "Elevação de Pernas", "grupo_muscular": "Core", "equipamento": None},
-    {"nome": "Abdominal Bicicleta", "grupo_muscular": "Core", "equipamento": None},
+    {"nome": "Abdominal Crunch", "grupo_muscular": "Core", "implemento_execucao": ImplementoExecucao.PESO_CORPO},
+    {"nome": "Prancha", "grupo_muscular": "Core", "implemento_execucao": ImplementoExecucao.PESO_CORPO},
+    {"nome": "Elevação de Pernas", "grupo_muscular": "Core", "implemento_execucao": ImplementoExecucao.PESO_CORPO},
+    {"nome": "Abdominal Bicicleta", "grupo_muscular": "Core", "implemento_execucao": ImplementoExecucao.PESO_CORPO},
     # Glúteos
-    {"nome": "Hip Thrust", "grupo_muscular": "Glúteos", "equipamento": "Barra"},
-    {"nome": "Abdução de Quadril", "grupo_muscular": "Glúteos", "equipamento": "Máquina"},
-    {"nome": "Kickback no Cabo", "grupo_muscular": "Glúteos", "equipamento": "Cabo"},
+    {"nome": "Hip Thrust", "grupo_muscular": "Glúteos", "implemento_execucao": ImplementoExecucao.BARRA},
+    {"nome": "Abdução de Quadril", "grupo_muscular": "Glúteos", "implemento_execucao": ImplementoExecucao.MAQUINA},
+    {"nome": "Kickback no Cabo", "grupo_muscular": "Glúteos", "implemento_execucao": ImplementoExecucao.CABO},
 ]
+
+
+def _recursos_por_exercicio(nome_exercicio: str, implemento: ImplementoExecucao) -> list[str]:
+    nome = nome_exercicio.lower()
+
+    if "supino" in nome:
+        return ["Banco de Supino"]
+    if "smith" in nome:
+        return ["Máquina Smith"]
+    if "leg press" in nome:
+        return ["Leg Press"]
+    if "cadeira extensora" in nome:
+        return ["Cadeira Extensora"]
+    if "cadeira flexora" in nome or "mesa flexora" in nome:
+        return ["Mesa Flexora"]
+
+    defaults = {
+        ImplementoExecucao.BARRA: ["Suporte de Barra"],
+        ImplementoExecucao.ELASTICO: ["Ponto de Ancoragem para Elástico"],
+        ImplementoExecucao.HALTERE: ["Rack de Halteres"],
+        ImplementoExecucao.KETTLEBELL: ["Rack de Kettlebells"],
+        ImplementoExecucao.CABO: ["Estação de Cabo"],
+        ImplementoExecucao.MAQUINA: ["Máquina Específica"],
+        ImplementoExecucao.PESO_CORPO: [],
+        ImplementoExecucao.OUTRO: [],
+    }
+    return defaults[implemento]
+
+
+async def _upsert_recurso(session, nome: str) -> RecursoTreino:
+    result = await session.execute(select(RecursoTreino).where(RecursoTreino.nome == nome))
+    recurso = result.scalar_one_or_none()
+    if recurso is not None:
+        return recurso
+
+    recurso = RecursoTreino(nome=nome, criado_por_sistema=True)
+    session.add(recurso)
+    await session.flush()
+    return recurso
+
+
+async def _sincronizar_recursos_e_requisitos(session) -> None:
+    result = await session.execute(select(ExercicioBase))
+    exercicios = result.scalars().all()
+
+    for exercicio in exercicios:
+        implemento = exercicio.implemento_execucao or ImplementoExecucao.OUTRO
+        exercicio.implemento_execucao = implemento
+        recursos_nomes = _recursos_por_exercicio(exercicio.nome, implemento)
+
+        links_existentes = (
+            await session.execute(
+                select(ExercicioRequisitoRecurso).where(
+                    ExercicioRequisitoRecurso.exercicio_base_id == exercicio.id
+                )
+            )
+        ).scalars().all()
+        if links_existentes:
+            continue
+
+        for nome_recurso in recursos_nomes:
+            recurso = await _upsert_recurso(session, nome_recurso)
+            session.add(
+                ExercicioRequisitoRecurso(
+                    exercicio_base_id=exercicio.id,
+                    recurso_treino_id=recurso.id,
+                )
+            )
+
+    await session.flush()
+
+
+async def _sincronizar_disponibilidade_alunos(session) -> None:
+    alunos_ids = (await session.execute(select(Aluno.id))).scalars().all()
+    recursos_ids = (await session.execute(select(RecursoTreino.id))).scalars().all()
+    existentes = set(
+        (await session.execute(
+            select(
+                AlunoRecursoDisponibilidade.aluno_id,
+                AlunoRecursoDisponibilidade.recurso_treino_id,
+            )
+        )).all()
+    )
+
+    for aluno_id in alunos_ids:
+        for recurso_id in recursos_ids:
+            if (aluno_id, recurso_id) in existentes:
+                continue
+            session.add(
+                AlunoRecursoDisponibilidade(
+                    aluno_id=aluno_id,
+                    recurso_treino_id=recurso_id,
+                    disponivel_para_aluno=True,
+                )
+            )
+
+    await session.flush()
 
 
 async def _resolver_exercicio_base_id(session, nome: str):
@@ -82,12 +186,73 @@ async def _resolver_exercicio_base_id(session, nome: str):
     exercicio = ExercicioBase(
         nome=nome,
         grupo_muscular="Outros",
-        equipamento=None,
+        implemento_execucao=ImplementoExecucao.PESO_CORPO,
         criado_por_sistema=False,
     )
     session.add(exercicio)
     await session.flush()
     return exercicio.id
+
+
+def _parse_alvo(rep: str | None) -> tuple[AlvoTipo, int | None, int | None, str | None]:
+    if rep is None:
+        return AlvoTipo.OUTROS, None, None, "Sem alvo"
+
+    texto = rep.strip()
+    if not texto:
+        return AlvoTipo.OUTROS, None, None, "Sem alvo"
+
+    texto_lower = texto.lower()
+
+    if "passo" in texto_lower:
+        numeros = [int(v) for v in re.findall(r"\d+", texto_lower)]
+        if numeros:
+            minimo = numeros[0]
+            maximo = numeros[1] if len(numeros) > 1 else minimo
+            return AlvoTipo.PASSOS, minimo, maximo, None
+        return AlvoTipo.OUTROS, None, None, texto
+
+    if "seg" in texto_lower or "min" in texto_lower:
+        unidades = re.findall(r"(\d+)\s*(seg|s|min)", texto_lower)
+        if unidades:
+            valores_em_segundos: list[int] = []
+            for valor, unidade in unidades:
+                numero = int(valor)
+                valores_em_segundos.append(numero * 60 if unidade == "min" else numero)
+            minimo = valores_em_segundos[0]
+            maximo = valores_em_segundos[1] if len(valores_em_segundos) > 1 else minimo
+            return AlvoTipo.SEGUNDOS, minimo, maximo, None
+
+        numeros = [int(v) for v in re.findall(r"\d+", texto_lower)]
+        if numeros:
+            minimo = numeros[0]
+            maximo = numeros[1] if len(numeros) > 1 else minimo
+            return AlvoTipo.SEGUNDOS, minimo, maximo, None
+        return AlvoTipo.OUTROS, None, None, texto
+
+    numeros = [int(v) for v in re.findall(r"\d+", texto_lower)]
+    if numeros:
+        minimo = numeros[0]
+        maximo = numeros[1] if len(numeros) > 1 else minimo
+        return AlvoTipo.REPETICOES, minimo, maximo, None
+
+    return AlvoTipo.OUTROS, None, None, texto
+
+
+def _parse_rer_rm(valor: str | None) -> tuple[RerRmTipo | None, str | None]:
+    if valor is None:
+        return None, None
+
+    texto = valor.strip()
+    if not texto:
+        return None, None
+
+    texto_upper = texto.upper()
+    if texto_upper == "FALHA":
+        return RerRmTipo.RER, "0"
+    if "%" in texto or "RM" in texto_upper:
+        return RerRmTipo.RM, texto
+    return RerRmTipo.RER, texto
 
 
 async def seed():
@@ -105,10 +270,14 @@ async def seed():
                     ExercicioBase(
                         nome=ex_data["nome"],
                         grupo_muscular=ex_data["grupo_muscular"],
-                        equipamento=ex_data.get("equipamento"),
+                        implemento_execucao=ex_data["implemento_execucao"],
                         criado_por_sistema=True,
                     )
                 )
+            else:
+                existing.implemento_execucao = ex_data["implemento_execucao"]
+
+        await _sincronizar_recursos_e_requisitos(session)
         await session.commit()
         print(f"Seed concluído: {len(EXERCICIOS_BASE)} exercícios verificados.")
 
@@ -170,6 +339,8 @@ async def seed():
                     aluno_id=aluno.id,
                     ativo=True,
                 ))
+
+            await _sincronizar_disponibilidade_alunos(session)
 
         await session.commit()
         print("Usuários de teste criados:")
@@ -297,14 +468,20 @@ async def _seed_treino_aldrey_ciclo1():
 
             for idx, ex in enumerate(treino_data["exercicios"]):
                 exercicio_base_id = await _resolver_exercicio_base_id(session, ex["nome"])
+                alvo_tipo, alvo_valor_min, alvo_valor_max, alvo_outros_texto = _parse_alvo(ex["rep"])
+                rer_rm_tipo, rer_rm_valor = _parse_rer_rm(ex["rer"])
                 session.add(ExercicioTreino(
                     treino_id=treino.id,
                     exercicio_base_id=exercicio_base_id,
                     ordem=idx,
                     numero_series_prescritas=ex["series"],
-                    repeticao_ou_tempo=ex["rep"],
+                    alvo_tipo=alvo_tipo,
+                    alvo_valor_min=alvo_valor_min,
+                    alvo_valor_max=alvo_valor_max,
+                    alvo_outros_texto=alvo_outros_texto,
                     tecnica=ex["tecnica"],
-                    rer_rm_valor=ex["rer"],
+                    rer_rm_tipo=rer_rm_tipo,
+                    rer_rm_valor=rer_rm_valor,
                     descanso_segundos=ex["descanso"],
                     observacoes=ex["obs"],
                 ))

@@ -124,7 +124,8 @@ Entidades principais:
 - id
 - nome
 - grupo_muscular
-- equipamento (opcional)
+- implemento_execucao: enum {BARRA, ELASTICO, HALTERE, KETTLEBELL, CABO, MAQUINA, PESO_CORPO, OUTRO}
+- pode_ser_feito_em_casa (boolean)
 - ativo
 - criado_por_sistema
 

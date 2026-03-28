@@ -35,3 +35,12 @@ from app.schemas.sessao import (  # noqa: F401
     SerieDetalheOut,
     UltimoPesoExercicioOut,
 )
+from app.schemas.recurso import (  # noqa: F401
+    RecursoTreinoCreate,
+    RecursoTreinoUpdate,
+    RecursoTreinoOut,
+    ExercicioRequisitosRecursoUpdate,
+    AlunoRecursoDisponibilidadeUpdate,
+    AlunoRecursosDisponibilidadeBatchUpdate,
+    AlunoRecursoDisponibilidadeOut,
+)

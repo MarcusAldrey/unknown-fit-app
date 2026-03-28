@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import String, Float, Integer, ForeignKey
+from sqlalchemy import Float, Integer, ForeignKey, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID
 
@@ -15,12 +15,17 @@ class Aluno(Base):
     idade: Mapped[int | None] = mapped_column(Integer, nullable=True)
     peso: Mapped[float | None] = mapped_column(Float, nullable=True)
     altura: Mapped[float | None] = mapped_column(Float, nullable=True)
+    treina_em_academia_condominio: Mapped[bool] = mapped_column(Boolean, default=False)
 
     usuario: Mapped["Usuario"] = relationship(back_populates="aluno")
     vinculos: Mapped[list["VinculoPersonalAluno"]] = relationship(back_populates="aluno")
     conjuntos_treino: Mapped[list["ConjuntoTreino"]] = relationship(back_populates="aluno")
     sessoes: Mapped[list["SessaoTreino"]] = relationship(back_populates="aluno")
     registros_peso: Mapped[list["RegistroPesoAluno"]] = relationship(back_populates="aluno")
+    recursos_disponibilidade: Mapped[list["AlunoRecursoDisponibilidade"]] = relationship(
+        back_populates="aluno",
+        cascade="all, delete-orphan",
+    )
 
 
 from app.models.usuario import Usuario  # noqa: E402
@@ -28,3 +33,4 @@ from app.models.vinculo import VinculoPersonalAluno  # noqa: E402
 from app.models.conjunto_treino import ConjuntoTreino  # noqa: E402
 from app.models.sessao_treino import SessaoTreino  # noqa: E402
 from app.models.peso_registro import RegistroPesoAluno  # noqa: E402
+from app.models.recurso_treino import AlunoRecursoDisponibilidade  # noqa: E402
