@@ -14,6 +14,8 @@ from app.models import (
     VinculoPersonalAluno,
     ConjuntoTreino,
     Treino,
+    SessaoTreino,
+    SerieExecutada,
     ExercicioTreino,
     ExercicioBase,
     ExercicioRequisitoRecurso,
@@ -36,6 +38,8 @@ from app.schemas import (
     TreinoCreate,
     TreinoUpdate,
     TreinoOut,
+    SessaoResumoOut,
+    SerieDetalheOut,
     ExercicioBaseOut,
     ExercicioTreinoCreate,
     ExercicioTreinoUpdate,
@@ -93,6 +97,25 @@ async def _garantir_disponibilidades_aluno(aluno_id: uuid.UUID, db: AsyncSession
             )
 
     await db.flush()
+
+
+async def _get_conjunto_aluno_vinculado(
+    personal: Personal,
+    aluno_id: uuid.UUID,
+    conjunto_id: uuid.UUID,
+    db: AsyncSession,
+) -> ConjuntoTreino:
+    await _get_aluno_vinculado(personal, aluno_id, db)
+    result = await db.execute(
+        select(ConjuntoTreino).where(
+            ConjuntoTreino.id == conjunto_id,
+            ConjuntoTreino.aluno_id == aluno_id,
+        )
+    )
+    conjunto = result.scalar_one_or_none()
+    if conjunto is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conjunto não encontrado")
+    return conjunto
 
 
 async def _exercicio_disponivel_para_aluno(
@@ -503,6 +526,95 @@ async def criar_treino(
     await db.flush()
     await db.refresh(treino)
     return treino
+
+
+@router.get(
+    "/alunos/{aluno_id}/conjuntos/{conjunto_id}/sessoes",
+    response_model=list[SessaoResumoOut],
+)
+async def listar_sessoes_aluno_por_conjunto(
+    aluno_id: uuid.UUID,
+    conjunto_id: uuid.UUID,
+    personal: Personal = Depends(get_current_personal),
+    db: AsyncSession = Depends(get_db),
+):
+    await _get_conjunto_aluno_vinculado(personal, aluno_id, conjunto_id, db)
+
+    rows = (
+        await db.execute(
+            select(SessaoTreino, Treino)
+            .join(Treino, SessaoTreino.treino_id == Treino.id)
+            .where(
+                SessaoTreino.aluno_id == aluno_id,
+                Treino.conjunto_treino_id == conjunto_id,
+            )
+            .order_by(SessaoTreino.iniciado_em.desc())
+        )
+    ).all()
+
+    return [
+        SessaoResumoOut(
+            id=sessao.id,
+            treino_id=sessao.treino_id,
+            treino_codigo=treino.codigo,
+            treino_nome=treino.nome,
+            iniciado_em=sessao.iniciado_em,
+            finalizado_em=sessao.finalizado_em,
+            status=sessao.status.value,
+        )
+        for sessao, treino in rows
+    ]
+
+
+@router.get(
+    "/alunos/{aluno_id}/sessoes/{sessao_id}/series",
+    response_model=list[SerieDetalheOut],
+)
+async def listar_series_sessao_aluno(
+    aluno_id: uuid.UUID,
+    sessao_id: uuid.UUID,
+    personal: Personal = Depends(get_current_personal),
+    db: AsyncSession = Depends(get_db),
+):
+    await _get_aluno_vinculado(personal, aluno_id, db)
+
+    sessao = (
+        await db.execute(
+            select(SessaoTreino)
+            .join(Treino, SessaoTreino.treino_id == Treino.id)
+            .join(ConjuntoTreino, Treino.conjunto_treino_id == ConjuntoTreino.id)
+            .where(
+                SessaoTreino.id == sessao_id,
+                SessaoTreino.aluno_id == aluno_id,
+                ConjuntoTreino.aluno_id == aluno_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if sessao is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sessão não encontrada")
+
+    rows = (
+        await db.execute(
+            select(SerieExecutada, ExercicioTreino)
+            .join(ExercicioTreino, SerieExecutada.exercicio_treino_id == ExercicioTreino.id)
+            .where(SerieExecutada.sessao_treino_id == sessao.id)
+            .order_by(ExercicioTreino.ordem, SerieExecutada.numero_serie)
+        )
+    ).all()
+
+    return [
+        SerieDetalheOut(
+            id=serie.id,
+            exercicio_treino_id=serie.exercicio_treino_id,
+            nome_exercicio=exercicio.nome_exercicio,
+            numero_serie=serie.numero_serie,
+            peso_utilizado=serie.peso_utilizado,
+            repeticoes_realizadas=serie.repeticoes_realizadas,
+            concluida=serie.concluida,
+            concluida_em=serie.concluida_em,
+        )
+        for serie, exercicio in rows
+    ]
 
 
 @router.patch("/treinos/{treino_id}", response_model=TreinoOut)

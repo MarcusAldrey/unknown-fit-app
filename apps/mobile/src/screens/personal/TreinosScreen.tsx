@@ -15,7 +15,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import api from "../../api/client";
-import type { Treino } from "../../types";
+import type { SessaoResumo, Treino } from "../../types";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
 
 type Props = NativeStackScreenProps<PersonalStackParamList, "Treinos">;
@@ -31,6 +31,16 @@ export function TreinosScreen({ route, navigation }: Props) {
     queryKey: ["personal", "conjunto", conjuntoId, "treinos"],
     queryFn: async () => {
       const res = await api.get(`/personal/conjuntos/${conjuntoId}/treinos`);
+      return res.data;
+    },
+  });
+
+  const { data: sessoes } = useQuery<SessaoResumo[]>({
+    queryKey: ["personal", "aluno", alunoId, "conjunto", conjuntoId, "sessoes"],
+    queryFn: async () => {
+      const res = await api.get(
+        `/personal/alunos/${alunoId}/conjuntos/${conjuntoId}/sessoes`,
+      );
       return res.data;
     },
   });
@@ -177,6 +187,8 @@ export function TreinosScreen({ route, navigation }: Props) {
   }
 
   const displayTreinos = reorderMode ? localTreinos : (treinos ?? []);
+  const totalTreinosRealizados = (sessoes ?? []).length;
+  const treinoTexto = totalTreinosRealizados === 1 ? "treino" : "treinos";
 
   const renderHeader = () => (
     <>
@@ -195,6 +207,25 @@ export function TreinosScreen({ route, navigation }: Props) {
               <Text style={styles.editIcon}>✎</Text>
             </TouchableOpacity>
             <Text style={styles.contextSub}>{alunoNome}</Text>
+            <Text style={styles.historicoResumoText}>
+              O aluno realizou {totalTreinosRealizados} {treinoTexto} desta periodização
+            </Text>
+            <TouchableOpacity
+              style={styles.historicoBtn}
+              onPress={() =>
+                navigation.navigate("HistoricoTreinosAluno", {
+                  alunoId,
+                  conjuntoId,
+                  conjuntoNome: localConjuntoNome,
+                  alunoNome,
+                })
+              }
+              activeOpacity={0.85}
+            >
+              <Text style={styles.historicoBtnText}>
+                Ver histórico de treinos deste aluno
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
       </View>
@@ -521,6 +552,26 @@ const styles = StyleSheet.create({
   },
   contextTitle: { color: "#fff", fontSize: 18, fontWeight: "bold" },
   contextSub: { color: "#888", fontSize: 14, marginTop: 2 },
+  historicoResumoText: {
+    color: "#bdbdbd",
+    fontSize: 13,
+    marginTop: 8,
+  },
+  historicoBtn: {
+    alignSelf: "flex-start",
+    marginTop: 6,
+    backgroundColor: "#173324",
+    borderWidth: 1,
+    borderColor: "#2b6a44",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  historicoBtnText: {
+    color: "#6ee7a3",
+    fontSize: 14,
+    fontWeight: "700",
+  },
   editIcon: { color: "#555", fontSize: 14 },
   reorderBtnAfterSeparator: {
     alignSelf: "flex-end",

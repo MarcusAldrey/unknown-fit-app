@@ -13,8 +13,10 @@ import { ExerciciosScreen } from "../screens/personal/ExerciciosScreen";
 import { CriarExercicioScreen } from "../screens/personal/CriarExercicioScreen";
 import { EditarExercicioBaseScreen } from "../screens/personal/EditarExercicioBaseScreen";
 import { CatalogoExerciciosScreen } from "../screens/personal/CatalogoExerciciosScreen";
+import { HistoricoTreinosAlunoScreen } from "../screens/personal/HistoricoTreinosAlunoScreen";
+import { DetalheTreinoRealizadoAlunoScreen } from "../screens/personal/DetalheTreinoRealizadoAlunoScreen";
 
-import type { ExercicioTreino, ExercicioBase } from "../types";
+import type { ExercicioTreino, ExercicioBase, SessaoResumo } from "../types";
 
 export type PersonalStackParamList = {
   AlunosList: undefined;
@@ -27,6 +29,16 @@ export type PersonalStackParamList = {
     conjuntoId: string;
     conjuntoNome: string;
     alunoNome: string;
+  };
+  HistoricoTreinosAluno: {
+    alunoId: string;
+    conjuntoId: string;
+    conjuntoNome: string;
+    alunoNome: string;
+  };
+  DetalheTreinoRealizadoAluno: {
+    alunoId: string;
+    sessao: SessaoResumo;
   };
   CriarTreino: {
     alunoId: string;
@@ -100,6 +112,16 @@ function MeusAlunosStackNavigator() {
         name="Treinos"
         component={TreinosScreen}
         options={{ title: "Treinos" }}
+      />
+      <AlunosStack.Screen
+        name="HistoricoTreinosAluno"
+        component={HistoricoTreinosAlunoScreen}
+        options={{ title: "Treinos Realizados" }}
+      />
+      <AlunosStack.Screen
+        name="DetalheTreinoRealizadoAluno"
+        component={DetalheTreinoRealizadoAlunoScreen}
+        options={{ title: "Detalhe do Treino" }}
       />
       <AlunosStack.Screen
         name="CriarTreino"
