@@ -1,0 +1,1 @@
+from app.repositories.equivalencia_exercicio import EquivalenciaExercicioRepository

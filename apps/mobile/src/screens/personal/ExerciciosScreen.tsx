@@ -315,7 +315,10 @@ export function ExerciciosScreen({ route, navigation }: Props) {
       const segmentoSeguinte = obterSegmento(segmentoAtual.end + 1);
       const reordenado = [
         ...localExercicios.slice(0, segmentoAtual.start),
-        ...localExercicios.slice(segmentoSeguinte.start, segmentoSeguinte.end + 1),
+        ...localExercicios.slice(
+          segmentoSeguinte.start,
+          segmentoSeguinte.end + 1,
+        ),
         ...localExercicios.slice(segmentoAtual.start, segmentoAtual.end + 1),
         ...localExercicios.slice(segmentoSeguinte.end + 1),
       ];
