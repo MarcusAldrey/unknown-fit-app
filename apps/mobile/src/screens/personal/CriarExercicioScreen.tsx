@@ -9,6 +9,7 @@ import {
   View,
   Text,
   TextInput,
+  Pressable,
   TouchableOpacity,
   StyleSheet,
   Alert,
@@ -109,10 +110,19 @@ export function CriarExercicioScreen({ route, navigation }: Props) {
       ? String(exercicioData.numero_series_prescritas)
       : "3",
   );
-  const [descansoInput, setDescansoInput] = useState(
-    exercicioData?.descanso_segundos != null
-      ? String(exercicioData.descanso_segundos)
-      : "60",
+  const [descansoMinInput, setDescansoMinInput] = useState(
+    exercicioData?.descanso_segundos_min != null
+      ? String(exercicioData.descanso_segundos_min)
+      : exercicioData?.descanso_segundos != null
+        ? String(exercicioData.descanso_segundos)
+        : "60",
+  );
+  const [descansoMaxInput, setDescansoMaxInput] = useState(
+    exercicioData?.descanso_segundos_max != null
+      ? String(exercicioData.descanso_segundos_max)
+      : exercicioData?.descanso_segundos != null
+        ? String(exercicioData.descanso_segundos)
+        : "60",
   );
   const [observacoesInputHeight, setObservacoesInputHeight] = useState(() =>
     estimarAlturaObservacoes(exercicioData?.observacoes ?? ""),
@@ -125,6 +135,13 @@ export function CriarExercicioScreen({ route, navigation }: Props) {
     setTimeout(() => {
       formScrollRef.current?.scrollToEnd({ animated: true });
     }, 120);
+  }, []);
+
+  const hasFloatingPanelsOpen = showDropdown || showAlvoTipoDropdown;
+
+  const closeFloatingPanels = useCallback(() => {
+    setShowDropdown(false);
+    setShowAlvoTipoDropdown(false);
   }, []);
 
   useEffect(() => {
@@ -158,7 +175,18 @@ export function CriarExercicioScreen({ route, navigation }: Props) {
         alvo_outros_texto: exercicioData?.alvo_outros_texto ?? "",
         rer_rm_tipo: exercicioData?.rer_rm_tipo ?? undefined,
         rer_rm_valor: exercicioData?.rer_rm_valor ?? "",
-        descanso_segundos: exercicioData?.descanso_segundos ?? 60,
+        descanso_segundos:
+          exercicioData?.descanso_segundos_max ??
+          exercicioData?.descanso_segundos ??
+          60,
+        descanso_segundos_min:
+          exercicioData?.descanso_segundos_min ??
+          exercicioData?.descanso_segundos ??
+          60,
+        descanso_segundos_max:
+          exercicioData?.descanso_segundos_max ??
+          exercicioData?.descanso_segundos ??
+          60,
         tecnica: exercicioData?.tecnica ?? "PADRAO",
         observacoes: exercicioData?.observacoes ?? "",
       },
@@ -167,6 +195,14 @@ export function CriarExercicioScreen({ route, navigation }: Props) {
   const selectedExercicioBaseId = watch("exercicio_base_id");
   const alvoTipo = watch("alvo_tipo");
   const rerRmTipo = watch("rer_rm_tipo");
+  const tecnica = watch("tecnica");
+
+  useEffect(() => {
+    if (tecnica === "ISOMETRIA" && alvoTipo !== "SEGUNDOS") {
+      setValue("alvo_tipo", "SEGUNDOS");
+      setValue("alvo_outros_texto", "");
+    }
+  }, [tecnica, alvoTipo, setValue]);
 
   const { data: existingExercicios } = useQuery<ExercicioTreino[]>({
     queryKey: ["personal", "treino", treinoId, "exercicios"],
@@ -281,10 +317,10 @@ export function CriarExercicioScreen({ route, navigation }: Props) {
     (ex: ExercicioBase) => {
       setValue("exercicio_base_id", ex.id);
       setSearchText(ex.nome);
-      setShowDropdown(false);
+      closeFloatingPanels();
       Keyboard.dismiss();
     },
-    [setValue],
+    [closeFloatingPanels, setValue],
   );
 
   const createMutation = useMutation({
@@ -323,7 +359,10 @@ export function CriarExercicioScreen({ route, navigation }: Props) {
         alvo_outros_texto: data.alvo_outros_texto || null,
         rer_rm_tipo: data.rer_rm_tipo ?? null,
         rer_rm_valor: data.rer_rm_valor || null,
-        descanso_segundos: data.descanso_segundos || null,
+        descanso_segundos:
+          data.descanso_segundos_max ?? data.descanso_segundos ?? null,
+        descanso_segundos_min: data.descanso_segundos_min ?? null,
+        descanso_segundos_max: data.descanso_segundos_max ?? null,
         tecnica: data.tecnica,
         observacoes: data.observacoes || null,
       });
@@ -352,6 +391,8 @@ export function CriarExercicioScreen({ route, navigation }: Props) {
       alvo_outros_texto: data.alvo_outros_texto?.trim() || undefined,
       observacoes: data.observacoes?.trim() || undefined,
       descanso_segundos: undefined,
+      descanso_segundos_min: undefined,
+      descanso_segundos_max: undefined,
     };
 
     const seriesPrescritas = parseInt(seriesPrescritasInput.trim(), 10);
@@ -361,16 +402,41 @@ export function CriarExercicioScreen({ route, navigation }: Props) {
     }
     payload.numero_series_prescritas = seriesPrescritas;
 
-    const descansoTexto = descansoInput.trim();
-    if (!descansoTexto) {
+    const descansoMinTexto = descansoMinInput.trim();
+    const descansoMaxTexto = descansoMaxInput.trim();
+    if (!descansoMinTexto && !descansoMaxTexto) {
       payload.descanso_segundos = undefined;
+      payload.descanso_segundos_min = undefined;
+      payload.descanso_segundos_max = undefined;
     } else {
-      const descansoValor = parseInt(descansoTexto, 10);
-      if (!Number.isInteger(descansoValor) || descansoValor < 0) {
-        Alert.alert("Atenção", "Informe um descanso válido (0 ou maior).");
+      if (!descansoMinTexto || !descansoMaxTexto) {
+        Alert.alert(
+          "Atenção",
+          "Informe os dois valores de descanso (mínimo e máximo).",
+        );
         return;
       }
-      payload.descanso_segundos = descansoValor;
+
+      const descansoMin = parseInt(descansoMinTexto, 10);
+      const descansoMax = parseInt(descansoMaxTexto, 10);
+      if (!Number.isInteger(descansoMin) || !Number.isInteger(descansoMax)) {
+        Alert.alert("Atenção", "Informe descanso mínimo e máximo válidos.");
+        return;
+      }
+      if (descansoMin < 0 || descansoMax < 0) {
+        Alert.alert("Atenção", "Descanso deve ser 0 ou maior.");
+        return;
+      }
+      if (descansoMin > descansoMax) {
+        Alert.alert(
+          "Atenção",
+          "O descanso mínimo não pode ser maior que o máximo.",
+        );
+        return;
+      }
+      payload.descanso_segundos_min = descansoMin;
+      payload.descanso_segundos_max = descansoMax;
+      payload.descanso_segundos = descansoMax;
     }
 
     if (payload.alvo_tipo === "OUTROS") {
@@ -460,94 +526,112 @@ export function CriarExercicioScreen({ route, navigation }: Props) {
         ref={formScrollRef}
         style={styles.container}
         contentContainerStyle={{
+          position: "relative",
           paddingBottom: keyboardHeight > 0 ? keyboardHeight + 56 : 48,
         }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
+        onScrollBeginDrag={closeFloatingPanels}
       >
-        <Text style={styles.label}>Exercício</Text>
-        <View style={styles.searchContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Buscar exercício..."
-            placeholderTextColor="#555"
-            value={searchText}
-            onChangeText={(text) => {
-              setSearchText(text);
-              setShowDropdown(true);
-              if (!text.trim()) {
-                setValue("exercicio_base_id", "");
-              }
-            }}
-            onFocus={() => {
-              if (searchText.trim()) setShowDropdown(true);
+        {hasFloatingPanelsOpen ? (
+          <Pressable
+            style={styles.floatingBackdrop}
+            onPress={() => {
+              closeFloatingPanels();
+              Keyboard.dismiss();
             }}
           />
-          {selectedExercicioBaseId ? (
-            <View
-              style={[
-                styles.selectedBadge,
-                statusExercicioSelecionado &&
-                !statusExercicioSelecionado.disponivel
-                  ? styles.selectedBadgeInvalid
-                  : styles.selectedBadgeValid,
-              ]}
-            >
-              <Text style={styles.selectedBadgeText}>
-                {statusExercicioSelecionado &&
-                !statusExercicioSelecionado.disponivel
-                  ? "X"
-                  : "✓"}
+        ) : null}
+
+        <View style={styles.searchBlock}>
+          <Text style={styles.label}>Exercício</Text>
+          <View style={styles.searchContainer}>
+            <TextInput
+              style={styles.input}
+              placeholder="Buscar exercício..."
+              placeholderTextColor="#555"
+              value={searchText}
+              onChangeText={(text) => {
+                setSearchText(text);
+                setShowAlvoTipoDropdown(false);
+                setShowDropdown(true);
+                if (!text.trim()) {
+                  setValue("exercicio_base_id", "");
+                }
+              }}
+              onFocus={() => {
+                setShowAlvoTipoDropdown(false);
+                if (searchText.trim()) setShowDropdown(true);
+              }}
+            />
+            {selectedExercicioBaseId ? (
+              <View
+                style={[
+                  styles.selectedBadge,
+                  statusExercicioSelecionado &&
+                  !statusExercicioSelecionado.disponivel
+                    ? styles.selectedBadgeInvalid
+                    : styles.selectedBadgeValid,
+                ]}
+              >
+                <Text style={styles.selectedBadgeText}>
+                  {statusExercicioSelecionado &&
+                  !statusExercicioSelecionado.disponivel
+                    ? "X"
+                    : "✓"}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+
+          {showDropdown && filteredExercicios.length > 0 && (
+            <View style={styles.dropdown}>
+              {filteredExercicios.slice(0, 8).map((ex) => {
+                const statusRecursos = avaliarRecursosExercicio(ex);
+
+                return (
+                  <TouchableOpacity
+                    key={ex.id}
+                    style={styles.dropdownItem}
+                    onPress={() => handleSelectExercicio(ex)}
+                  >
+                    <Text style={styles.dropdownNome}>{ex.nome}</Text>
+                    <Text style={styles.dropdownGrupo}>
+                      {ex.grupo_muscular} ·{" "}
+                      {formatarImplementoExecucao(ex.implemento_execucao)}
+                    </Text>
+                    {statusRecursos.texto ? (
+                      <Text
+                        style={[
+                          styles.dropdownRecurso,
+                          statusRecursos.cor === "indisponivel"
+                            ? styles.dropdownRecursoIndisponivel
+                            : statusRecursos.cor === "disponivel"
+                              ? styles.dropdownRecursoDisponivel
+                              : styles.dropdownRecursoNeutro,
+                        ]}
+                      >
+                        {statusRecursos.texto}
+                      </Text>
+                    ) : null}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+
+          {statusExercicioSelecionado &&
+          !statusExercicioSelecionado.disponivel ? (
+            <View style={styles.recursoAlertaBox}>
+              <Text style={styles.recursoAlertaTitulo}>
+                Recurso indisponível
+              </Text>
+              <Text style={styles.recursoAlertaTexto}>
+                {statusExercicioSelecionado.texto}
               </Text>
             </View>
           ) : null}
         </View>
-
-        {showDropdown && filteredExercicios.length > 0 && (
-          <View style={styles.dropdown}>
-            {filteredExercicios.slice(0, 8).map((ex) => {
-              const statusRecursos = avaliarRecursosExercicio(ex);
-
-              return (
-                <TouchableOpacity
-                  key={ex.id}
-                  style={styles.dropdownItem}
-                  onPress={() => handleSelectExercicio(ex)}
-                >
-                  <Text style={styles.dropdownNome}>{ex.nome}</Text>
-                  <Text style={styles.dropdownGrupo}>
-                    {ex.grupo_muscular} ·{" "}
-                    {formatarImplementoExecucao(ex.implemento_execucao)}
-                  </Text>
-                  {statusRecursos.texto ? (
-                    <Text
-                      style={[
-                        styles.dropdownRecurso,
-                        statusRecursos.cor === "indisponivel"
-                          ? styles.dropdownRecursoIndisponivel
-                          : statusRecursos.cor === "disponivel"
-                            ? styles.dropdownRecursoDisponivel
-                            : styles.dropdownRecursoNeutro,
-                      ]}
-                    >
-                      {statusRecursos.texto}
-                    </Text>
-                  ) : null}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
-
-        {statusExercicioSelecionado &&
-        !statusExercicioSelecionado.disponivel ? (
-          <View style={styles.recursoAlertaBox}>
-            <Text style={styles.recursoAlertaTitulo}>Recurso indisponível</Text>
-            <Text style={styles.recursoAlertaTexto}>
-              {statusExercicioSelecionado.texto}
-            </Text>
-          </View>
-        ) : null}
 
         <Text style={styles.label}>Repetições/tempo</Text>
         <View style={styles.alvoInlineRow}>
@@ -656,6 +740,7 @@ export function CriarExercicioScreen({ route, navigation }: Props) {
         <View style={styles.compactFieldsRow}>
           <View style={styles.compactField}>
             <Text style={styles.labelCompact}>Séries prescritas</Text>
+            <Text style={styles.inlineHintPlaceholder}>MIN</Text>
             <TextInput
               style={styles.inputCompact}
               placeholder="3"
@@ -668,14 +753,33 @@ export function CriarExercicioScreen({ route, navigation }: Props) {
 
           <View style={styles.compactField}>
             <Text style={styles.labelCompact}>Descanso (s)</Text>
-            <TextInput
-              style={styles.inputCompact}
-              placeholder="60"
-              placeholderTextColor="#555"
-              keyboardType="numeric"
-              value={descansoInput}
-              onChangeText={setDescansoInput}
-            />
+            <View style={styles.compactRangeRow}>
+              <View style={styles.inlineNumericContainer}>
+                <Text style={styles.inlineHint}>MIN</Text>
+                <TextInput
+                  style={styles.inputHalf}
+                  placeholder="0"
+                  placeholderTextColor="#555"
+                  keyboardType="numeric"
+                  value={descansoMinInput}
+                  onChangeText={setDescansoMinInput}
+                />
+              </View>
+
+              <Text style={styles.inlineRangeSeparator}>-</Text>
+
+              <View style={styles.inlineNumericContainer}>
+                <Text style={styles.inlineHint}>MAX</Text>
+                <TextInput
+                  style={styles.inputHalf}
+                  placeholder="0"
+                  placeholderTextColor="#555"
+                  keyboardType="numeric"
+                  value={descansoMaxInput}
+                  onChangeText={setDescansoMaxInput}
+                />
+              </View>
+            </View>
           </View>
         </View>
 
@@ -742,7 +846,7 @@ export function CriarExercicioScreen({ route, navigation }: Props) {
                     onChange(t);
 
                     if (t === "PADRAO") {
-                      setValue("alvo_tipo", "PASSOS");
+                      setValue("alvo_tipo", "REPETICOES");
                       setValue("alvo_outros_texto", "");
                       return;
                     }
@@ -823,6 +927,15 @@ export function CriarExercicioScreen({ route, navigation }: Props) {
 const styles = StyleSheet.create({
   wrapper: { flex: 1, backgroundColor: "#0d0d0d" },
   container: { flex: 1, padding: 16 },
+  floatingBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.001)",
+    zIndex: 30,
+    elevation: 10,
+  },
+  searchBlock: {
+    zIndex: 60,
+  },
   label: {
     color: "#888",
     fontSize: 12,
@@ -942,6 +1055,14 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
     marginBottom: 4,
   },
+  inlineHintPlaceholder: {
+    color: "#7c7c7c",
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 0.6,
+    marginBottom: 4,
+    opacity: 0,
+  },
   alvoTipoTrigger: {
     backgroundColor: "#1a1a1a",
     borderWidth: 1,
@@ -1015,6 +1136,11 @@ const styles = StyleSheet.create({
   },
   compactField: {
     flex: 1,
+  },
+  compactRangeRow: {
+    flexDirection: "row",
+    gap: 10,
+    alignItems: "flex-start",
   },
   labelCompact: {
     color: "#888",

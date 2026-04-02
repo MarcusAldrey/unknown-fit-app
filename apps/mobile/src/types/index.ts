@@ -134,6 +134,8 @@ export interface ExercicioTreino {
   rer_rm_tipo: RerRmTipo | null;
   rer_rm_valor: string | null;
   descanso_segundos: number | null;
+  descanso_segundos_min: number | null;
+  descanso_segundos_max: number | null;
   tecnica: Tecnica;
   observacoes: string | null;
   observacoes_aluno: string | null;
@@ -164,6 +166,8 @@ export interface ExercicioTreinoCreate {
   rer_rm_tipo?: RerRmTipo;
   rer_rm_valor?: string;
   descanso_segundos?: number;
+  descanso_segundos_min?: number;
+  descanso_segundos_max?: number;
   tecnica?: Tecnica;
   observacoes?: string;
   observacoes_aluno?: string;
@@ -181,6 +185,8 @@ export interface ExercicioTreinoUpdate {
   rer_rm_tipo?: RerRmTipo;
   rer_rm_valor?: string;
   descanso_segundos?: number;
+  descanso_segundos_min?: number;
+  descanso_segundos_max?: number;
   tecnica?: Tecnica;
   observacoes?: string;
   observacoes_aluno?: string;

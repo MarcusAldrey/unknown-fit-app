@@ -3,9 +3,12 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Modal,
+  Pressable,
   StyleSheet,
   Switch,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -25,6 +28,10 @@ export function GerirRecursosAlunoScreen({ route }: Props) {
   const { alunoId } = route.params;
   const queryClient = useQueryClient();
   const [pendingIds, setPendingIds] = useState<string[]>([]);
+  const [editorVisible, setEditorVisible] = useState(false);
+  const [editorNome, setEditorNome] = useState("");
+  const [recursoEmEdicao, setRecursoEmEdicao] =
+    useState<AlunoRecursoDisponibilidade | null>(null);
 
   const recursosQueryKey = [
     "personal",
@@ -73,6 +80,43 @@ export function GerirRecursosAlunoScreen({ route }: Props) {
       return res.data as AlunoRecursoDisponibilidade[];
     },
   });
+
+  const criarRecursoMutation = useMutation({
+    mutationFn: async (nome: string) => {
+      await api.post("/catalogo/recursos-treino", { nome });
+    },
+  });
+
+  const editarRecursoMutation = useMutation({
+    mutationFn: async (variables: { recursoId: string; nome: string }) => {
+      await api.patch(`/catalogo/recursos-treino/${variables.recursoId}`, {
+        nome: variables.nome,
+      });
+    },
+  });
+
+  const removerRecursoMutation = useMutation({
+    mutationFn: async (recursoId: string) => {
+      await api.patch(`/catalogo/recursos-treino/${recursoId}`, {
+        ativo: false,
+      });
+    },
+  });
+
+  const recursoCrudPendente =
+    criarRecursoMutation.isPending ||
+    editarRecursoMutation.isPending ||
+    removerRecursoMutation.isPending;
+
+  const invalidarRecursos = () => {
+    queryClient.invalidateQueries({ queryKey: recursosQueryKey });
+    queryClient.invalidateQueries({
+      queryKey: ["catalogo", "recursos-treino"],
+    });
+    queryClient.invalidateQueries({
+      queryKey: ["catalogo", "exercicios-base"],
+    });
+  };
 
   const todosMarcados = useMemo(
     () =>
@@ -168,6 +212,93 @@ export function GerirRecursosAlunoScreen({ route }: Props) {
     }
   };
 
+  const abrirCriacaoRecurso = () => {
+    setRecursoEmEdicao(null);
+    setEditorNome("");
+    setEditorVisible(true);
+  };
+
+  const abrirEdicaoRecurso = (item: AlunoRecursoDisponibilidade) => {
+    setRecursoEmEdicao(item);
+    setEditorNome(item.nome_recurso);
+    setEditorVisible(true);
+  };
+
+  const salvarRecurso = async () => {
+    const nome = editorNome.trim();
+    if (nome.length < 2) {
+      Alert.alert(
+        "Atencao",
+        "Informe um nome de recurso com pelo menos 2 caracteres.",
+      );
+      return;
+    }
+
+    try {
+      if (recursoEmEdicao) {
+        await editarRecursoMutation.mutateAsync({
+          recursoId: recursoEmEdicao.recurso_treino_id,
+          nome,
+        });
+      } else {
+        await criarRecursoMutation.mutateAsync(nome);
+      }
+
+      setEditorVisible(false);
+      setEditorNome("");
+      setRecursoEmEdicao(null);
+      invalidarRecursos();
+    } catch (mutationError: any) {
+      const detail = mutationError?.response?.data?.detail;
+      Alert.alert(
+        "Erro",
+        typeof detail === "string"
+          ? detail
+          : "Nao foi possivel salvar o recurso.",
+      );
+    }
+  };
+
+  const confirmarRemocaoRecurso = (item: AlunoRecursoDisponibilidade) => {
+    Alert.alert(
+      "Remover recurso",
+      `Deseja remover o recurso \"${item.nome_recurso}\"?`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Remover",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await removerRecursoMutation.mutateAsync(item.recurso_treino_id);
+              invalidarRecursos();
+            } catch (mutationError: any) {
+              const detail = mutationError?.response?.data?.detail;
+              Alert.alert(
+                "Erro",
+                typeof detail === "string"
+                  ? detail
+                  : "Nao foi possivel remover o recurso.",
+              );
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const abrirMenuRecurso = (item: AlunoRecursoDisponibilidade) => {
+    Alert.alert(item.nome_recurso, "", [
+      { text: "Editar nome", onPress: () => abrirEdicaoRecurso(item) },
+      {
+        text: "Remover",
+        style: "destructive",
+        onPress: () => confirmarRemocaoRecurso(item),
+      },
+      { text: "Cancelar", style: "cancel" },
+    ]);
+  };
+
   if (isLoading) {
     return (
       <View style={styles.center}>
@@ -194,12 +325,21 @@ export function GerirRecursosAlunoScreen({ route }: Props) {
     <View style={styles.container}>
       <View style={styles.actionsRow}>
         <TouchableOpacity
+          onPress={abrirCriacaoRecurso}
+          disabled={recursoCrudPendente}
+          style={styles.addRecursoButton}
+        >
+          <Text style={styles.addRecursoButtonText}>+ recurso</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
           onPress={toggleMarcarTodos}
           disabled={
             (recursos?.length ?? 0) === 0 ||
             pendingIds.length > 0 ||
             atualizarDisponibilidadeMutation.isPending ||
-            atualizarDisponibilidadeEmLoteMutation.isPending
+            atualizarDisponibilidadeEmLoteMutation.isPending ||
+            recursoCrudPendente
           }
           style={styles.marcarTodosButton}
         >
@@ -233,17 +373,91 @@ export function GerirRecursosAlunoScreen({ route }: Props) {
                   {item.disponivel_para_aluno ? "Disponivel" : "Indisponivel"}
                 </Text>
               </View>
-              <Switch
-                value={item.disponivel_para_aluno}
-                onValueChange={(value) => toggleDisponibilidade(item, value)}
-                disabled={isPending}
-                trackColor={{ false: "#3a1f1f", true: "#1f3a27" }}
-                thumbColor={item.disponivel_para_aluno ? "#22c55e" : "#ef4444"}
-              />
+              <View style={styles.rowActions}>
+                <TouchableOpacity
+                  style={styles.rowMenuButton}
+                  onPress={() => abrirMenuRecurso(item)}
+                  disabled={recursoCrudPendente || isPending}
+                >
+                  <Text style={styles.rowMenuText}>...</Text>
+                </TouchableOpacity>
+
+                <Switch
+                  value={item.disponivel_para_aluno}
+                  onValueChange={(value) => toggleDisponibilidade(item, value)}
+                  disabled={isPending || recursoCrudPendente}
+                  trackColor={{ false: "#3a1f1f", true: "#1f3a27" }}
+                  thumbColor={
+                    item.disponivel_para_aluno ? "#22c55e" : "#ef4444"
+                  }
+                />
+              </View>
             </View>
           );
         }}
       />
+
+      <Modal
+        visible={editorVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          if (recursoCrudPendente) return;
+          setEditorVisible(false);
+          setEditorNome("");
+          setRecursoEmEdicao(null);
+        }}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => {
+            if (recursoCrudPendente) return;
+            setEditorVisible(false);
+            setEditorNome("");
+            setRecursoEmEdicao(null);
+          }}
+        >
+          <Pressable style={styles.modalContent} onPress={() => {}}>
+            <Text style={styles.modalTitle}>
+              {recursoEmEdicao ? "Editar recurso" : "Novo recurso"}
+            </Text>
+
+            <TextInput
+              style={styles.modalInput}
+              value={editorNome}
+              onChangeText={setEditorNome}
+              editable={!recursoCrudPendente}
+              autoFocus
+              placeholder="Nome do recurso"
+              placeholderTextColor="#666"
+            />
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalCancelBtn}
+                onPress={() => {
+                  if (recursoCrudPendente) return;
+                  setEditorVisible(false);
+                  setEditorNome("");
+                  setRecursoEmEdicao(null);
+                }}
+              >
+                <Text style={styles.modalCancelText}>Cancelar</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.modalSaveBtn}
+                onPress={salvarRecurso}
+                disabled={recursoCrudPendente}
+              >
+                <Text style={styles.modalSaveText}>
+                  {recursoCrudPendente ? "Salvando..." : "Salvar"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -262,8 +476,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   actionsRow: {
-    alignItems: "flex-end",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 10,
+  },
+  addRecursoButton: {
+    paddingVertical: 2,
+    paddingHorizontal: 2,
+    backgroundColor: "transparent",
+  },
+  addRecursoButtonText: {
+    color: "#7dd3a2",
+    fontSize: 12,
+    fontWeight: "600",
+    opacity: 0.9,
   },
   marcarTodosButton: {
     paddingVertical: 0,
@@ -274,6 +501,28 @@ const styles = StyleSheet.create({
     color: "#22c55e",
     fontSize: 13,
     fontWeight: "700",
+  },
+  rowActions: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 10,
+  },
+  rowMenuButton: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#2f2f2f",
+    backgroundColor: "#121212",
+    marginRight: 2,
+  },
+  rowMenuText: {
+    color: "#7f7f7f",
+    fontSize: 11,
+    fontWeight: "700",
+    marginTop: -1,
   },
   row: {
     flexDirection: "row",
@@ -319,5 +568,63 @@ const styles = StyleSheet.create({
     color: "#aaaaaa",
     textAlign: "center",
     fontSize: 13,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    justifyContent: "center",
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: "#131313",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#2a2a2a",
+    padding: 16,
+  },
+  modalTitle: {
+    color: "#f5f5f5",
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 12,
+  },
+  modalInput: {
+    backgroundColor: "#1a1a1a",
+    color: "#fff",
+    borderWidth: 1,
+    borderColor: "#2f2f2f",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 15,
+  },
+  modalActions: {
+    marginTop: 14,
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 10,
+  },
+  modalCancelBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#323232",
+  },
+  modalCancelText: {
+    color: "#b8b8b8",
+    fontWeight: "600",
+  },
+  modalSaveBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: "#14532d",
+    borderWidth: 1,
+    borderColor: "#1f7a45",
+  },
+  modalSaveText: {
+    color: "#d7ffe8",
+    fontWeight: "700",
   },
 });

@@ -199,6 +199,8 @@ def upgrade() -> None:
         sa.Column("rer_rm_tipo", rer_rm_tipo_enum, nullable=True),
         sa.Column("rer_rm_valor", sa.String(length=50), nullable=True),
         sa.Column("descanso_segundos", sa.Integer(), nullable=True),
+        sa.Column("descanso_segundos_min", sa.Integer(), nullable=True),
+        sa.Column("descanso_segundos_max", sa.Integer(), nullable=True),
         sa.Column("tecnica", tecnica_enum, nullable=False),
         sa.Column("observacoes", sa.Text(), nullable=True),
         sa.Column("observacoes_aluno", sa.Text(), nullable=True),

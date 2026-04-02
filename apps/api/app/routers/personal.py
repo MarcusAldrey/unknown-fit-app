@@ -795,6 +795,12 @@ async def criar_exercicio(
             detail="Exercício indisponível para o aluno: nenhum requisito alternativo de recurso está disponível.",
         )
 
+    descanso_min = body.descanso_segundos_min
+    descanso_max = body.descanso_segundos_max
+    if body.descanso_segundos is not None and (descanso_min is None or descanso_max is None):
+        descanso_min = body.descanso_segundos
+        descanso_max = body.descanso_segundos
+
     exercicio = ExercicioTreino(
         treino_id=treino_id,
         exercicio_base_id=body.exercicio_base_id,
@@ -807,7 +813,9 @@ async def criar_exercicio(
         alvo_outros_texto=body.alvo_outros_texto,
         rer_rm_tipo=RerRmTipo(body.rer_rm_tipo.value) if body.rer_rm_tipo is not None else None,
         rer_rm_valor=body.rer_rm_valor,
-        descanso_segundos=body.descanso_segundos,
+        descanso_segundos=descanso_max,
+        descanso_segundos_min=descanso_min,
+        descanso_segundos_max=descanso_max,
         tecnica=Tecnica(body.tecnica),
         observacoes=body.observacoes,
         observacoes_aluno=body.observacoes_aluno,
@@ -839,6 +847,33 @@ async def editar_exercicio(
             if update_data["rer_rm_tipo"] is not None
             else None
         )
+    if (
+        "descanso_segundos" in update_data
+        and "descanso_segundos_min" not in update_data
+        and "descanso_segundos_max" not in update_data
+    ):
+        update_data["descanso_segundos_min"] = update_data["descanso_segundos"]
+        update_data["descanso_segundos_max"] = update_data["descanso_segundos"]
+
+    if "descanso_segundos_min" in update_data and "descanso_segundos_max" in update_data:
+        descanso_min = update_data["descanso_segundos_min"]
+        descanso_max = update_data["descanso_segundos_max"]
+        if (descanso_min is None) != (descanso_max is None):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="descanso_segundos_min e descanso_segundos_max devem ser ambos nulos ou ambos informados",
+            )
+        if (
+            descanso_min is not None
+            and descanso_max is not None
+            and descanso_min > descanso_max
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="descanso_segundos_min não pode ser maior que descanso_segundos_max",
+            )
+        update_data["descanso_segundos"] = descanso_max
+
     if "exercicio_base_id" in update_data:
         result = await db.execute(
             select(ExercicioBase).where(ExercicioBase.id == update_data["exercicio_base_id"])

@@ -42,6 +42,8 @@ class ExercicioTreino(Base):
     rer_rm_tipo: Mapped[RerRmTipo | None] = mapped_column(SAEnum(RerRmTipo), nullable=True)
     rer_rm_valor: Mapped[str | None] = mapped_column(String(50), nullable=True)
     descanso_segundos: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    descanso_segundos_min: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    descanso_segundos_max: Mapped[int | None] = mapped_column(Integer, nullable=True)
     tecnica: Mapped[Tecnica] = mapped_column(SAEnum(Tecnica), default=Tecnica.PADRAO)
     observacoes: Mapped[str | None] = mapped_column(Text, nullable=True)
     observacoes_aluno: Mapped[str | None] = mapped_column(Text, nullable=True)

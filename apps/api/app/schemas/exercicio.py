@@ -28,7 +28,9 @@ class ExercicioTreinoCreate(BaseModel):
     alvo_outros_texto: str | None = None
     rer_rm_tipo: RerRmTipo | None = None
     rer_rm_valor: str | None = None
-    descanso_segundos: int | None = None
+    descanso_segundos: int | None = Field(default=None, ge=0)
+    descanso_segundos_min: int | None = Field(default=None, ge=0)
+    descanso_segundos_max: int | None = Field(default=None, ge=0)
     tecnica: str = "PADRAO"
     observacoes: str | None = None
     observacoes_aluno: str | None = None
@@ -57,6 +59,20 @@ class ExercicioTreinoCreate(BaseModel):
                 raise ValueError("rer_rm_valor é obrigatório quando rer_rm_tipo é informado")
             self.rer_rm_valor = valor_rer_rm
 
+        if self.descanso_segundos_min is None and self.descanso_segundos_max is None:
+            if self.descanso_segundos is not None:
+                self.descanso_segundos_min = self.descanso_segundos
+                self.descanso_segundos_max = self.descanso_segundos
+        elif self.descanso_segundos_min is None or self.descanso_segundos_max is None:
+            raise ValueError("descanso_segundos_min e descanso_segundos_max devem ser informados juntos")
+        elif self.descanso_segundos_min > self.descanso_segundos_max:
+            raise ValueError("descanso_segundos_min não pode ser maior que descanso_segundos_max")
+
+        if self.descanso_segundos_min is not None and self.descanso_segundos_max is not None:
+            self.descanso_segundos = self.descanso_segundos_max
+        else:
+            self.descanso_segundos = None
+
         if self.prescricao is not None:
             self.prescricao = self.prescricao.strip() or None
         if self.observacoes is not None:
@@ -78,10 +94,47 @@ class ExercicioTreinoUpdate(BaseModel):
     alvo_outros_texto: str | None = None
     rer_rm_tipo: RerRmTipo | None = None
     rer_rm_valor: str | None = None
-    descanso_segundos: int | None = None
+    descanso_segundos: int | None = Field(default=None, ge=0)
+    descanso_segundos_min: int | None = Field(default=None, ge=0)
+    descanso_segundos_max: int | None = Field(default=None, ge=0)
     tecnica: str | None = None
     observacoes: str | None = None
     observacoes_aluno: str | None = None
+
+    @model_validator(mode="after")
+    def validar_descanso(self):
+        descanso_min_set = "descanso_segundos_min" in self.model_fields_set
+        descanso_max_set = "descanso_segundos_max" in self.model_fields_set
+
+        if descanso_min_set != descanso_max_set:
+            raise ValueError("descanso_segundos_min e descanso_segundos_max devem ser atualizados juntos")
+
+        if descanso_min_set:
+            if (self.descanso_segundos_min is None) != (self.descanso_segundos_max is None):
+                raise ValueError(
+                    "descanso_segundos_min e descanso_segundos_max devem ser ambos nulos ou ambos informados"
+                )
+            if (
+                self.descanso_segundos_min is not None
+                and self.descanso_segundos_max is not None
+                and self.descanso_segundos_min > self.descanso_segundos_max
+            ):
+                raise ValueError("descanso_segundos_min não pode ser maior que descanso_segundos_max")
+            self.descanso_segundos = self.descanso_segundos_max
+
+        if (
+            "descanso_segundos" in self.model_fields_set
+            and not descanso_min_set
+            and not descanso_max_set
+        ):
+            if self.descanso_segundos is None:
+                self.descanso_segundos_min = None
+                self.descanso_segundos_max = None
+            else:
+                self.descanso_segundos_min = self.descanso_segundos
+                self.descanso_segundos_max = self.descanso_segundos
+
+        return self
 
 
 class ExercicioTreinoEquivalentesUpdate(BaseModel):
@@ -119,6 +172,8 @@ class ExercicioTreinoOut(BaseModel):
     rer_rm_tipo: RerRmTipo | None = None
     rer_rm_valor: str | None = None
     descanso_segundos: int | None = None
+    descanso_segundos_min: int | None = None
+    descanso_segundos_max: int | None = None
     tecnica: str
     observacoes: str | None = None
     observacoes_aluno: str | None = None

@@ -28,6 +28,7 @@ import type {
   UltimoPesoExercicio,
 } from "../../types";
 import type { AlunoTreinoStackParamList } from "../../navigation/AlunoNavigator";
+import { formatarIntervaloDescanso } from "../../utils/formatters";
 
 type Props = NativeStackScreenProps<AlunoTreinoStackParamList, "SessaoTreino">;
 
@@ -67,15 +68,6 @@ function primeiraColunaTitulo(exercicio: ExercicioTreino) {
   if (exercicio.alvo_tipo === "SEGUNDOS") return "Tempo (s)";
   if (exercicio.alvo_tipo === "PASSOS") return "Passos";
   return "Reps";
-}
-
-function formatarDescanso(descansoSegundos: number | null) {
-  if (descansoSegundos == null) return "-";
-  if (descansoSegundos < 60) return `${descansoSegundos}s`;
-
-  const minutos = Math.floor(descansoSegundos / 60);
-  const segundos = descansoSegundos % 60;
-  return segundos > 0 ? `${minutos}min ${segundos}s` : `${minutos}min`;
 }
 
 function formatarPrescricaoPrincipal(exercicio: ExercicioTreino) {
@@ -1059,7 +1051,11 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
                   {formatarPrescricaoPrincipal(exercicioAtivo)}
                 </Text>
                 <Text style={styles.exercicioMetaSecundaria}>
-                  {`Descanso: ${formatarDescanso(exercicioAtivo.descanso_segundos)}`}
+                  {`Descanso: ${formatarIntervaloDescanso(
+                    exercicioAtivo.descanso_segundos_min,
+                    exercicioAtivo.descanso_segundos_max,
+                    exercicioAtivo.descanso_segundos,
+                  )}`}
                 </Text>
                 {exercicioAtivo.rer_rm_tipo && exercicioAtivo.rer_rm_valor ? (
                   <Text style={styles.exercicioMetaTerciaria}>

@@ -17,6 +17,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import api from "../../api/client";
 import type { ExercicioTreino } from "../../types";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
+import { formatarIntervaloDescanso } from "../../utils/formatters";
 
 type Props = NativeStackScreenProps<PersonalStackParamList, "Exercicios">;
 
@@ -197,6 +198,8 @@ export function ExerciciosScreen({ route, navigation }: Props) {
         rer_rm_tipo: ex.rer_rm_tipo,
         rer_rm_valor: ex.rer_rm_valor,
         descanso_segundos: ex.descanso_segundos,
+        descanso_segundos_min: ex.descanso_segundos_min,
+        descanso_segundos_max: ex.descanso_segundos_max,
         tecnica: ex.tecnica,
         observacoes: ex.observacoes,
       });
@@ -570,7 +573,11 @@ export function ExerciciosScreen({ route, navigation }: Props) {
                     </View>
                     <View style={styles.detalheChip}>
                       <Text style={styles.detalheChipText}>
-                        {`Descanso ${item.descanso_segundos ? `${item.descanso_segundos}s` : "—"}`}
+                        {`Descanso ${formatarIntervaloDescanso(
+                          item.descanso_segundos_min,
+                          item.descanso_segundos_max,
+                          item.descanso_segundos,
+                        )}`}
                       </Text>
                     </View>
                     {formatarRerRmCompacto(item) ? (

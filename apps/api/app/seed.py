@@ -483,6 +483,8 @@ async def _seed_treino_aldrey_ciclo1():
                     rer_rm_tipo=rer_rm_tipo,
                     rer_rm_valor=rer_rm_valor,
                     descanso_segundos=ex["descanso"],
+                    descanso_segundos_min=ex["descanso"],
+                    descanso_segundos_max=ex["descanso"],
                     observacoes=ex["obs"],
                 ))
 

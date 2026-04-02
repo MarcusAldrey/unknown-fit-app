@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Pressable,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -86,6 +87,13 @@ export function HistoricoTreinosScreen({ navigation }: Props) {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 16 }]}>
+      {menuAberto ? (
+        <Pressable
+          style={styles.menuBackdrop}
+          onPress={() => setMenuAberto(false)}
+        />
+      ) : null}
+
       <View style={styles.pagePadding}>
         <View style={styles.topBar}>
           <Text style={styles.topBarNome}>{usuario?.nome ?? "Perfil"}</Text>
@@ -163,7 +171,17 @@ export function HistoricoTreinosScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0d0d0d" },
+  container: {
+    flex: 1,
+    backgroundColor: "#0d0d0d",
+    position: "relative",
+  },
+  menuBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 10,
+    backgroundColor: "rgba(0,0,0,0.001)",
+    elevation: 4,
+  },
   pagePadding: {
     paddingHorizontal: 16,
   },
@@ -184,6 +202,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    zIndex: 20,
   },
   topBarNome: {
     color: "#fff",
@@ -226,6 +245,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#151515",
     overflow: "hidden",
     zIndex: 50,
+    elevation: 8,
   },
   menuItem: {
     paddingVertical: 10,
