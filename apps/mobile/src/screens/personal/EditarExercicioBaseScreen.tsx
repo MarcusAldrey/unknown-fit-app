@@ -14,6 +14,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import api from "../../api/client";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
 import type { ImplementoExecucao } from "../../types";
+import { formatarImplementoExecucao } from "../../utils/formatters";
 
 type Props = NativeStackScreenProps<
   PersonalStackParamList,
@@ -37,9 +38,6 @@ const IMPLEMENTOS: ImplementoExecucao[] = [
   "PESO_CORPO",
   "OUTRO",
 ];
-
-const formatarImplemento = (valor: ImplementoExecucao) =>
-  valor.replace(/_/g, " ");
 
 export function EditarExercicioBaseScreen({ route, navigation }: Props) {
   const { exercicio } = route.params;
@@ -132,7 +130,7 @@ export function EditarExercicioBaseScreen({ route, navigation }: Props) {
                     value === implemento && styles.chipTextActive,
                   ]}
                 >
-                  {formatarImplemento(implemento)}
+                  {formatarImplementoExecucao(implemento)}
                 </Text>
               </TouchableOpacity>
             ))}

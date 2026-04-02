@@ -17,6 +17,7 @@ import api from "../../api/client";
 import { useAuth } from "../../contexts/AuthContext";
 import type { ExercicioBase, Usuario } from "../../types";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
+import { formatarImplementoExecucao } from "../../utils/formatters";
 
 type Props = NativeStackScreenProps<
   PersonalStackParamList,
@@ -71,6 +72,9 @@ export function CatalogoExerciciosScreen({ navigation }: Props) {
         .map((recurso) => recurso.nome)
         .join(", ");
 
+    const implementoTexto = (ex: ExercicioBase) =>
+      formatarImplementoExecucao(ex.implemento_execucao).toLowerCase();
+
     return base.filter((ex) => {
       const matchGrupo =
         grupoFiltro === "Todos" || ex.grupo_muscular === grupoFiltro;
@@ -79,6 +83,7 @@ export function CatalogoExerciciosScreen({ navigation }: Props) {
         ex.nome.toLowerCase().includes(termo) ||
         ex.grupo_muscular.toLowerCase().includes(termo) ||
         ex.implemento_execucao.toLowerCase().includes(termo) ||
+        implementoTexto(ex).includes(termo) ||
         recursosTexto(ex).toLowerCase().includes(termo);
       return matchGrupo && matchBusca;
     });
@@ -202,7 +207,9 @@ export function CatalogoExerciciosScreen({ navigation }: Props) {
             <Text style={styles.nome}>{item.nome}</Text>
             <Text style={styles.subInfo}>
               {item.grupo_muscular}
-              {item.implemento_execucao ? ` · ${item.implemento_execucao}` : ""}
+              {item.implemento_execucao
+                ? ` · ${formatarImplementoExecucao(item.implemento_execucao)}`
+                : ""}
             </Text>
           </TouchableOpacity>
         )}

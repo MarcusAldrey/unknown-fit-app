@@ -410,6 +410,12 @@ export function ExerciciosScreen({ route, navigation }: Props) {
     setEquivalentesVisible(true);
   }, [equivalenteBase]);
 
+  const displayExercicios = reorderMode ? localExercicios : (exercicios ?? []);
+
+  const metadadosGrupoEquivalentes = useMemo(() => {
+    return montarMetadadosGrupoEquivalentes(displayExercicios);
+  }, [displayExercicios]);
+
   // --- Render ---
   if (isLoading) {
     return (
@@ -418,12 +424,6 @@ export function ExerciciosScreen({ route, navigation }: Props) {
       </View>
     );
   }
-
-  const displayExercicios = reorderMode ? localExercicios : (exercicios ?? []);
-
-  const metadadosGrupoEquivalentes = useMemo(() => {
-    return montarMetadadosGrupoEquivalentes(displayExercicios);
-  }, [displayExercicios]);
 
   const renderHeader = () => (
     <>
@@ -524,10 +524,12 @@ export function ExerciciosScreen({ route, navigation }: Props) {
           const metadadoProximo = proximoExercicio
             ? metadadosGrupoEquivalentes.get(proximoExercicio.id)
             : undefined;
-          const mostrarOuEntreCards =
-            Boolean(proximoExercicio) &&
-            Boolean(metadadoAtual) &&
-            metadadoAtual.groupId === metadadoProximo?.groupId;
+          const mostrarOuEntreCards = Boolean(
+            proximoExercicio &&
+            metadadoAtual &&
+            metadadoProximo &&
+            metadadoAtual.groupId === metadadoProximo.groupId,
+          );
 
           return (
             <View
