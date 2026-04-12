@@ -3,12 +3,15 @@ from functools import lru_cache
 
 
 class Settings(BaseSettings):
+    environment: str = "development"
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/ecg"
-    secret_key: str = "dev-secret-key-change-in-production"
+    secret_key: str | None = None
+    admin_api_key: str | None = None
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 7
     api_host: str = "0.0.0.0"
     api_port: int = 8000
+    log_level: str = "INFO"
 
     model_config = {"env_file": "../../.env", "extra": "ignore"}
 

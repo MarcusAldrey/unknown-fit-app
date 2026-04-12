@@ -15,11 +15,13 @@ import { EditarExercicioBaseScreen } from "../screens/personal/EditarExercicioBa
 import { CatalogoExerciciosScreen } from "../screens/personal/CatalogoExerciciosScreen";
 import { HistoricoTreinosAlunoScreen } from "../screens/personal/HistoricoTreinosAlunoScreen";
 import { DetalheTreinoRealizadoAlunoScreen } from "../screens/personal/DetalheTreinoRealizadoAlunoScreen";
+import { AdminUsuariosScreen } from "../screens/personal/AdminUsuariosScreen";
 
 import type { ExercicioTreino, ExercicioBase, SessaoResumo } from "../types";
 
 export type PersonalStackParamList = {
   AlunosList: undefined;
+  AdminUsuarios: undefined;
   CatalogoExercicios: undefined;
   AlunoFicha: { alunoId: string };
   GerirRecursosAluno: { alunoId: string; alunoNome: string };
@@ -92,6 +94,11 @@ function MeusAlunosStackNavigator() {
         name="AlunosList"
         component={AlunosListScreen}
         options={{ headerShown: false }}
+      />
+      <AlunosStack.Screen
+        name="AdminUsuarios"
+        component={AdminUsuariosScreen}
+        options={{ title: "Gestão de Usuários" }}
       />
       <AlunosStack.Screen
         name="AlunoFicha"

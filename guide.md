@@ -188,6 +188,18 @@ Auth:
 - POST /auth/login
 - POST /auth/refresh
 - POST /auth/logout
+- GET /auth/me
+
+Admin (header X-Admin-Key):
+
+- GET /admin/personais
+- POST /admin/personais
+- PATCH /admin/personais/{personal_id}
+- DELETE /admin/personais/{personal_id}
+- GET /admin/alunos
+- POST /admin/alunos
+- PATCH /admin/alunos/{aluno_id}
+- DELETE /admin/alunos/{aluno_id}
 
 Personal:
 

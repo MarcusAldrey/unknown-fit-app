@@ -1,9 +1,12 @@
+import logging
+
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 
 from app.config import get_settings
 
 settings = get_settings()
+logger = logging.getLogger("ecg.api.database")
 
 engine = create_async_engine(settings.database_url, echo=False)
 
@@ -20,5 +23,6 @@ async def get_db():
             yield session
             await session.commit()
         except Exception:
+            logger.exception("db_transaction_error_rollback")
             await session.rollback()
             raise

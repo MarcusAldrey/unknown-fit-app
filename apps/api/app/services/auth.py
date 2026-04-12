@@ -13,6 +13,13 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 ALGORITHM = "HS256"
 
 
+def _get_secret_key() -> str:
+    secret_key = settings.secret_key
+    if not secret_key:
+        raise RuntimeError("SECRET_KEY não configurada")
+    return secret_key
+
+
 def hash_senha(senha: str) -> str:
     return pwd_context.hash(senha)
 
@@ -25,7 +32,7 @@ def criar_token(data: dict[str, Any], expires_delta: timedelta) -> str:
     to_encode = data.copy()
     expire = datetime.utcnow() + expires_delta
     to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, settings.secret_key, algorithm=ALGORITHM)
+    return jwt.encode(to_encode, _get_secret_key(), algorithm=ALGORITHM)
 
 
 def criar_access_token(sub: str, role: str) -> str:
@@ -44,6 +51,6 @@ def criar_refresh_token(sub: str) -> str:
 
 def decodificar_token(token: str) -> dict[str, Any]:
     try:
-        return jwt.decode(token, settings.secret_key, algorithms=[ALGORITHM])
+        return jwt.decode(token, _get_secret_key(), algorithms=[ALGORITHM])
     except JWTError:
         raise ValueError("Token inválido")

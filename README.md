@@ -67,6 +67,12 @@ pnpm install
 pnpm start
 ```
 
+Para habilitar a tela de gestão de usuários (Admin) no app mobile, defina:
+
+```bash
+EXPO_PUBLIC_ADMIN_API_KEY=sua-chave-admin-aqui
+```
+
 Escaneie o QR Code com o Expo Go ou rode em emulador.
 
 ## Documentação

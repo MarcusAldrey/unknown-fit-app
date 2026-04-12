@@ -48,6 +48,67 @@ export interface Usuario {
   ativo: boolean;
 }
 
+// --- Admin ---
+
+export interface PersonalAdmin {
+  personal_id: string;
+  usuario_id: string;
+  nome: string;
+  email: string;
+  ativo: boolean;
+  role: Role;
+}
+
+export interface PersonalAdminCreateRequest {
+  nome: string;
+  email: string;
+  senha: string;
+}
+
+export interface PersonalAdminUpdateRequest {
+  nome?: string;
+  email?: string;
+  senha?: string;
+  ativo?: boolean;
+}
+
+export interface AlunoAdmin {
+  aluno_id: string;
+  usuario_id: string;
+  nome: string;
+  email: string;
+  ativo: boolean;
+  role: Role;
+  idade: number | null;
+  peso: number | null;
+  altura: number | null;
+  treina_em_academia_condominio: boolean;
+  personal_id: string | null;
+}
+
+export interface AlunoAdminCreateRequest {
+  nome: string;
+  email: string;
+  senha: string;
+  idade?: number;
+  peso?: number;
+  altura?: number;
+  treina_em_academia_condominio?: boolean;
+  personal_id?: string;
+}
+
+export interface AlunoAdminUpdateRequest {
+  nome?: string;
+  email?: string;
+  senha?: string;
+  ativo?: boolean;
+  idade?: number | null;
+  peso?: number | null;
+  altura?: number | null;
+  treina_em_academia_condominio?: boolean;
+  personal_id?: string | null;
+}
+
 // --- Aluno ---
 
 export interface AlunoResumo {

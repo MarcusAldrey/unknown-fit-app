@@ -1,16 +1,32 @@
 import uuid
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.config import get_settings
 from app.database import get_db
 from app.models import Usuario, Personal, Aluno, Role
 from app.services.auth import decodificar_token
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+settings = get_settings()
+
+
+def require_admin_api_key(
+    x_admin_key: str | None = Header(default=None, alias="X-Admin-Key"),
+) -> None:
+    configured_admin_key = settings.admin_api_key
+    if not configured_admin_key:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Admin key não configurada",
+        )
+
+    if x_admin_key != configured_admin_key:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Admin key inválida")
 
 
 async def get_current_user(

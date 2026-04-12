@@ -1,4 +1,12 @@
 from app.schemas.auth import LoginRequest, TokenResponse, RefreshRequest  # noqa: F401
+from app.schemas.admin import (  # noqa: F401
+    PersonalAdminCreateRequest,
+    PersonalAdminUpdateRequest,
+    PersonalAdminOut,
+    AlunoAdminCreateRequest,
+    AlunoAdminUpdateRequest,
+    AlunoAdminOut,
+)
 from app.schemas.usuario import UsuarioOut  # noqa: F401
 from app.schemas.aluno import (  # noqa: F401
     AlunoFicha,

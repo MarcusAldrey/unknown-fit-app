@@ -13,7 +13,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { AxiosError } from "axios";
 
-import api from "../../api/client";
+import api, { hasAdminApiKey } from "../../api/client";
 import { useAuth } from "../../contexts/AuthContext";
 import type { AlunoResumo, Usuario } from "../../types";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
@@ -91,6 +91,19 @@ export function AlunosListScreen({ navigation }: Props) {
 
           {menuAberto ? (
             <View style={styles.settingsMenu}>
+              {hasAdminApiKey ? (
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => {
+                    setMenuAberto(false);
+                    navigation.navigate("AdminUsuarios");
+                  }}
+                >
+                  <Text style={styles.menuItemTextNeutral}>
+                    Gestão Usuários
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
               <TouchableOpacity
                 style={styles.menuItem}
                 onPress={async () => {
@@ -205,6 +218,11 @@ const styles = StyleSheet.create({
   },
   menuItemText: {
     color: "#fca5a5",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  menuItemTextNeutral: {
+    color: "#e5e7eb",
     fontSize: 14,
     fontWeight: "600",
   },

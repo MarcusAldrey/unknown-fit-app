@@ -3,7 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models import Usuario, Personal, Aluno, Role
+from app.models import Usuario
 from app.deps import get_current_user
 from app.schemas.auth import LoginRequest, TokenResponse, RefreshRequest
 from app.schemas.usuario import UsuarioOut
