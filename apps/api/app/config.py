@@ -1,4 +1,5 @@
 from functools import lru_cache
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings
@@ -39,6 +40,34 @@ class Settings(BaseSettings):
             normalized = normalized.replace("postgres://", "postgresql+asyncpg://", 1)
         elif normalized.startswith("postgresql://"):
             normalized = normalized.replace("postgresql://", "postgresql+asyncpg://", 1)
+
+        # O asyncpg espera `ssl`, enquanto provedores costumam entregar `sslmode`.
+        parsed = urlsplit(normalized)
+        query_params = parse_qsl(parsed.query, keep_blank_values=True)
+        has_ssl_param = any(key == "ssl" for key, _ in query_params)
+
+        if query_params and not has_ssl_param:
+            converted_params: list[tuple[str, str]] = []
+            sslmode_value: str | None = None
+
+            for key, param_value in query_params:
+                if key == "sslmode":
+                    sslmode_value = param_value
+                    continue
+
+                converted_params.append((key, param_value))
+
+            if sslmode_value is not None:
+                converted_params.append(("ssl", sslmode_value))
+                normalized = urlunsplit(
+                    (
+                        parsed.scheme,
+                        parsed.netloc,
+                        parsed.path,
+                        urlencode(converted_params, doseq=True),
+                        parsed.fragment,
+                    )
+                )
 
         return normalized
 
