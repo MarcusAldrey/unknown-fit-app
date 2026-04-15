@@ -1,4 +1,4 @@
-# Dependencias de runtime para deploy (DigitalOcean App Platform)
+# Dependencias de runtime para deploy em container
 fastapi>=0.115.0
 uvicorn[standard]>=0.34.0
 sqlalchemy[asyncio]>=2.0.0
