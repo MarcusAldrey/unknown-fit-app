@@ -76,17 +76,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function login(body: LoginRequest) {
-    const { data } = await api.post<TokenResponse>("/auth/login", body);
+    try {
+      console.log("[Auth] Login attempt:", body.email);
+      const { data } = await api.post<TokenResponse>("/auth/login", body);
+      console.log("[Auth] Login success:", data.role);
 
-    await SecureStore.setItemAsync("access_token", data.access_token);
-    await SecureStore.setItemAsync("refresh_token", data.refresh_token);
-    await SecureStore.setItemAsync("user_role", data.role);
+      await SecureStore.setItemAsync("access_token", data.access_token);
+      await SecureStore.setItemAsync("refresh_token", data.refresh_token);
+      await SecureStore.setItemAsync("user_role", data.role);
 
-    setState({
-      isLoading: false,
-      isAuthenticated: true,
-      role: data.role,
-    });
+      setState({
+        isLoading: false,
+        isAuthenticated: true,
+        role: data.role,
+      });
+    } catch (error: any) {
+      console.error("[Auth] Login error:", error.message);
+      if (error.response?.status === 422) {
+        throw new Error("Email ou senha incorretos");
+      }
+      throw error;
+    }
   }
 
   async function logout() {

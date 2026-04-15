@@ -22,6 +22,11 @@ const API_BASE_URL =
   envApiUrl || (__DEV__ ? DEV_API_BASE_URL : "https://api.ecg.com/api/v1");
 const ADMIN_API_KEY = envAdminApiKey ?? extraAdminApiKey ?? "";
 
+console.log("[API Client] __DEV__:", __DEV__);
+console.log("[API Client] envApiUrl:", envApiUrl);
+console.log("[API Client] DEV_API_HOST:", DEV_API_HOST);
+console.log("[API Client] API_BASE_URL:", API_BASE_URL);
+
 export const hasAdminApiKey = ADMIN_API_KEY.length > 0;
 
 const api = axios.create({
