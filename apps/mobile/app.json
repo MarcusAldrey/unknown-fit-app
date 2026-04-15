@@ -24,6 +24,9 @@
     },
     "extra": {
       "apiHost": "192.168.1.18"
+    },
+    "env": {
+      "EXPO_PUBLIC_API_URL": "https://165.22.233.67:8000/api/v1"
     }
   }
 }

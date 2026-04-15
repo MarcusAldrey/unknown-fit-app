@@ -2,7 +2,7 @@ import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 import Constants from "expo-constants";
 
-// Prioriza URL explícita via env para evitar depender de IP fixo de rede.
+// Prioriza URL explícita via env (EXPO_PUBLIC_API_URL) para produção.
 const envApiUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
 const envAdminApiKey = process.env.EXPO_PUBLIC_ADMIN_API_KEY?.trim();
 const hostFromExpo = Constants.expoConfig?.hostUri?.split(":")[0];
