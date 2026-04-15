@@ -29,14 +29,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   async function checkAuth() {
-    const token = await SecureStore.getItemAsync("access_token");
-    const role = (await SecureStore.getItemAsync("user_role")) as Role | null;
+    try {
+      const token = await SecureStore.getItemAsync("access_token");
+      const role = (await SecureStore.getItemAsync("user_role")) as Role | null;
 
-    setState({
-      isLoading: false,
-      isAuthenticated: !!token,
-      role,
-    });
+      if (!token) {
+        setState({
+          isLoading: false,
+          isAuthenticated: false,
+          role: null,
+        });
+        return;
+      }
+
+      // Validar token chamando uma rota autenticada
+      try {
+        await api.get("/alunos", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        // Token válido
+        setState({
+          isLoading: false,
+          isAuthenticated: true,
+          role,
+        });
+      } catch (error: any) {
+        // Token inválido ou expirado
+        console.log("Token validation failed, clearing auth");
+        await SecureStore.deleteItemAsync("access_token");
+        await SecureStore.deleteItemAsync("refresh_token");
+        await SecureStore.deleteItemAsync("user_role");
+        setState({
+          isLoading: false,
+          isAuthenticated: false,
+          role: null,
+        });
+      }
+    } catch (error) {
+      console.error("checkAuth error:", error);
+      setState({
+        isLoading: false,
+        isAuthenticated: false,
+        role: null,
+      });
+    }
   }
 
   async function login(body: LoginRequest) {
