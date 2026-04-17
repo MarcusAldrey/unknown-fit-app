@@ -70,6 +70,19 @@ function primeiraColunaTitulo(exercicio: ExercicioTreino) {
   return "Reps";
 }
 
+function placeholderPrimeiraColuna(
+  exercicio: ExercicioTreino,
+  ultimoValor: number | null | undefined,
+) {
+  if (ultimoValor != null) {
+    return String(ultimoValor);
+  }
+
+  if (exercicio.alvo_tipo === "SEGUNDOS") return "s";
+  if (exercicio.alvo_tipo === "PASSOS") return "passos";
+  return "reps";
+}
+
 function formatarPrescricaoPrincipal(exercicio: ExercicioTreino) {
   if (exercicio.alvo_tipo === "OUTROS") {
     const descricao = exercicio.alvo_outros_texto?.trim() || "sem alvo";
@@ -133,7 +146,19 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
   const [observacoesAlunoExercicio, setObservacoesAlunoExercicio] = useState<
     Record<string, string>
   >({});
+  const [
+    observacoesAlunoExercicioAbertas,
+    setObservacoesAlunoExercicioAbertas,
+  ] = useState<Record<string, boolean>>({});
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const ultimaObservacaoTreinoSalvaRef = useRef("");
+  const observacoesExercicioSalvasRef = useRef<Record<string, string>>({});
+  const debounceObservacaoTreinoRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
+  const debounceObservacoesExercicioRef = useRef<
+    Record<string, ReturnType<typeof setTimeout>>
+  >({});
   const listaExerciciosRef = useRef<FlatList<any>>(null);
 
   function focarObservacaoExercicio(index: number) {
@@ -249,22 +274,27 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
     },
   });
 
-  const { data: sessaoAtivaAtual } = useQuery<SessaoAtiva | null>({
-    queryKey: ["aluno", "sessao-ativa"],
-    queryFn: async () => {
-      try {
-        const res = await api.get("/aluno/sessoes/ativa");
-        return res.data;
-      } catch (err: any) {
-        if (err.response?.status === 404) return null;
-        throw err;
-      }
-    },
-    enabled: !sessaoId,
-    refetchOnWindowFocus: false,
-  });
+  const { data: sessaoAtivaAtual, isLoading: loadingSessaoAtivaAtual } =
+    useQuery<SessaoAtiva | null>({
+      queryKey: ["aluno", "sessao-ativa"],
+      queryFn: async () => {
+        try {
+          const res = await api.get("/aluno/sessoes/ativa");
+          return res.data;
+        } catch (err: any) {
+          if (err.response?.status === 404) return null;
+          throw err;
+        }
+      },
+      enabled: !sessaoId,
+      refetchOnWindowFocus: false,
+    });
 
-  const { data: ultimosPesos = {} } = useQuery<Record<string, number | null>>({
+  const sessaoAtivaParaRetomar = sessaoAtivaParam ?? null;
+
+  const { data: ultimosPesos = {} } = useQuery<
+    Record<string, UltimoPesoExercicio>
+  >({
     queryKey: ["aluno", "treino", treinoId, "ultimos-pesos"],
     enabled: !!exercicios?.length,
     queryFn: async () => {
@@ -273,7 +303,7 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
           const res = await api.get<UltimoPesoExercicio>(
             `/aluno/exercicios/${exercicio.id}/ultimo-peso`,
           );
-          return [exercicio.id, res.data.peso_utilizado] as const;
+          return [exercicio.id, res.data] as const;
         }),
       );
 
@@ -289,6 +319,21 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
         if (next[exercicio.id] === undefined) {
           next[exercicio.id] = exercicio.observacoes_aluno ?? "";
         }
+
+        if (observacoesExercicioSalvasRef.current[exercicio.id] === undefined) {
+          observacoesExercicioSalvasRef.current[exercicio.id] =
+            exercicio.observacoes_aluno ?? "";
+        }
+      });
+      return next;
+    });
+
+    setObservacoesAlunoExercicioAbertas((current) => {
+      const next = { ...current };
+      exercicios.forEach((exercicio) => {
+        if (next[exercicio.id] === undefined) {
+          next[exercicio.id] = false;
+        }
       });
       return next;
     });
@@ -298,7 +343,9 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
     if (!treinosAtivos?.length) return;
     const treinoAtual = treinosAtivos.find((treino) => treino.id === treinoId);
     if (!treinoAtual) return;
-    setObservacaoTreinoAluno(treinoAtual.observacoes_aluno ?? "");
+    const observacaoAtual = treinoAtual.observacoes_aluno ?? "";
+    setObservacaoTreinoAluno(observacaoAtual);
+    ultimaObservacaoTreinoSalvaRef.current = observacaoAtual;
   }, [treinosAtivos, treinoId]);
 
   const iniciarMutation = useMutation({
@@ -309,6 +356,10 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
       return res.data;
     },
     onSuccess: (data) => {
+      void queryClient.invalidateQueries({
+        queryKey: ["aluno", "sessao-ativa"],
+      });
+
       setSessaoId(data.id);
       setSubstituicoesExercicio({});
       const startedAt = parseApiDateToMs(data.iniciado_em);
@@ -376,6 +427,10 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
   }
 
   function iniciarTreinoComValidacao() {
+    if (loadingSessaoAtivaAtual) {
+      return;
+    }
+
     const sessaoConflitante =
       sessaoAtivaAtual && sessaoAtivaAtual.treino_id !== treinoId
         ? sessaoAtivaAtual
@@ -417,12 +472,16 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
 
   // Retomar sessão ativa vinda dos params
   useEffect(() => {
-    if (!sessaoAtivaParam || !exercicios?.length || sessaoAtivaInicializada) {
+    if (
+      !sessaoAtivaParaRetomar ||
+      !exercicios?.length ||
+      sessaoAtivaInicializada
+    ) {
       return;
     }
 
-    setSessaoId(sessaoAtivaParam.id);
-    const startedAt = parseApiDateToMs(sessaoAtivaParam.iniciado_em);
+    setSessaoId(sessaoAtivaParaRetomar.id);
+    const startedAt = parseApiDateToMs(sessaoAtivaParaRetomar.iniciado_em);
     setSessionStartMs(startedAt);
     setSessionElapsedSeconds(
       Math.max(0, Math.floor((Date.now() - startedAt) / 1000)),
@@ -430,7 +489,7 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
 
     // Restaurar séries já registradas e criar as pendentes
     const seriesLocal: SerieLocal[] = [];
-    const seriesJaRegistradas = sessaoAtivaParam.series || [];
+    const seriesJaRegistradas = sessaoAtivaParaRetomar.series || [];
     const substituicoesIniciais: Record<string, string> = {};
 
     (exercicios ?? []).forEach((exercicio) => {
@@ -486,7 +545,12 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
     setSeries(seriesLocal);
     setSubstituicoesExercicio(substituicoesIniciais);
     setSessaoAtivaInicializada(true);
-  }, [sessaoAtivaParam, exercicios, exerciciosPorId, sessaoAtivaInicializada]);
+  }, [
+    sessaoAtivaParaRetomar,
+    exercicios,
+    exerciciosPorId,
+    sessaoAtivaInicializada,
+  ]);
 
   useEffect(() => {
     if (!sessaoId || !sessionStartMs) return;
@@ -507,6 +571,9 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
       await api.patch(`/aluno/sessoes/${sessaoId}/finalizar`);
     },
     onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["aluno", "sessao-ativa"],
+      });
       queryClient.invalidateQueries({ queryKey: ["aluno"] });
       Alert.alert("Parabéns!", "Sessão finalizada com sucesso.", [
         { text: "OK", onPress: () => navigation.goBack() },
@@ -586,6 +653,13 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
     }));
   }
 
+  function toggleObservacaoAlunoExercicio(exercicioId: string) {
+    setObservacoesAlunoExercicioAbertas((current) => ({
+      ...current,
+      [exercicioId]: !current[exercicioId],
+    }));
+  }
+
   function abrirSelecaoSubstituicao(exercicioId: string) {
     const existeSerieConcluida = series.some(
       (serie) => serie.exercicio_treino_id === exercicioId && serie.concluida,
@@ -647,38 +721,106 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
   });
 
   const salvarObservacaoTreinoMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (observacoesAluno: string) => {
       await api.patch(`/aluno/treinos/${treinoId}/observacoes-aluno`, {
-        observacoes_aluno: observacaoTreinoAluno,
+        observacoes_aluno: observacoesAluno,
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["aluno", "conjunto-ativo", "treinos"],
-      });
-      Alert.alert("Sucesso", "Observação do treino salva.");
-    },
-    onError: () => {
-      Alert.alert("Erro", "Não foi possível salvar a observação do treino.");
+    onSuccess: (_, observacoesAluno) => {
+      ultimaObservacaoTreinoSalvaRef.current = observacoesAluno;
+      queryClient.setQueryData<Treino[]>(
+        ["aluno", "conjunto-ativo", "treinos"],
+        (current) =>
+          current?.map((treino) =>
+            treino.id === treinoId
+              ? { ...treino, observacoes_aluno: observacoesAluno }
+              : treino,
+          ) ?? current,
+      );
     },
   });
 
   const salvarObservacaoExercicioMutation = useMutation({
-    mutationFn: async (exercicioId: string) => {
+    mutationFn: async ({
+      exercicioId,
+      observacoesAluno,
+    }: {
+      exercicioId: string;
+      observacoesAluno: string;
+    }) => {
       await api.patch(`/aluno/exercicios/${exercicioId}/observacoes-aluno`, {
-        observacoes_aluno: observacoesAlunoExercicio[exercicioId] ?? "",
+        observacoes_aluno: observacoesAluno,
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["aluno", "treino", treinoId, "exercicios"],
-      });
-      Alert.alert("Sucesso", "Observação do exercício salva.");
-    },
-    onError: () => {
-      Alert.alert("Erro", "Não foi possível salvar a observação do exercício.");
+    onSuccess: (_, vars) => {
+      observacoesExercicioSalvasRef.current[vars.exercicioId] =
+        vars.observacoesAluno;
+      delete debounceObservacoesExercicioRef.current[vars.exercicioId];
+      queryClient.setQueryData<ExercicioTreino[]>(
+        ["aluno", "treino", treinoId, "exercicios"],
+        (current) =>
+          current?.map((exercicio) =>
+            exercicio.id === vars.exercicioId
+              ? { ...exercicio, observacoes_aluno: vars.observacoesAluno }
+              : exercicio,
+          ) ?? current,
+      );
     },
   });
+
+  function atualizarObservacaoTreinoComDebounce(texto: string) {
+    setObservacaoTreinoAluno(texto);
+
+    if (debounceObservacaoTreinoRef.current) {
+      clearTimeout(debounceObservacaoTreinoRef.current);
+    }
+
+    debounceObservacaoTreinoRef.current = setTimeout(() => {
+      if (texto !== ultimaObservacaoTreinoSalvaRef.current) {
+        salvarObservacaoTreinoMutation.mutate(texto);
+      }
+    }, 1000);
+  }
+
+  function atualizarObservacaoExercicioComDebounce(
+    exercicioId: string,
+    texto: string,
+  ) {
+    setObservacoesAlunoExercicio((current) => ({
+      ...current,
+      [exercicioId]: texto,
+    }));
+
+    const timerExistente = debounceObservacoesExercicioRef.current[exercicioId];
+    if (timerExistente) {
+      clearTimeout(timerExistente);
+    }
+
+    debounceObservacoesExercicioRef.current[exercicioId] = setTimeout(() => {
+      const observacaoSalva =
+        observacoesExercicioSalvasRef.current[exercicioId] ?? "";
+      if (texto !== observacaoSalva) {
+        salvarObservacaoExercicioMutation.mutate({
+          exercicioId,
+          observacoesAluno: texto,
+        });
+      }
+    }, 1000);
+  }
+
+  useEffect(() => {
+    return () => {
+      if (debounceObservacaoTreinoRef.current) {
+        clearTimeout(debounceObservacaoTreinoRef.current);
+      }
+
+      Object.values(debounceObservacoesExercicioRef.current).forEach(
+        (timer) => {
+          clearTimeout(timer);
+        },
+      );
+    };
+  }, []);
 
   function renumerarSeries(seriesAtuais: SerieLocal[]) {
     const contadores: Record<string, number> = {};
@@ -891,19 +1033,8 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
               placeholder="Escreva uma observação sobre este treino"
               placeholderTextColor="#666"
               value={observacaoTreinoAluno}
-              onChangeText={setObservacaoTreinoAluno}
+              onChangeText={atualizarObservacaoTreinoComDebounce}
             />
-            <TouchableOpacity
-              style={styles.alunoObsSaveBtn}
-              onPress={() => salvarObservacaoTreinoMutation.mutate()}
-              disabled={salvarObservacaoTreinoMutation.isPending}
-            >
-              <Text style={styles.alunoObsSaveText}>
-                {salvarObservacaoTreinoMutation.isPending
-                  ? "Salvando..."
-                  : "Salvar observação"}
-              </Text>
-            </TouchableOpacity>
           </View>
 
           {/* Preview de exercícios */}
@@ -933,6 +1064,7 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
             ]}
             onPress={iniciarTreinoComValidacao}
             disabled={
+              loadingSessaoAtivaAtual ||
               iniciarMutation.isPending ||
               finalizarSessaoConflitanteMutation.isPending ||
               descartarSessaoConflitanteMutation.isPending
@@ -964,30 +1096,6 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
             <Text style={styles.timerValue}>
               {formatTime(sessionElapsedSeconds)}
             </Text>
-          </View>
-          <View style={styles.alunoObsCardSessao}>
-            <Text style={styles.alunoObsLabel}>
-              Observação do aluno (treino)
-            </Text>
-            <TextInput
-              style={styles.alunoObsInput}
-              multiline
-              placeholder="Escreva uma observação sobre este treino"
-              placeholderTextColor="#666"
-              value={observacaoTreinoAluno}
-              onChangeText={setObservacaoTreinoAluno}
-            />
-            <TouchableOpacity
-              style={styles.alunoObsSaveBtn}
-              onPress={() => salvarObservacaoTreinoMutation.mutate()}
-              disabled={salvarObservacaoTreinoMutation.isPending}
-            >
-              <Text style={styles.alunoObsSaveText}>
-                {salvarObservacaoTreinoMutation.isPending
-                  ? "Salvando..."
-                  : "Salvar observação"}
-              </Text>
-            </TouchableOpacity>
           </View>
         </View>
 
@@ -1080,34 +1188,34 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
                 ) : null}
 
                 <View style={styles.alunoObsExercicioBox}>
-                  <Text style={styles.alunoObsLabel}>Sua observação</Text>
-                  <TextInput
-                    style={styles.alunoObsInput}
-                    multiline
-                    placeholder="Escreva uma observação sobre este exercício"
-                    placeholderTextColor="#666"
-                    value={observacoesAlunoExercicio[exercicio.id] ?? ""}
-                    onFocus={() => focarObservacaoExercicio(index)}
-                    onChangeText={(texto) =>
-                      setObservacoesAlunoExercicio((current) => ({
-                        ...current,
-                        [exercicio.id]: texto,
-                      }))
-                    }
-                  />
                   <TouchableOpacity
-                    style={styles.alunoObsSaveBtn}
-                    onPress={() =>
-                      salvarObservacaoExercicioMutation.mutate(exercicio.id)
-                    }
-                    disabled={salvarObservacaoExercicioMutation.isPending}
+                    style={styles.observacoesToggle}
+                    onPress={() => toggleObservacaoAlunoExercicio(exercicio.id)}
+                    activeOpacity={0.8}
                   >
-                    <Text style={styles.alunoObsSaveText}>
-                      {salvarObservacaoExercicioMutation.isPending
-                        ? "Salvando..."
-                        : "Salvar observação"}
+                    <Text style={styles.alunoObsLabel}>Sua observação</Text>
+                    <Text style={styles.observacoesAcao}>
+                      {observacoesAlunoExercicioAbertas[exercicio.id]
+                        ? "-"
+                        : "+"}
                     </Text>
                   </TouchableOpacity>
+                  {observacoesAlunoExercicioAbertas[exercicio.id] ? (
+                    <TextInput
+                      style={styles.alunoObsInput}
+                      multiline
+                      placeholder="Escreva uma observação sobre este exercício"
+                      placeholderTextColor="#666"
+                      value={observacoesAlunoExercicio[exercicio.id] ?? ""}
+                      onFocus={() => focarObservacaoExercicio(index)}
+                      onChangeText={(texto) =>
+                        atualizarObservacaoExercicioComDebounce(
+                          exercicio.id,
+                          texto,
+                        )
+                      }
+                    />
+                  ) : null}
                 </View>
 
                 {exercicioAtivo.observacoes?.trim() ? (
@@ -1151,13 +1259,10 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
                     </Text>
                     <TextInput
                       style={styles.serieInput}
-                      placeholder={
-                        primeiraColunaTitulo(exercicioAtivo) === "Tempo (s)"
-                          ? "s"
-                          : primeiraColunaTitulo(exercicioAtivo) === "Passos"
-                            ? "passos"
-                            : "reps"
-                      }
+                      placeholder={placeholderPrimeiraColuna(
+                        exercicioAtivo,
+                        ultimosPesos[exercicioAtivo.id]?.repeticoes_realizadas,
+                      )}
                       placeholderTextColor="#666"
                       keyboardType="numeric"
                       value={serie.reps}
@@ -1169,8 +1274,10 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
                     <TextInput
                       style={styles.serieInput}
                       placeholder={
-                        ultimosPesos[exercicioAtivo.id] != null
-                          ? String(ultimosPesos[exercicioAtivo.id])
+                        ultimosPesos[exercicioAtivo.id]?.peso_utilizado != null
+                          ? String(
+                              ultimosPesos[exercicioAtivo.id]?.peso_utilizado,
+                            )
                           : "kg"
                       }
                       placeholderTextColor="#666"

@@ -39,6 +39,10 @@ api.interceptors.request.use(async (config) => {
   const requestUrl = config.url ?? "";
   config.headers = config.headers ?? {};
 
+  console.log(
+    `[API Request] ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`,
+  );
+
   const token = await SecureStore.getItemAsync("access_token");
   if (token) {
     (config.headers as Record<string, string>).Authorization =
@@ -54,11 +58,44 @@ api.interceptors.request.use(async (config) => {
 
 // Interceptor: refresh automático em 401
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log(
+      `[API Response] ${response.status} ${response.config.method?.toUpperCase()} ${response.config.url}`,
+    );
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
     const requestUrl = originalRequest?.url ?? "";
+    const requestMethod = (originalRequest?.method ?? "").toLowerCase();
     const isAdminEndpoint = requestUrl.includes("/admin/");
+
+    const isExpectedSessaoAtiva404 =
+      error.response?.status === 404 &&
+      requestUrl.includes("/aluno/sessoes/ativa");
+
+    const isExpectedDescartarSessao404 =
+      error.response?.status === 404 &&
+      requestMethod === "delete" &&
+      /\/aluno\/sessoes\/[0-9a-f-]+$/i.test(requestUrl);
+
+    if (isExpectedSessaoAtiva404) {
+      console.log("[API Info] Nenhuma sessão ativa no momento.");
+      return Promise.reject(error);
+    }
+
+    if (isExpectedDescartarSessao404) {
+      console.log("[API Info] Sessão já não estava em andamento.");
+      return Promise.reject(error);
+    }
+
+    console.error(
+      `[API Error] ${error.response?.status || error.code} ${error.config?.method?.toUpperCase()} ${error.config?.url}`,
+    );
+    console.error(`[API Error] Message: ${error.message}`);
+    if (error.response?.data) {
+      console.error(`[API Error] Data:`, error.response.data);
+    }
 
     if (
       error.response?.status === 401 &&

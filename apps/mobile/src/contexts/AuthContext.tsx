@@ -42,9 +42,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // Validar token chamando uma rota autenticada
+      // Validar token chamando uma rota autenticada existente
       try {
-        await api.get("/alunos", {
+        await api.get("/auth/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
         // Token válido

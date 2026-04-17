@@ -333,6 +333,7 @@ export interface SerieDetalhe {
 export interface UltimoPesoExercicio {
   exercicio_treino_id: string;
   peso_utilizado: number | null;
+  repeticoes_realizadas: number | null;
 }
 
 export interface SerieCreate {

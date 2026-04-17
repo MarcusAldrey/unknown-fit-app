@@ -116,7 +116,12 @@ async def atualizar_observacoes_aluno_exercicio(
     result = await db.execute(
         select(ExercicioTreino)
         .where(ExercicioTreino.id == exercicio_treino_id)
-        .options(selectinload(ExercicioTreino.treino).selectinload(Treino.conjunto))
+        .options(
+            selectinload(ExercicioTreino.treino).selectinload(Treino.conjunto),
+            selectinload(ExercicioTreino.equivalentes).selectinload(
+                ExercicioTreinoEquivalente.exercicio_equivalente_treino
+            ),
+        )
     )
     exercicio = result.scalar_one_or_none()
 
@@ -129,7 +134,6 @@ async def atualizar_observacoes_aluno_exercicio(
     texto = body.observacoes_aluno.strip() if body.observacoes_aluno else None
     exercicio.observacoes_aluno = texto or None
     await db.flush()
-    await db.refresh(exercicio)
     return exercicio
 
 
@@ -358,7 +362,7 @@ async def ultimo_peso_exercicio(
     aluno: Aluno = Depends(get_current_aluno),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(
+    peso_result = await db.execute(
         select(SerieExecutada.peso_utilizado)
         .join(SessaoTreino, SerieExecutada.sessao_treino_id == SessaoTreino.id)
         .where(
@@ -370,11 +374,26 @@ async def ultimo_peso_exercicio(
         .order_by(SessaoTreino.iniciado_em.desc(), SerieExecutada.numero_serie.desc())
         .limit(1)
     )
-    peso = result.scalar_one_or_none()
+    peso = peso_result.scalar_one_or_none()
+
+    repeticoes_result = await db.execute(
+        select(SerieExecutada.repeticoes_realizadas)
+        .join(SessaoTreino, SerieExecutada.sessao_treino_id == SessaoTreino.id)
+        .where(
+            SerieExecutada.exercicio_treino_id == exercicio_treino_id,
+            SessaoTreino.aluno_id == aluno.id,
+            SessaoTreino.status == StatusSessao.FINALIZADO,
+            SerieExecutada.repeticoes_realizadas.is_not(None),
+        )
+        .order_by(SessaoTreino.iniciado_em.desc(), SerieExecutada.numero_serie.desc())
+        .limit(1)
+    )
+    repeticoes = repeticoes_result.scalar_one_or_none()
 
     return UltimoPesoExercicioOut(
         exercicio_treino_id=exercicio_treino_id,
         peso_utilizado=peso,
+        repeticoes_realizadas=repeticoes,
     )
 
 

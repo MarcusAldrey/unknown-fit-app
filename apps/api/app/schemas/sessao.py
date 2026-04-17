@@ -67,6 +67,7 @@ class SerieDetalheOut(BaseModel):
 class UltimoPesoExercicioOut(BaseModel):
     exercicio_treino_id: uuid.UUID
     peso_utilizado: float | None = None
+    repeticoes_realizadas: int | None = None
 
 
 class SessaoAtivaOut(BaseModel):

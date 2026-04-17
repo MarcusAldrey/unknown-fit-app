@@ -27,12 +27,35 @@ export function LoginScreen() {
 
     setLoading(true);
     try {
+      console.log("[LoginScreen] Tentando login com:", email);
       await login({ email: email.trim(), senha });
-    } catch (error) {
-      if (axios.isAxiosError(error) && !error.response) {
-        Alert.alert("Erro", "Falha de conexão com o servidor.");
+      console.log("[LoginScreen] Login bem-sucedido");
+    } catch (error: any) {
+      console.error("[LoginScreen] Erro de login:", error);
+      console.error("[LoginScreen] Error message:", error.message);
+      console.error("[LoginScreen] Error code:", error.code);
+      console.error(
+        "[LoginScreen] Error response:",
+        error.response?.status,
+        error.response?.data,
+      );
+
+      if (axios.isAxiosError(error)) {
+        if (!error.response) {
+          Alert.alert(
+            "Erro de Conexão",
+            `Não conseguiu conectar ao servidor: ${error.message}`,
+          );
+        } else if (error.response.status === 422) {
+          Alert.alert("Erro", "Email ou senha incorretos.");
+        } else {
+          Alert.alert(
+            "Erro",
+            `Erro ${error.response.status}: ${error.response.data?.detail || error.message}`,
+          );
+        }
       } else {
-        Alert.alert("Erro", "Credenciais inválidas. Tente novamente.");
+        Alert.alert("Erro", error.message || "Erro desconhecido");
       }
     } finally {
       setLoading(false);

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { useFocusEffect } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
 
 import api from "../../api/client";
@@ -81,22 +82,32 @@ export function ConjuntoAtivoScreen({ navigation }: Props) {
     enabled: !!treinos?.length,
   });
 
-  const { data: sessaoAtiva, isLoading: loadingSessaoAtiva } =
-    useQuery<SessaoAtiva | null>({
-      queryKey: ["aluno", "sessao-ativa"],
-      queryFn: async () => {
-        try {
-          const res = await api.get("/aluno/sessoes/ativa");
-          return res.data;
-        } catch (err: any) {
-          if (err.response?.status === 404) return null;
-          throw err;
-        }
-      },
-      refetchOnWindowFocus: false,
-      refetchOnMount: "always",
-      staleTime: 30_000,
-    });
+  const {
+    data: sessaoAtiva,
+    isLoading: loadingSessaoAtiva,
+    refetch: refetchSessaoAtiva,
+  } = useQuery<SessaoAtiva | null>({
+    queryKey: ["aluno", "sessao-ativa"],
+    queryFn: async () => {
+      try {
+        const res = await api.get("/aluno/sessoes/ativa");
+        return res.data;
+      } catch (err: any) {
+        if (err.response?.status === 404) return null;
+        throw err;
+      }
+    },
+    refetchOnWindowFocus: false,
+    refetchOnMount: "always",
+    staleTime: 30_000,
+  });
+
+  useFocusEffect(
+    useCallback(() => {
+      // Garante sincronização imediata ao voltar para a home do aluno.
+      void refetchSessaoAtiva();
+    }, [refetchSessaoAtiva]),
+  );
 
   const descartarSessaoMutation = useMutation({
     mutationFn: async (sessaoId: string) => {
@@ -108,7 +119,18 @@ export function ConjuntoAtivoScreen({ navigation }: Props) {
       });
       Alert.alert("Treino descartado", "A sessão em andamento foi descartada.");
     },
-    onError: () => {
+    onError: async (err: any) => {
+      if (err?.response?.status === 404) {
+        await queryClient.invalidateQueries({
+          queryKey: ["aluno", "sessao-ativa"],
+        });
+        Alert.alert(
+          "Treino descartado",
+          "A sessão já tinha sido finalizada ou descartada.",
+        );
+        return;
+      }
+
       Alert.alert("Erro", "Não foi possível descartar o treino em andamento.");
     },
   });
