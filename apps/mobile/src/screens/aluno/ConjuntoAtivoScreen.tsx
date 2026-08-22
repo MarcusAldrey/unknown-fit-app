@@ -21,6 +21,7 @@ import type {
   SessaoResumo,
 } from "../../types";
 import type { AlunoTreinoStackParamList } from "../../navigation/AlunoNavigator";
+import { colors } from "../../theme/colors";
 
 type Props = NativeStackScreenProps<AlunoTreinoStackParamList, "ConjuntoAtivo">;
 
@@ -193,7 +194,7 @@ export function ConjuntoAtivoScreen({ navigation }: Props) {
   if (loadingConjunto) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#22c55e" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -238,12 +239,12 @@ export function ConjuntoAtivoScreen({ navigation }: Props) {
               hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
             >
               {descartarSessaoMutation.isPending ? (
-                <ActivityIndicator size="small" color="#fca5a5" />
+                <ActivityIndicator size="small" color={colors.danger} />
               ) : (
                 <MaterialIcons
                   name="delete-outline"
                   size={18}
-                  color="#fca5a5"
+                  color={colors.danger}
                 />
               )}
             </TouchableOpacity>
@@ -266,7 +267,7 @@ export function ConjuntoAtivoScreen({ navigation }: Props) {
             }
           >
             <Text style={styles.continueCtaText}>Continuar treino</Text>
-            <MaterialIcons name="arrow-forward" size={18} color="#0d0d0d" />
+            <MaterialIcons name="arrow-forward" size={18} color={colors.background} />
           </TouchableOpacity>
         </View>
       )}
@@ -274,7 +275,7 @@ export function ConjuntoAtivoScreen({ navigation }: Props) {
       {loadingTreinos ? (
         <ActivityIndicator
           size="large"
-          color="#22c55e"
+          color={colors.primary}
           style={{ marginTop: 32 }}
         />
       ) : (
@@ -304,21 +305,21 @@ export function ConjuntoAtivoScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0d0d0d", padding: 16 },
+  container: { flex: 1, backgroundColor: colors.background, padding: 16 },
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#0d0d0d",
+    backgroundColor: colors.background,
     padding: 32,
   },
   header: { marginBottom: 24 },
-  conjuntoNome: { color: "#fff", fontSize: 24, fontWeight: "bold" },
-  conjuntoSub: { color: "#888", fontSize: 14, marginTop: 4 },
+  conjuntoNome: { color: colors.text, fontSize: 24, fontWeight: "bold" },
+  conjuntoSub: { color: colors.textMuted, fontSize: 14, marginTop: 4 },
   // Continuar Treino
   continueCard: {
-    backgroundColor: "#152a1d",
-    borderColor: "#22c55e",
+    backgroundColor: colors.surface,
+    borderColor: colors.primary,
     borderWidth: 1,
     borderRadius: 14,
     padding: 16,
@@ -334,23 +335,23 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   continueBadge: {
-    color: "#86efac",
+    color: colors.primary,
     fontSize: 10,
     fontWeight: "700",
     letterSpacing: 0.8,
   },
   continueTitle: {
-    color: "#fff",
+    color: colors.text,
     fontSize: 18,
     fontWeight: "700",
   },
   continueSub: {
-    color: "#a3a3a3",
+    color: colors.textMuted,
     fontSize: 13,
     marginTop: 3,
   },
   continueTimer: {
-    color: "#d1fae5",
+    color: colors.text,
     fontSize: 14,
     fontWeight: "700",
     fontVariant: ["tabular-nums"],
@@ -361,13 +362,13 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#1a3624",
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#2f5b40",
+    borderColor: colors.border,
   },
   continueCtaButton: {
     marginTop: 12,
-    backgroundColor: "#22c55e",
+    backgroundColor: colors.primary,
     borderRadius: 10,
     paddingVertical: 11,
     paddingHorizontal: 12,
@@ -377,13 +378,13 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   continueCtaText: {
-    color: "#0d0d0d",
+    color: colors.background,
     fontSize: 14,
     fontWeight: "700",
   },
   // Lista de treinos
   card: {
-    backgroundColor: "#1a1a1a",
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 20,
     marginBottom: 12,
@@ -392,13 +393,13 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   codigo: {
-    color: "#22c55e",
+    color: colors.primary,
     fontSize: 28,
     fontWeight: "bold",
     width: 48,
     textAlign: "center",
   },
-  nome: { color: "#fff", fontSize: 18, flex: 1 },
-  empty: { color: "#888", textAlign: "center", fontSize: 18 },
-  emptySub: { color: "#555", textAlign: "center", fontSize: 14, marginTop: 8 },
+  nome: { color: colors.text, fontSize: 18, flex: 1 },
+  empty: { color: colors.textMuted, textAlign: "center", fontSize: 18 },
+  emptySub: { color: colors.border, textAlign: "center", fontSize: 14, marginTop: 8 },
 });

@@ -20,6 +20,7 @@ import type {
   PersonalAdmin,
   PersonalAdminCreateRequest,
 } from "../../types";
+import { colors } from "../../theme/colors";
 
 type Aba = "personais" | "alunos";
 
@@ -355,14 +356,14 @@ export function AdminUsuariosScreen() {
             <TextInput
               style={styles.input}
               placeholder="Nome"
-              placeholderTextColor="#777"
+              placeholderTextColor={colors.textMuted}
               value={personalNome}
               onChangeText={setPersonalNome}
             />
             <TextInput
               style={styles.input}
               placeholder="E-mail"
-              placeholderTextColor="#777"
+              placeholderTextColor={colors.textMuted}
               autoCapitalize="none"
               keyboardType="email-address"
               value={personalEmail}
@@ -371,7 +372,7 @@ export function AdminUsuariosScreen() {
             <TextInput
               style={styles.input}
               placeholder="Senha"
-              placeholderTextColor="#777"
+              placeholderTextColor={colors.textMuted}
               secureTextEntry
               value={personalSenha}
               onChangeText={setPersonalSenha}
@@ -394,14 +395,14 @@ export function AdminUsuariosScreen() {
             <TextInput
               style={styles.input}
               placeholder="Nome"
-              placeholderTextColor="#777"
+              placeholderTextColor={colors.textMuted}
               value={alunoNome}
               onChangeText={setAlunoNome}
             />
             <TextInput
               style={styles.input}
               placeholder="E-mail"
-              placeholderTextColor="#777"
+              placeholderTextColor={colors.textMuted}
               autoCapitalize="none"
               keyboardType="email-address"
               value={alunoEmail}
@@ -410,7 +411,7 @@ export function AdminUsuariosScreen() {
             <TextInput
               style={styles.input}
               placeholder="Senha"
-              placeholderTextColor="#777"
+              placeholderTextColor={colors.textMuted}
               secureTextEntry
               value={alunoSenha}
               onChangeText={setAlunoSenha}
@@ -418,7 +419,7 @@ export function AdminUsuariosScreen() {
             <TextInput
               style={styles.input}
               placeholder="Idade (opcional)"
-              placeholderTextColor="#777"
+              placeholderTextColor={colors.textMuted}
               keyboardType="numeric"
               value={alunoIdade}
               onChangeText={setAlunoIdade}
@@ -426,7 +427,7 @@ export function AdminUsuariosScreen() {
             <TextInput
               style={styles.input}
               placeholder="Peso (opcional)"
-              placeholderTextColor="#777"
+              placeholderTextColor={colors.textMuted}
               keyboardType="numeric"
               value={alunoPeso}
               onChangeText={setAlunoPeso}
@@ -434,7 +435,7 @@ export function AdminUsuariosScreen() {
             <TextInput
               style={styles.input}
               placeholder="Altura (opcional)"
-              placeholderTextColor="#777"
+              placeholderTextColor={colors.textMuted}
               keyboardType="numeric"
               value={alunoAltura}
               onChangeText={setAlunoAltura}
@@ -442,7 +443,7 @@ export function AdminUsuariosScreen() {
             <TextInput
               style={styles.input}
               placeholder="Personal ID (opcional)"
-              placeholderTextColor="#777"
+              placeholderTextColor={colors.textMuted}
               autoCapitalize="none"
               value={alunoPersonalId}
               onChangeText={setAlunoPersonalId}
@@ -476,7 +477,7 @@ export function AdminUsuariosScreen() {
 
         {loadingAtual ? (
           <View style={styles.loaderWrapper}>
-            <ActivityIndicator size="small" color="#22c55e" />
+            <ActivityIndicator size="small" color={colors.primary} />
           </View>
         ) : (
           <FlatList
@@ -576,23 +577,23 @@ export function AdminUsuariosScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0d0d0d",
+    backgroundColor: colors.background,
   },
   centeredScreen: {
     flex: 1,
-    backgroundColor: "#0d0d0d",
+    backgroundColor: colors.background,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 24,
   },
   errorTitle: {
-    color: "#fca5a5",
+    color: colors.danger,
     fontSize: 18,
     fontWeight: "700",
     marginBottom: 8,
   },
   errorText: {
-    color: "#a3a3a3",
+    color: colors.textMuted,
     textAlign: "center",
     lineHeight: 20,
   },
@@ -605,30 +606,30 @@ const styles = StyleSheet.create({
   tabButton: {
     flex: 1,
     borderWidth: 1,
-    borderColor: "#2f2f2f",
+    borderColor: colors.border,
     borderRadius: 10,
     paddingVertical: 10,
     alignItems: "center",
-    backgroundColor: "#141414",
+    backgroundColor: colors.surface,
   },
   tabButtonActive: {
-    backgroundColor: "#1f2937",
-    borderColor: "#334155",
+    backgroundColor: colors.surface,
+    borderColor: colors.primary,
   },
   tabText: {
-    color: "#9ca3af",
+    color: colors.textMuted,
     fontSize: 14,
     fontWeight: "600",
   },
   tabTextActive: {
-    color: "#e5e7eb",
+    color: colors.text,
   },
   formSection: {
     maxHeight: 330,
     marginTop: 10,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: "#1f1f1f",
+    borderColor: colors.border,
   },
   formContent: {
     paddingHorizontal: 12,
@@ -636,16 +637,16 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   sectionTitle: {
-    color: "#e5e7eb",
+    color: colors.text,
     fontSize: 15,
     fontWeight: "700",
     marginBottom: 6,
   },
   input: {
-    backgroundColor: "#161616",
-    borderColor: "#2b2b2b",
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
     borderWidth: 1,
-    color: "#fff",
+    color: colors.text,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -657,26 +658,26 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#151515",
+    backgroundColor: colors.surface,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#2b2b2b",
+    borderColor: colors.border,
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
   switchLabel: {
-    color: "#d1d5db",
+    color: colors.text,
     fontSize: 13,
   },
   primaryButton: {
     marginTop: 4,
-    backgroundColor: "#16a34a",
+    backgroundColor: colors.primary,
     borderRadius: 10,
     paddingVertical: 12,
     alignItems: "center",
   },
   primaryButtonText: {
-    color: "#fff",
+    color: colors.text,
     fontSize: 14,
     fontWeight: "700",
   },
@@ -695,30 +696,30 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   emptyText: {
-    color: "#777",
+    color: colors.textMuted,
     textAlign: "center",
     marginTop: 24,
   },
   card: {
-    backgroundColor: "#181818",
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#2a2a2a",
+    borderColor: colors.surface,
     borderRadius: 12,
     padding: 12,
     marginBottom: 10,
   },
   cardTitle: {
-    color: "#fff",
+    color: colors.text,
     fontSize: 16,
     fontWeight: "700",
   },
   cardSubtitle: {
-    color: "#9ca3af",
+    color: colors.textMuted,
     marginTop: 2,
     marginBottom: 6,
   },
   cardMeta: {
-    color: "#7c7c7c",
+    color: colors.textMuted,
     fontSize: 12,
   },
   cardActions: {
@@ -733,17 +734,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   secondaryButtonText: {
-    color: "#fff",
+    color: colors.text,
     fontWeight: "700",
     fontSize: 13,
   },
   warnButton: {
-    backgroundColor: "#a16207",
+    backgroundColor: colors.warning,
   },
   okButton: {
-    backgroundColor: "#15803d",
+    backgroundColor: colors.primary,
   },
   dangerButton: {
-    backgroundColor: "#b91c1c",
+    backgroundColor: colors.danger,
   },
 });

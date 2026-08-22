@@ -6,6 +6,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { PersonalStack } from "./PersonalNavigator";
 import { AlunoStack } from "./AlunoNavigator";
 import { AuthStack } from "./AuthNavigator";
+import { colors } from "../theme/colors";
 
 export function RootNavigator() {
   const { isLoading, isAuthenticated, role } = useAuth();
@@ -17,10 +18,10 @@ export function RootNavigator() {
           flex: 1,
           justifyContent: "center",
           alignItems: "center",
-          backgroundColor: "#1a1a2e",
+          backgroundColor: colors.background,
         }}
       >
-        <ActivityIndicator size="large" color="#e94560" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }

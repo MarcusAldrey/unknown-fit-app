@@ -29,6 +29,7 @@ import type {
 } from "../../types";
 import type { AlunoTreinoStackParamList } from "../../navigation/AlunoNavigator";
 import { formatarIntervaloDescanso } from "../../utils/formatters";
+import { colors } from "../../theme/colors";
 
 type Props = NativeStackScreenProps<AlunoTreinoStackParamList, "SessaoTreino">;
 
@@ -991,7 +992,7 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
   if (isLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#22c55e" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -1004,7 +1005,7 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
         keyboardVerticalOffset={0}
       >
         <ScrollView
-          style={{ flex: 1, backgroundColor: "#0d0d0d" }}
+          style={{ flex: 1, backgroundColor: colors.background }}
           contentContainerStyle={[
             styles.preStartContainer,
             { paddingBottom: 32 + keyboardHeight },
@@ -1031,7 +1032,7 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
               style={styles.alunoObsInput}
               multiline
               placeholder="Escreva uma observação sobre este treino"
-              placeholderTextColor="#666"
+              placeholderTextColor={colors.textMuted}
               value={observacaoTreinoAluno}
               onChangeText={atualizarObservacaoTreinoComDebounce}
             />
@@ -1073,7 +1074,7 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
             {iniciarMutation.isPending ||
             finalizarSessaoConflitanteMutation.isPending ||
             descartarSessaoConflitanteMutation.isPending ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={colors.text} />
             ) : (
               <Text style={styles.buttonText}>Iniciar Treino</Text>
             )}
@@ -1205,7 +1206,7 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
                       style={styles.alunoObsInput}
                       multiline
                       placeholder="Escreva uma observação sobre este exercício"
-                      placeholderTextColor="#666"
+                      placeholderTextColor={colors.textMuted}
                       value={observacoesAlunoExercicio[exercicio.id] ?? ""}
                       onFocus={() => focarObservacaoExercicio(index)}
                       onChangeText={(texto) =>
@@ -1263,7 +1264,7 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
                         exercicioAtivo,
                         ultimosPesos[exercicioAtivo.id]?.repeticoes_realizadas,
                       )}
-                      placeholderTextColor="#666"
+                      placeholderTextColor={colors.textMuted}
                       keyboardType="numeric"
                       value={serie.reps}
                       onChangeText={(v) =>
@@ -1280,7 +1281,7 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
                             )
                           : "kg"
                       }
-                      placeholderTextColor="#666"
+                      placeholderTextColor={colors.textMuted}
                       keyboardType="numeric"
                       value={serie.peso}
                       onChangeText={(v) =>
@@ -1337,7 +1338,7 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
         {keyboardHeight === 0 ? (
           <View style={styles.footer}>
             <TouchableOpacity
-              style={[styles.button, { backgroundColor: "#166534" }]}
+              style={[styles.button, { backgroundColor: colors.primary }]}
               disabled={finalizarMutation.isPending}
               onPress={() =>
                 Alert.alert(
@@ -1354,7 +1355,7 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
               }
             >
               {finalizarMutation.isPending ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color={colors.text} />
               ) : (
                 <Text style={styles.buttonText}>Finalizar Sessão</Text>
               )}
@@ -1445,17 +1446,17 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0d0d0d" },
+  container: { flex: 1, backgroundColor: colors.background },
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#0d0d0d",
+    backgroundColor: colors.background,
     padding: 32,
   },
-  iniciarTitle: { color: "#fff", fontSize: 32, fontWeight: "bold" },
+  iniciarTitle: { color: colors.text, fontSize: 32, fontWeight: "bold" },
   iniciarNomeTreino: {
-    color: "#d4d4d4",
+    color: colors.text,
     fontSize: 20,
     fontWeight: "600",
     lineHeight: 24,
@@ -1463,7 +1464,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     paddingHorizontal: 18,
   },
-  iniciarSub: { color: "#888", fontSize: 16, marginTop: 8, marginBottom: 16 },
+  iniciarSub: { color: colors.textMuted, fontSize: 16, marginTop: 8, marginBottom: 16 },
   preStartContainer: {
     paddingTop: 48,
     paddingBottom: 32,
@@ -1481,7 +1482,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   previewOrder: {
-    color: "#6ee7b7",
+    color: colors.primary,
     fontSize: 13,
     fontWeight: "700",
     width: 22,
@@ -1492,12 +1493,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   previewName: {
-    color: "#fff",
+    color: colors.text,
     fontSize: 16,
     fontWeight: "600",
   },
   previewDetail: {
-    color: "#7d7d7d",
+    color: colors.textMuted,
     fontSize: 14,
     marginTop: 2,
   },
@@ -1517,18 +1518,18 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   alunoObsLabel: {
-    color: "#9ca3af",
+    color: colors.textMuted,
     fontSize: 12,
     textTransform: "uppercase",
     marginBottom: 6,
     letterSpacing: 0.4,
   },
   alunoObsInput: {
-    backgroundColor: "#0d0d0d",
+    backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: "#2a2a2a",
+    borderColor: colors.border,
     borderRadius: 8,
-    color: "#fff",
+    color: colors.text,
     minHeight: 64,
     paddingHorizontal: 10,
     paddingVertical: 8,
@@ -1538,46 +1539,46 @@ const styles = StyleSheet.create({
   alunoObsSaveBtn: {
     alignSelf: "flex-start",
     marginTop: 8,
-    backgroundColor: "#1f2b22",
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#245132",
+    borderColor: colors.border,
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
   alunoObsSaveText: {
-    color: "#9fe6b4",
+    color: colors.primary,
     fontSize: 12,
     fontWeight: "600",
   },
   timerCard: {
-    backgroundColor: "#1a1a1a",
+    backgroundColor: colors.surface,
     borderRadius: 10,
     paddingVertical: 12,
     paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: "#232323",
+    borderColor: colors.border,
   },
-  timerLabel: { color: "#a3a3a3", fontSize: 12 },
+  timerLabel: { color: colors.textMuted, fontSize: 12 },
   timerValue: {
-    color: "#fff",
+    color: colors.text,
     fontSize: 22,
     fontWeight: "700",
     marginTop: 2,
   },
   content: { paddingBottom: 100, paddingTop: 2 },
   exercicioCard: {
-    backgroundColor: "#1a1a1a",
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     marginHorizontal: 16,
     marginTop: 12,
     borderWidth: 1,
-    borderColor: "#232323",
+    borderColor: colors.border,
   },
   exercicioCardDone: {
-    borderColor: "#22c55e",
-    backgroundColor: "#13201a",
+    borderColor: colors.primary,
+    backgroundColor: colors.surface,
   },
   exercicioHeader: {
     flexDirection: "row",
@@ -1585,34 +1586,34 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   badgePending: {
-    color: "#facc15",
+    color: colors.warning,
     fontSize: 12,
     fontWeight: "600",
   },
   badgeDone: {
-    color: "#22c55e",
+    color: colors.primary,
     fontSize: 12,
     fontWeight: "700",
   },
-  exercicioNome: { color: "#fff", fontSize: 16, fontWeight: "bold", flex: 1 },
+  exercicioNome: { color: colors.text, fontSize: 16, fontWeight: "bold", flex: 1 },
   exercicioNomeSecundario: {
-    color: "#7d7d7d",
+    color: colors.textMuted,
     fontSize: 12,
     marginTop: 2,
   },
   exercicioDetalhe: {
-    color: "#9ca3af",
+    color: colors.textMuted,
     fontSize: 12,
     marginTop: 4,
     marginBottom: 2,
   },
   exercicioMetaSecundaria: {
-    color: "#6b7280",
+    color: colors.textMuted,
     fontSize: 12,
     marginBottom: 2,
   },
   exercicioMetaTerciaria: {
-    color: "#6b7280",
+    color: colors.textMuted,
     fontSize: 12,
     marginBottom: 8,
   },
@@ -1622,27 +1623,27 @@ const styles = StyleSheet.create({
   substituicaoBtn: {
     alignSelf: "flex-start",
     borderWidth: 1,
-    borderColor: "#245132",
-    backgroundColor: "#1f2b22",
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
   substituicaoBtnText: {
-    color: "#9fe6b4",
+    color: colors.primary,
     fontSize: 12,
     fontWeight: "600",
   },
   substituicaoResumo: {
-    color: "#86efac",
+    color: colors.primary,
     fontSize: 12,
     marginTop: 6,
   },
   observacoesBox: {
     borderWidth: 1,
-    borderColor: "#262626",
+    borderColor: colors.border,
     borderRadius: 8,
-    backgroundColor: "#101010",
+    backgroundColor: colors.surface,
     marginBottom: 8,
   },
   observacoesToggle: {
@@ -1653,20 +1654,20 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
   },
   observacoesTitulo: {
-    color: "#d4d4d4",
+    color: colors.text,
     fontSize: 12,
     fontWeight: "600",
     textTransform: "uppercase",
     letterSpacing: 0.4,
   },
   observacoesAcao: {
-    color: "#22c55e",
+    color: colors.primary,
     fontSize: 17,
     fontWeight: "700",
     lineHeight: 18,
   },
   observacoesTexto: {
-    color: "#e5e5e5",
+    color: colors.text,
     fontSize: 13,
     lineHeight: 18,
     paddingHorizontal: 10,
@@ -1683,7 +1684,7 @@ const styles = StyleSheet.create({
     width: 68,
   },
   seriesHeaderTitle: {
-    color: "#9ca3af",
+    color: colors.textMuted,
     fontSize: 11,
     fontWeight: "600",
     textTransform: "uppercase",
@@ -1702,10 +1703,10 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 8,
   },
-  serieNum: { color: "#22c55e", fontWeight: "bold", width: 68, fontSize: 12 },
+  serieNum: { color: colors.primary, fontWeight: "bold", width: 68, fontSize: 12 },
   serieInput: {
-    backgroundColor: "#0d0d0d",
-    color: "#fff",
+    backgroundColor: colors.background,
+    color: colors.text,
     borderRadius: 6,
     paddingHorizontal: 10,
     paddingVertical: 8,
@@ -1718,25 +1719,25 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 9,
     borderWidth: 2,
-    borderColor: "#6b7280",
+    borderColor: colors.border,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#1f232a",
+    backgroundColor: colors.surface,
   },
   checkboxChecked: {
-    backgroundColor: "#22c55e",
-    borderColor: "#22c55e",
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   checkboxBusy: {
     opacity: 0.6,
   },
   checkboxIcon: {
-    color: "#9ca3af",
+    color: colors.textMuted,
     fontSize: 18,
     fontWeight: "900",
   },
   checkboxIconChecked: {
-    color: "#0d0d0d",
+    color: colors.background,
   },
   serieActions: {
     width: 72,
@@ -1750,17 +1751,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#2f2f2f",
+    borderColor: colors.border,
     borderRadius: 8,
-    backgroundColor: "#151515",
+    backgroundColor: colors.surface,
   },
   deleteButtonText: {
-    color: "#a3a3a3",
+    color: colors.textMuted,
     fontSize: 13,
     fontWeight: "700",
   },
   addSerie: { marginTop: 10, alignSelf: "flex-start" },
-  addSerieText: { color: "#22c55e", fontSize: 14 },
+  addSerieText: { color: colors.primary, fontSize: 14 },
   substituicaoModalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.72)",
@@ -1770,50 +1771,50 @@ const styles = StyleSheet.create({
   },
   substituicaoModalContent: {
     width: "100%",
-    backgroundColor: "#171717",
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#2a2a2a",
+    borderColor: colors.border,
     borderRadius: 12,
     padding: 14,
     gap: 8,
   },
   substituicaoModalTitle: {
-    color: "#fff",
+    color: colors.text,
     fontSize: 16,
     fontWeight: "700",
   },
   substituicaoModalSubTitle: {
-    color: "#a3a3a3",
+    color: colors.textMuted,
     fontSize: 13,
     marginBottom: 4,
   },
   substituicaoOpcao: {
     borderWidth: 1,
-    borderColor: "#2a2a2a",
+    borderColor: colors.border,
     borderRadius: 9,
     paddingHorizontal: 10,
     paddingVertical: 10,
-    backgroundColor: "#111111",
+    backgroundColor: colors.surface,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
   substituicaoOpcaoNome: {
-    color: "#e5e7eb",
+    color: colors.text,
     fontSize: 14,
     flex: 1,
   },
   substituicaoOpcaoHint: {
-    color: "#86efac",
+    color: colors.primary,
     fontSize: 12,
     fontWeight: "700",
   },
   footer: { padding: 16 },
   button: {
-    backgroundColor: "#22c55e",
+    backgroundColor: colors.primary,
     borderRadius: 10,
     paddingVertical: 16,
     alignItems: "center",
   },
-  buttonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
+  buttonText: { color: colors.text, fontSize: 16, fontWeight: "bold" },
 });

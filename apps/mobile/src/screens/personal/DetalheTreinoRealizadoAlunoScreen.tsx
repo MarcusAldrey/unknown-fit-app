@@ -12,6 +12,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import api from "../../api/client";
 import type { SerieDetalhe } from "../../types";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
+import { colors } from "../../theme/colors";
 
 type Props = NativeStackScreenProps<
   PersonalStackParamList,
@@ -56,7 +57,7 @@ export function DetalheTreinoRealizadoAlunoScreen({ route }: Props) {
   if (isLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#22c55e" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -117,10 +118,10 @@ export function DetalheTreinoRealizadoAlunoScreen({ route }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0d0d0d" },
+  container: { flex: 1, backgroundColor: colors.background },
   center: {
     flex: 1,
-    backgroundColor: "#0d0d0d",
+    backgroundColor: colors.background,
     justifyContent: "center",
     alignItems: "center",
     padding: 24,
@@ -136,18 +137,18 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 8,
   },
-  codigo: { color: "#22c55e", fontSize: 14, fontWeight: "700" },
-  nome: { color: "#fff", fontSize: 20, fontWeight: "700", marginTop: 2 },
+  codigo: { color: colors.primary, fontSize: 14, fontWeight: "700" },
+  nome: { color: colors.text, fontSize: 20, fontWeight: "700", marginTop: 2 },
   card: {
-    backgroundColor: "#1a1a1a",
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 14,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: "#242424",
+    borderColor: colors.border,
   },
   exercicioNome: {
-    color: "#fff",
+    color: colors.text,
     fontSize: 16,
     fontWeight: "700",
     marginBottom: 6,
@@ -158,25 +159,25 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   serieNum: {
-    color: "#22c55e",
+    color: colors.primary,
     fontWeight: "700",
     width: 36,
   },
   valor: {
-    color: "#d0d0d0",
+    color: colors.text,
     width: 90,
     fontSize: 14,
   },
   done: {
-    color: "#22c55e",
+    color: colors.primary,
     fontSize: 16,
     fontWeight: "700",
   },
   pending: {
-    color: "#999",
+    color: colors.textMuted,
     fontSize: 16,
     fontWeight: "700",
   },
-  empty: { color: "#8d8d8d", fontSize: 16, textAlign: "center" },
-  error: { color: "#f87171", fontSize: 16, textAlign: "center" },
+  empty: { color: colors.textMuted, fontSize: 16, textAlign: "center" },
+  error: { color: colors.danger, fontSize: 16, textAlign: "center" },
 });

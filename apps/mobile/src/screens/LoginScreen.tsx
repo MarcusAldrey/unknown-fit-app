@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import axios from "axios";
 import { useAuth } from "../contexts/AuthContext";
+import { colors } from "../theme/colors";
 
 export function LoginScreen() {
   const { login } = useAuth();
@@ -74,7 +75,7 @@ export function LoginScreen() {
         <TextInput
           style={styles.input}
           placeholder="E-mail"
-          placeholderTextColor="#888"
+          placeholderTextColor={colors.textMuted}
           keyboardType="email-address"
           autoCapitalize="none"
           value={email}
@@ -84,7 +85,7 @@ export function LoginScreen() {
         <TextInput
           style={styles.input}
           placeholder="Senha"
-          placeholderTextColor="#888"
+          placeholderTextColor={colors.textMuted}
           secureTextEntry
           value={senha}
           onChangeText={setSenha}
@@ -96,7 +97,7 @@ export function LoginScreen() {
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colors.text} />
           ) : (
             <Text style={styles.buttonText}>Entrar</Text>
           )}
@@ -109,7 +110,7 @@ export function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0d0d0d",
+    backgroundColor: colors.background,
   },
   inner: {
     flex: 1,
@@ -119,18 +120,18 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 48,
     fontWeight: "bold",
-    color: "#22c55e",
+    color: colors.primary,
     textAlign: "center",
   },
   subtitle: {
     fontSize: 16,
-    color: "#aaa",
+    color: colors.textMuted,
     textAlign: "center",
     marginBottom: 48,
   },
   input: {
-    backgroundColor: "#1a1a1a",
-    color: "#fff",
+    backgroundColor: colors.surface,
+    color: colors.text,
     borderRadius: 10,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -138,14 +139,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   button: {
-    backgroundColor: "#22c55e",
+    backgroundColor: colors.primary,
     borderRadius: 10,
     paddingVertical: 16,
     alignItems: "center",
     marginTop: 8,
   },
   buttonText: {
-    color: "#fff",
+    color: colors.text,
     fontSize: 18,
     fontWeight: "bold",
   },

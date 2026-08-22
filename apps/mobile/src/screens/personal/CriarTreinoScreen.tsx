@@ -14,6 +14,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import api from "../../api/client";
 import type { Treino } from "../../types";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
+import { colors } from "../../theme/colors";
 
 type Props = NativeStackScreenProps<PersonalStackParamList, "CriarTreino">;
 
@@ -81,7 +82,7 @@ export function CriarTreinoScreen({ route, navigation }: Props) {
           <TextInput
             style={styles.input}
             placeholder={nextCodigo}
-            placeholderTextColor="#555"
+            placeholderTextColor={colors.border}
             value={value}
             onChangeText={onChange}
             autoCapitalize="characters"
@@ -98,7 +99,7 @@ export function CriarTreinoScreen({ route, navigation }: Props) {
           <TextInput
             style={styles.input}
             placeholder="Peito e Tríceps"
-            placeholderTextColor="#555"
+            placeholderTextColor={colors.border}
             value={value}
             onChangeText={onChange}
           />
@@ -118,36 +119,36 @@ export function CriarTreinoScreen({ route, navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0d0d0d", padding: 16 },
+  container: { flex: 1, backgroundColor: colors.background, padding: 16 },
   contextHeader: {
     marginBottom: 8,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#1a1a1a",
+    borderBottomColor: colors.surface,
   },
-  contextTitle: { color: "#fff", fontSize: 17, fontWeight: "bold" },
-  contextSub: { color: "#888", fontSize: 14, marginTop: 2 },
+  contextTitle: { color: colors.text, fontSize: 17, fontWeight: "bold" },
+  contextSub: { color: colors.textMuted, fontSize: 14, marginTop: 2 },
   label: {
-    color: "#888",
+    color: colors.textMuted,
     fontSize: 12,
     textTransform: "uppercase",
     marginBottom: 8,
     marginTop: 16,
   },
   input: {
-    backgroundColor: "#1a1a1a",
-    color: "#fff",
+    backgroundColor: colors.surface,
+    color: colors.text,
     borderRadius: 10,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
   },
   button: {
-    backgroundColor: "#22c55e",
+    backgroundColor: colors.primary,
     borderRadius: 10,
     paddingVertical: 16,
     alignItems: "center",
     marginTop: 32,
   },
-  buttonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
+  buttonText: { color: colors.text, fontSize: 16, fontWeight: "bold" },
 });

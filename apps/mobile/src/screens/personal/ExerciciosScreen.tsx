@@ -18,6 +18,7 @@ import api from "../../api/client";
 import type { ExercicioTreino } from "../../types";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
 import { formatarIntervaloDescanso } from "../../utils/formatters";
+import { colors } from "../../theme/colors";
 
 type Props = NativeStackScreenProps<PersonalStackParamList, "Exercicios">;
 
@@ -423,7 +424,7 @@ export function ExerciciosScreen({ route, navigation }: Props) {
   if (isLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#22c55e" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -666,7 +667,7 @@ export function ExerciciosScreen({ route, navigation }: Props) {
               value={editNomeText}
               onChangeText={setEditNomeText}
               autoFocus
-              placeholderTextColor="#555"
+              placeholderTextColor={colors.border}
               placeholder="Nome do treino"
             />
             <View style={styles.modalActions}>
@@ -733,8 +734,8 @@ export function ExerciciosScreen({ route, navigation }: Props) {
               style={[styles.menuItem, styles.menuItemDanger]}
               onPress={handleDelete}
             >
-              <Text style={[styles.menuItemIcon, { color: "#ef4444" }]}>✕</Text>
-              <Text style={[styles.menuItemText, { color: "#ef4444" }]}>
+              <Text style={[styles.menuItemIcon, { color: colors.danger }]}>✕</Text>
+              <Text style={[styles.menuItemText, { color: colors.danger }]}>
                 Deletar exercício
               </Text>
             </TouchableOpacity>
@@ -824,12 +825,12 @@ export function ExerciciosScreen({ route, navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0d0d0d", padding: 16 },
+  container: { flex: 1, backgroundColor: colors.background, padding: 16 },
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#0d0d0d",
+    backgroundColor: colors.background,
   },
 
   // --- Header ---
@@ -837,25 +838,25 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#1a1a1a",
+    borderBottomColor: colors.surface,
   },
   contextRow: { flexDirection: "row", alignItems: "center" },
-  contextTitle: { color: "#fff", fontSize: 18, fontWeight: "bold" },
-  contextSub: { color: "#888", fontSize: 14 },
+  contextTitle: { color: colors.text, fontSize: 18, fontWeight: "bold" },
+  contextSub: { color: colors.textMuted, fontSize: 14 },
   editNomeRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
     marginTop: 2,
   },
-  editIcon: { color: "#555", fontSize: 14 },
+  editIcon: { color: colors.border, fontSize: 14 },
 
   // --- Reorder bar ---
   reorderBtnAfterSeparator: {
     alignSelf: "flex-end",
     marginBottom: 0,
     minHeight: 34,
-    backgroundColor: "#1a1a1a",
+    backgroundColor: colors.surface,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -873,39 +874,39 @@ const styles = StyleSheet.create({
     alignItems: "center",
     minHeight: 34,
   },
-  reorderBtnText: { color: "#888", fontSize: 13 },
+  reorderBtnText: { color: colors.textMuted, fontSize: 13 },
   reorderBar: {
     marginTop: 8,
     marginBottom: 14,
-    backgroundColor: "#151d17",
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#23422f",
+    borderColor: colors.surface,
     borderRadius: 10,
     padding: 12,
   },
-  reorderLabel: { color: "#9ccfb0", fontSize: 13, marginBottom: 10 },
+  reorderLabel: { color: colors.textMuted, fontSize: 13, marginBottom: 10 },
   reorderActions: { flexDirection: "row", gap: 10, justifyContent: "flex-end" },
   cancelBtn: {
     borderWidth: 1,
-    borderColor: "#333",
+    borderColor: colors.border,
     borderRadius: 8,
     paddingHorizontal: 14,
     minHeight: 34,
     justifyContent: "center",
   },
-  cancelBtnText: { color: "#888", fontSize: 14 },
+  cancelBtnText: { color: colors.textMuted, fontSize: 14 },
   saveBtn: {
-    backgroundColor: "#22c55e",
+    backgroundColor: colors.primary,
     borderRadius: 8,
     paddingHorizontal: 14,
     minHeight: 34,
     justifyContent: "center",
   },
-  saveBtnText: { color: "#fff", fontSize: 14, fontWeight: "bold" },
+  saveBtnText: { color: colors.text, fontSize: 14, fontWeight: "bold" },
 
   // --- Exercise card ---
   card: {
-    backgroundColor: "#1a1a1a",
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 0,
@@ -921,8 +922,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     borderLeftWidth: 1,
     borderRightWidth: 1,
-    borderColor: "#2d6a48",
-    backgroundColor: "#111111",
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
   grupoEquivalenteInicio: {
     borderTopWidth: 1,
@@ -939,7 +940,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   ordem: {
-    color: "#22c55e",
+    color: colors.primary,
     fontSize: 20,
     fontWeight: "bold",
     width: 30,
@@ -947,7 +948,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
   info: { flex: 1 },
-  nome: { color: "#fff", fontSize: 16, fontWeight: "bold" },
+  nome: { color: colors.text, fontSize: 16, fontWeight: "bold" },
   detalhesChips: {
     marginTop: 8,
     flexDirection: "row",
@@ -956,15 +957,15 @@ const styles = StyleSheet.create({
   },
   detalheChip: {
     borderWidth: 1,
-    borderColor: "#2a2a2a",
-    backgroundColor: "#141414",
+    borderColor: colors.surface,
+    backgroundColor: colors.surface,
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
-  detalheChipText: { color: "#b7b7b7", fontSize: 12, fontWeight: "600" },
-  tecnica: { color: "#22c55e", fontSize: 12, marginTop: 4, fontWeight: "bold" },
-  obs: { color: "#666", fontSize: 12, marginTop: 4, fontStyle: "italic" },
+  detalheChipText: { color: colors.textMuted, fontSize: 12, fontWeight: "600" },
+  tecnica: { color: colors.primary, fontSize: 12, marginTop: 4, fontWeight: "bold" },
+  obs: { color: colors.textMuted, fontSize: 12, marginTop: 4, fontStyle: "italic" },
   ouEntreCardsWrap: {
     marginTop: 0,
     alignItems: "center",
@@ -972,14 +973,14 @@ const styles = StyleSheet.create({
   },
   ouEntreCardsBtn: {
     borderWidth: 1,
-    borderColor: "#2d6a48",
+    borderColor: colors.border,
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 3,
-    backgroundColor: "#13281d",
+    backgroundColor: colors.surface,
   },
   ouEntreCardsText: {
-    color: "#9fe6b4",
+    color: colors.primary,
     fontSize: 11,
     fontWeight: "700",
   },
@@ -988,12 +989,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
-  menuDots: { color: "#888", fontSize: 22, fontWeight: "bold" },
+  menuDots: { color: colors.textMuted, fontSize: 22, fontWeight: "bold" },
 
   // --- Arrows ---
   arrowContainer: { flexDirection: "column", gap: 4, alignSelf: "center" },
   arrowBtn: {
-    backgroundColor: "#2a2a2a",
+    backgroundColor: colors.surface,
     borderRadius: 6,
     width: 32,
     height: 28,
@@ -1001,12 +1002,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   arrowDisabled: { opacity: 0.25 },
-  arrowText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
+  arrowText: { color: colors.text, fontSize: 16, fontWeight: "bold" },
 
   // --- Footer / Empty ---
   addCard: {
     borderWidth: 1,
-    borderColor: "#2a2a2a",
+    borderColor: colors.surface,
     borderStyle: "dashed",
     borderRadius: 12,
     padding: 16,
@@ -1016,18 +1017,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
   },
-  addIcon: { color: "#22c55e", fontSize: 20, fontWeight: "bold" },
-  addText: { color: "#888", fontSize: 15 },
+  addIcon: { color: colors.primary, fontSize: 20, fontWeight: "bold" },
+  addText: { color: colors.textMuted, fontSize: 15 },
   emptyCard: {
-    backgroundColor: "#1a1a1a",
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 32,
     alignItems: "center",
     marginTop: 8,
   },
-  emptyIcon: { color: "#22c55e", fontSize: 32, fontWeight: "bold" },
+  emptyIcon: { color: colors.primary, fontSize: 32, fontWeight: "bold" },
   emptyText: {
-    color: "#888",
+    color: colors.textMuted,
     fontSize: 15,
     marginTop: 8,
     textAlign: "center",
@@ -1042,31 +1043,31 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   modalContent: {
-    backgroundColor: "#1a1a1a",
+    backgroundColor: colors.surface,
     borderRadius: 14,
     padding: 20,
     width: "100%",
   },
   modalTitle: {
-    color: "#fff",
+    color: colors.text,
     fontSize: 17,
     fontWeight: "bold",
     marginBottom: 16,
   },
   modalSubTitle: {
-    color: "#9ca3af",
+    color: colors.textMuted,
     fontSize: 13,
     marginBottom: 12,
   },
   modalInput: {
-    backgroundColor: "#0d0d0d",
-    color: "#fff",
+    backgroundColor: colors.background,
+    color: colors.text,
     borderRadius: 10,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: "#2a2a2a",
+    borderColor: colors.surface,
   },
   modalActions: {
     flexDirection: "row",
@@ -1076,19 +1077,19 @@ const styles = StyleSheet.create({
   },
   modalCancelBtn: {
     borderWidth: 1,
-    borderColor: "#333",
+    borderColor: colors.border,
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
-  modalCancelText: { color: "#888", fontSize: 14 },
+  modalCancelText: { color: colors.textMuted, fontSize: 14 },
   modalSaveBtn: {
-    backgroundColor: "#22c55e",
+    backgroundColor: colors.primary,
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
-  modalSaveText: { color: "#fff", fontSize: 14, fontWeight: "bold" },
+  modalSaveText: { color: colors.text, fontSize: 14, fontWeight: "bold" },
   equivalentesList: {
     maxHeight: 300,
     gap: 8,
@@ -1098,47 +1099,47 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     borderWidth: 1,
-    borderColor: "#2a2a2a",
+    borderColor: colors.surface,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: "#121212",
+    backgroundColor: colors.surface,
   },
   equivalenteRowSelecionado: {
-    borderColor: "#2e7d4f",
-    backgroundColor: "#12281c",
+    borderColor: colors.primary,
+    backgroundColor: colors.surface,
   },
   equivalenteNome: {
-    color: "#e5e7eb",
+    color: colors.text,
     fontSize: 14,
     flex: 1,
   },
   equivalenteCheck: {
-    color: "#9ca3af",
+    color: colors.textMuted,
     fontSize: 18,
     fontWeight: "700",
     width: 20,
     textAlign: "center",
   },
   equivalenteCheckSelecionado: {
-    color: "#22c55e",
+    color: colors.primary,
   },
 
   // --- Modal Menu ---
   menuContent: {
-    backgroundColor: "#1a1a1a",
+    backgroundColor: colors.surface,
     borderRadius: 14,
     padding: 8,
     width: "100%",
   },
   menuTitle: {
-    color: "#fff",
+    color: colors.text,
     fontSize: 16,
     fontWeight: "bold",
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#2a2a2a",
+    borderBottomColor: colors.surface,
   },
   menuItem: {
     flexDirection: "row",
@@ -1149,8 +1150,8 @@ const styles = StyleSheet.create({
   },
   menuItemDanger: {
     borderTopWidth: 1,
-    borderTopColor: "#2a2a2a",
+    borderTopColor: colors.surface,
   },
-  menuItemIcon: { color: "#ccc", fontSize: 18 },
-  menuItemText: { color: "#ccc", fontSize: 15 },
+  menuItemIcon: { color: colors.textMuted, fontSize: 18 },
+  menuItemText: { color: colors.textMuted, fontSize: 15 },
 });

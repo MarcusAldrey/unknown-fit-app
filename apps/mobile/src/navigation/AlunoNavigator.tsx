@@ -8,6 +8,7 @@ import { SessaoTreinoScreen } from "../screens/aluno/SessaoTreinoScreen";
 import { HistoricoTreinosScreen } from "../screens/aluno/HistoricoTreinosScreen";
 import { DetalheTreinoRealizadoScreen } from "../screens/aluno/DetalheTreinoRealizadoScreen";
 import type { SessaoAtiva, SessaoResumo } from "../types";
+import { colors } from "../theme/colors";
 
 export type AlunoTreinoStackParamList = {
   ConjuntoAtivo: undefined;
@@ -38,8 +39,8 @@ function MeuTreinoStackNavigator() {
   return (
     <TreinoStack.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: "#0d0d0d" },
-        headerTintColor: "#fff",
+        headerStyle: { backgroundColor: colors.background },
+        headerTintColor: colors.text,
         headerBackButtonDisplayMode: "minimal",
       }}
     >
@@ -61,8 +62,8 @@ function HistoricoStackNavigator() {
   return (
     <HistoricoStack.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: "#0d0d0d" },
-        headerTintColor: "#fff",
+        headerStyle: { backgroundColor: colors.background },
+        headerTintColor: colors.text,
         headerBackButtonDisplayMode: "minimal",
       }}
     >
@@ -85,9 +86,9 @@ export function AlunoStack() {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarStyle: { backgroundColor: "#0d0d0d", borderTopColor: "#202020" },
-        tabBarActiveTintColor: "#22c55e",
-        tabBarInactiveTintColor: "#7a7a7a",
+        tabBarStyle: { backgroundColor: colors.background, borderTopColor: colors.border },
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textMuted,
       }}
     >
       <Tab.Screen

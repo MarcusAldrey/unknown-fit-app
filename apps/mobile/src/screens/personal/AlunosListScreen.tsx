@@ -17,6 +17,7 @@ import api, { hasAdminApiKey } from "../../api/client";
 import { useAuth } from "../../contexts/AuthContext";
 import type { AlunoResumo, Usuario } from "../../types";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
+import { colors } from "../../theme/colors";
 
 type Props = NativeStackScreenProps<PersonalStackParamList, "AlunosList">;
 
@@ -61,7 +62,7 @@ export function AlunosListScreen({ navigation }: Props) {
   if (isLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#22c55e" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -147,7 +148,7 @@ export function AlunosListScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0d0d0d",
+    backgroundColor: colors.background,
     paddingHorizontal: 16,
     position: "relative",
   },
@@ -161,7 +162,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#0d0d0d",
+    backgroundColor: colors.background,
   },
   topBar: {
     flexDirection: "row",
@@ -170,7 +171,7 @@ const styles = StyleSheet.create({
     zIndex: 20,
   },
   topBarNome: {
-    color: "#fff",
+    color: colors.text,
     fontSize: 22,
     fontWeight: "700",
   },
@@ -184,8 +185,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#2b2b2b",
-    backgroundColor: "#151515",
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
   kebabIcon: {
     flexDirection: "row",
@@ -197,7 +198,7 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "#d4d4d4",
+    backgroundColor: colors.text,
   },
   settingsMenu: {
     position: "absolute",
@@ -206,8 +207,8 @@ const styles = StyleSheet.create({
     minWidth: 110,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#2f2f2f",
-    backgroundColor: "#151515",
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
     overflow: "hidden",
     zIndex: 50,
     elevation: 8,
@@ -217,44 +218,44 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   menuItemText: {
-    color: "#fca5a5",
+    color: colors.danger,
     fontSize: 14,
     fontWeight: "600",
   },
   menuItemTextNeutral: {
-    color: "#e5e7eb",
+    color: colors.text,
     fontSize: 14,
     fontWeight: "600",
   },
   sectionTitle: {
-    color: "#d4d4d4",
+    color: colors.text,
     fontSize: 15,
     fontWeight: "600",
     marginTop: 18,
   },
   sectionSeparator: {
     height: 1,
-    backgroundColor: "#252525",
+    backgroundColor: colors.border,
     marginTop: 8,
     marginBottom: 12,
   },
   card: {
-    backgroundColor: "#1a1a1a",
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
   },
-  nome: { color: "#fff", fontSize: 18, fontWeight: "bold" },
-  email: { color: "#888", fontSize: 14, marginTop: 4 },
-  empty: { color: "#888", textAlign: "center", marginTop: 32, fontSize: 16 },
+  nome: { color: colors.text, fontSize: 18, fontWeight: "bold" },
+  email: { color: colors.textMuted, fontSize: 14, marginTop: 4 },
+  empty: { color: colors.textMuted, textAlign: "center", marginTop: 32, fontSize: 16 },
   errorTitle: {
-    color: "#fca5a5",
+    color: colors.danger,
     fontSize: 16,
     fontWeight: "700",
     marginBottom: 8,
   },
   errorText: {
-    color: "#aaa",
+    color: colors.textMuted,
     fontSize: 13,
     textAlign: "center",
     paddingHorizontal: 24,

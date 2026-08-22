@@ -16,6 +16,7 @@ import api from "../../api/client";
 import { useAuth } from "../../contexts/AuthContext";
 import type { SessaoResumo, Usuario } from "../../types";
 import type { AlunoHistoricoStackParamList } from "../../navigation/AlunoNavigator";
+import { colors } from "../../theme/colors";
 
 type Props = NativeStackScreenProps<
   AlunoHistoricoStackParamList,
@@ -70,7 +71,7 @@ export function HistoricoTreinosScreen({ navigation }: Props) {
   if (isLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#22c55e" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -173,7 +174,7 @@ export function HistoricoTreinosScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0d0d0d",
+    backgroundColor: colors.background,
     position: "relative",
   },
   menuBackdrop: {
@@ -189,7 +190,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#0d0d0d",
+    backgroundColor: colors.background,
     padding: 24,
   },
   centerBody: {
@@ -205,7 +206,7 @@ const styles = StyleSheet.create({
     zIndex: 20,
   },
   topBarNome: {
-    color: "#fff",
+    color: colors.text,
     fontSize: 22,
     fontWeight: "700",
   },
@@ -219,8 +220,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#2b2b2b",
-    backgroundColor: "#151515",
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
   kebabIcon: {
     flexDirection: "row",
@@ -232,7 +233,7 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "#d4d4d4",
+    backgroundColor: colors.text,
   },
   settingsMenu: {
     position: "absolute",
@@ -241,8 +242,8 @@ const styles = StyleSheet.create({
     minWidth: 110,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#2f2f2f",
-    backgroundColor: "#151515",
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
     overflow: "hidden",
     zIndex: 50,
     elevation: 8,
@@ -252,19 +253,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   menuItemText: {
-    color: "#fca5a5",
+    color: colors.danger,
     fontSize: 14,
     fontWeight: "600",
   },
   sectionTitle: {
-    color: "#d4d4d4",
+    color: colors.text,
     fontSize: 15,
     fontWeight: "600",
     marginTop: 18,
   },
   sectionSeparator: {
     height: 1,
-    backgroundColor: "#252525",
+    backgroundColor: colors.border,
     marginTop: 8,
     marginBottom: 12,
   },
@@ -272,15 +273,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 24,
   },
-  empty: { color: "#8d8d8d", fontSize: 16, textAlign: "center" },
-  error: { color: "#f87171", fontSize: 16, textAlign: "center" },
+  empty: { color: colors.textMuted, fontSize: 16, textAlign: "center" },
+  error: { color: colors.danger, fontSize: 16, textAlign: "center" },
   card: {
-    backgroundColor: "#1a1a1a",
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: "#242424",
+    borderColor: colors.border,
   },
   cardHeader: {
     flexDirection: "row",
@@ -288,9 +289,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 6,
   },
-  codigo: { color: "#22c55e", fontWeight: "700", fontSize: 16 },
-  nome: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  meta: { color: "#9a9a9a", marginTop: 6, fontSize: 13 },
-  statusDone: { color: "#22c55e", fontSize: 12, fontWeight: "700" },
-  statusOpen: { color: "#facc15", fontSize: 12, fontWeight: "700" },
+  codigo: { color: colors.primary, fontWeight: "700", fontSize: 16 },
+  nome: { color: colors.text, fontSize: 16, fontWeight: "600" },
+  meta: { color: colors.textMuted, marginTop: 6, fontSize: 13 },
+  statusDone: { color: colors.primary, fontSize: 12, fontWeight: "700" },
+  statusOpen: { color: colors.warning, fontSize: 12, fontWeight: "700" },
 });

@@ -33,6 +33,7 @@ import type {
 } from "../../types";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
 import { formatarImplementoExecucao } from "../../utils/formatters";
+import { colors } from "../../theme/colors";
 
 type Props = NativeStackScreenProps<PersonalStackParamList, "CriarExercicio">;
 
@@ -549,7 +550,7 @@ export function CriarExercicioScreen({ route, navigation }: Props) {
             <TextInput
               style={styles.input}
               placeholder="Buscar exercício..."
-              placeholderTextColor="#555"
+              placeholderTextColor={colors.border}
               value={searchText}
               onChangeText={(text) => {
                 setSearchText(text);
@@ -643,7 +644,7 @@ export function CriarExercicioScreen({ route, navigation }: Props) {
                 alvoTipo === "OUTROS" && styles.inlineNumericDisabled,
               ]}
               placeholder="0"
-              placeholderTextColor="#555"
+              placeholderTextColor={colors.border}
               keyboardType="numeric"
               editable={alvoTipo !== "OUTROS"}
               value={alvoMinInput}
@@ -661,7 +662,7 @@ export function CriarExercicioScreen({ route, navigation }: Props) {
                 alvoTipo === "OUTROS" && styles.inlineNumericDisabled,
               ]}
               placeholder="0"
-              placeholderTextColor="#555"
+              placeholderTextColor={colors.border}
               keyboardType="numeric"
               editable={alvoTipo !== "OUTROS"}
               value={alvoMaxInput}
@@ -729,7 +730,7 @@ export function CriarExercicioScreen({ route, navigation }: Props) {
               <TextInput
                 style={[styles.input, { marginTop: 10 }]}
                 placeholder="Descreva o alvo"
-                placeholderTextColor="#555"
+                placeholderTextColor={colors.border}
                 value={value ?? ""}
                 onChangeText={onChange}
               />
@@ -744,7 +745,7 @@ export function CriarExercicioScreen({ route, navigation }: Props) {
             <TextInput
               style={styles.inputCompact}
               placeholder="3"
-              placeholderTextColor="#555"
+              placeholderTextColor={colors.border}
               keyboardType="numeric"
               value={seriesPrescritasInput}
               onChangeText={setSeriesPrescritasInput}
@@ -759,7 +760,7 @@ export function CriarExercicioScreen({ route, navigation }: Props) {
                 <TextInput
                   style={styles.inputHalf}
                   placeholder="0"
-                  placeholderTextColor="#555"
+                  placeholderTextColor={colors.border}
                   keyboardType="numeric"
                   value={descansoMinInput}
                   onChangeText={setDescansoMinInput}
@@ -773,7 +774,7 @@ export function CriarExercicioScreen({ route, navigation }: Props) {
                 <TextInput
                   style={styles.inputHalf}
                   placeholder="0"
-                  placeholderTextColor="#555"
+                  placeholderTextColor={colors.border}
                   keyboardType="numeric"
                   value={descansoMaxInput}
                   onChangeText={setDescansoMaxInput}
@@ -823,7 +824,7 @@ export function CriarExercicioScreen({ route, navigation }: Props) {
               <TextInput
                 style={[styles.input, { marginTop: 10 }]}
                 placeholder={rerRmTipo === "RER" ? "Ex.: 2" : "Ex.: 85%"}
-                placeholderTextColor="#555"
+                placeholderTextColor={colors.border}
                 value={value ?? ""}
                 onFocus={scrollToFormEnd}
                 onChangeText={onChange}
@@ -890,7 +891,7 @@ export function CriarExercicioScreen({ route, navigation }: Props) {
                 },
               ]}
               placeholder="Observações..."
-              placeholderTextColor="#555"
+              placeholderTextColor={colors.border}
               multiline
               scrollEnabled={false}
               value={value ?? ""}
@@ -925,7 +926,7 @@ export function CriarExercicioScreen({ route, navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  wrapper: { flex: 1, backgroundColor: "#0d0d0d" },
+  wrapper: { flex: 1, backgroundColor: colors.background },
   container: { flex: 1, padding: 16 },
   floatingBackdrop: {
     ...StyleSheet.absoluteFillObject,
@@ -937,7 +938,7 @@ const styles = StyleSheet.create({
     zIndex: 60,
   },
   label: {
-    color: "#888",
+    color: colors.textMuted,
     fontSize: 12,
     textTransform: "uppercase",
     marginBottom: 8,
@@ -949,24 +950,24 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    backgroundColor: "#1a1a1a",
-    color: "#fff",
+    backgroundColor: colors.surface,
+    color: colors.text,
     borderRadius: 10,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: "#282828",
+    borderColor: colors.border,
   },
   observacoesInput: {
-    backgroundColor: "#1a1a1a",
-    color: "#fff",
+    backgroundColor: colors.surface,
+    color: colors.text,
     borderRadius: 10,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: "#282828",
+    borderColor: colors.border,
     width: "100%",
   },
   selectedBadge: {
@@ -978,48 +979,48 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   selectedBadgeValid: {
-    backgroundColor: "#22c55e",
+    backgroundColor: colors.primary,
   },
   selectedBadgeInvalid: {
-    backgroundColor: "#ef4444",
+    backgroundColor: colors.danger,
   },
-  selectedBadgeText: { color: "#fff", fontWeight: "700" },
+  selectedBadgeText: { color: colors.text, fontWeight: "700" },
   dropdown: {
     marginTop: 8,
     borderRadius: 10,
-    backgroundColor: "#141414",
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#282828",
+    borderColor: colors.border,
     overflow: "hidden",
   },
   dropdownItem: {
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#1f1f1f",
+    borderBottomColor: colors.border,
   },
-  dropdownNome: { color: "#fff", fontSize: 15, fontWeight: "600" },
-  dropdownGrupo: { color: "#9aa0a6", fontSize: 12, marginTop: 3 },
+  dropdownNome: { color: colors.text, fontSize: 15, fontWeight: "600" },
+  dropdownGrupo: { color: colors.textMuted, fontSize: 12, marginTop: 3 },
   dropdownRecurso: { fontSize: 12, marginTop: 3 },
-  dropdownRecursoDisponivel: { color: "#9fe6b4" },
-  dropdownRecursoIndisponivel: { color: "#ef4444" },
-  dropdownRecursoNeutro: { color: "#9aa0a6" },
+  dropdownRecursoDisponivel: { color: colors.primary },
+  dropdownRecursoIndisponivel: { color: colors.danger },
+  dropdownRecursoNeutro: { color: colors.textMuted },
   recursoAlertaBox: {
     marginTop: 10,
     borderWidth: 1,
-    borderColor: "#5b2222",
-    backgroundColor: "#2a1515",
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
   recursoAlertaTitulo: {
-    color: "#fda4a4",
+    color: colors.danger,
     fontSize: 12,
     fontWeight: "700",
   },
   recursoAlertaTexto: {
-    color: "#fecaca",
+    color: colors.danger,
     fontSize: 12,
     marginTop: 4,
   },
@@ -1042,21 +1043,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   inlineRangeSeparator: {
-    color: "#7c7c7c",
+    color: colors.textMuted,
     fontSize: 20,
     fontWeight: "700",
     marginTop: 26,
     marginHorizontal: -2,
   },
   inlineHint: {
-    color: "#7c7c7c",
+    color: colors.textMuted,
     fontSize: 10,
     fontWeight: "700",
     letterSpacing: 0.6,
     marginBottom: 4,
   },
   inlineHintPlaceholder: {
-    color: "#7c7c7c",
+    color: colors.textMuted,
     fontSize: 10,
     fontWeight: "700",
     letterSpacing: 0.6,
@@ -1064,9 +1065,9 @@ const styles = StyleSheet.create({
     opacity: 0,
   },
   alvoTipoTrigger: {
-    backgroundColor: "#1a1a1a",
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#282828",
+    borderColor: colors.border,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 13,
@@ -1075,12 +1076,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   alvoTipoTriggerText: {
-    color: "#fff",
+    color: colors.text,
     fontSize: 14,
     fontWeight: "600",
   },
   alvoTipoTriggerChevron: {
-    color: "#9aa0a6",
+    color: colors.textMuted,
     fontSize: 12,
     fontWeight: "700",
   },
@@ -1091,8 +1092,8 @@ const styles = StyleSheet.create({
     right: 0,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#2b2b2b",
-    backgroundColor: "#141414",
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
     overflow: "hidden",
     elevation: 12,
     shadowColor: "#000",
@@ -1104,26 +1105,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#202020",
+    borderBottomColor: colors.border,
   },
   alvoTipoMenuText: {
-    color: "#cfcfcf",
+    color: colors.text,
     fontSize: 13,
     fontWeight: "500",
   },
   alvoTipoMenuTextActive: {
-    color: "#9fe6b4",
+    color: colors.primary,
     fontWeight: "700",
   },
   inlineNumericInput: {
-    backgroundColor: "#1a1a1a",
-    color: "#fff",
+    backgroundColor: colors.surface,
+    color: colors.text,
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 14,
     fontSize: 14,
     borderWidth: 1,
-    borderColor: "#282828",
+    borderColor: colors.border,
     textAlign: "center",
   },
   inlineNumericDisabled: {
@@ -1143,20 +1144,20 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
   },
   labelCompact: {
-    color: "#888",
+    color: colors.textMuted,
     fontSize: 12,
     textTransform: "uppercase",
     marginBottom: 8,
   },
   inputCompact: {
-    backgroundColor: "#1a1a1a",
-    color: "#fff",
+    backgroundColor: colors.surface,
+    color: colors.text,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 14,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: "#282828",
+    borderColor: colors.border,
   },
   rowSplit: {
     flexDirection: "row",
@@ -1165,32 +1166,32 @@ const styles = StyleSheet.create({
   },
   inputHalf: {
     flex: 1,
-    backgroundColor: "#1a1a1a",
-    color: "#fff",
+    backgroundColor: colors.surface,
+    color: colors.text,
     borderRadius: 10,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: "#282828",
+    borderColor: colors.border,
   },
   chip: {
     borderWidth: 1,
-    borderColor: "#2b2b2b",
+    borderColor: colors.border,
     borderRadius: 999,
     paddingVertical: 8,
     paddingHorizontal: 12,
-    backgroundColor: "#151515",
+    backgroundColor: colors.surface,
   },
   chipActive: {
-    backgroundColor: "#133120",
-    borderColor: "#245d3d",
+    backgroundColor: colors.surface,
+    borderColor: colors.primary,
   },
-  chipText: { color: "#9aa0a6", fontSize: 12, fontWeight: "600" },
-  chipTextActive: { color: "#c8f2d7" },
+  chipText: { color: colors.textMuted, fontSize: 12, fontWeight: "600" },
+  chipTextActive: { color: colors.primary },
   button: {
     marginTop: 24,
-    backgroundColor: "#22c55e",
+    backgroundColor: colors.primary,
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: "center",
@@ -1198,5 +1199,5 @@ const styles = StyleSheet.create({
   buttonDisabled: {
     opacity: 0.5,
   },
-  buttonText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+  buttonText: { color: colors.text, fontSize: 16, fontWeight: "700" },
 });

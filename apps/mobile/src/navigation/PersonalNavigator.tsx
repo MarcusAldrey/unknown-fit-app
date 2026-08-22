@@ -18,6 +18,7 @@ import { DetalheTreinoRealizadoAlunoScreen } from "../screens/personal/DetalheTr
 import { AdminUsuariosScreen } from "../screens/personal/AdminUsuariosScreen";
 
 import type { ExercicioTreino, ExercicioBase, SessaoResumo } from "../types";
+import { colors } from "../theme/colors";
 
 export type PersonalStackParamList = {
   AlunosList: undefined;
@@ -85,8 +86,8 @@ function MeusAlunosStackNavigator() {
   return (
     <AlunosStack.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: "#0d0d0d" },
-        headerTintColor: "#fff",
+        headerStyle: { backgroundColor: colors.background },
+        headerTintColor: colors.text,
         headerBackButtonDisplayMode: "minimal",
       }}
     >
@@ -160,8 +161,8 @@ function CatalogoStackNavigator() {
   return (
     <CatalogoStack.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: "#0d0d0d" },
-        headerTintColor: "#fff",
+        headerStyle: { backgroundColor: colors.background },
+        headerTintColor: colors.text,
         headerBackButtonDisplayMode: "minimal",
       }}
     >
@@ -184,9 +185,9 @@ export function PersonalStack() {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarStyle: { backgroundColor: "#0d0d0d", borderTopColor: "#202020" },
-        tabBarActiveTintColor: "#22c55e",
-        tabBarInactiveTintColor: "#7a7a7a",
+        tabBarStyle: { backgroundColor: colors.background, borderTopColor: colors.border },
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textMuted,
       }}
     >
       <Tab.Screen

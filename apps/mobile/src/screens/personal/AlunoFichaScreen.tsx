@@ -22,6 +22,7 @@ import type {
   RegistroPesoCreate,
 } from "../../types";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
+import { colors } from "../../theme/colors";
 
 type Props = NativeStackScreenProps<PersonalStackParamList, "AlunoFicha">;
 
@@ -139,7 +140,7 @@ export function AlunoFichaScreen({ route, navigation }: Props) {
   if (loadingAluno || !aluno) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#22c55e" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -191,7 +192,7 @@ export function AlunoFichaScreen({ route, navigation }: Props) {
           {loadingPeso ? (
             <ActivityIndicator
               size="small"
-              color="#22c55e"
+              color={colors.primary}
               style={{ marginTop: 8 }}
             />
           ) : (
@@ -273,7 +274,7 @@ export function AlunoFichaScreen({ route, navigation }: Props) {
           {renderHeader()}
           <ActivityIndicator
             size="large"
-            color="#22c55e"
+            color={colors.primary}
             style={{ marginTop: 32 }}
           />
         </>
@@ -391,7 +392,7 @@ export function AlunoFichaScreen({ route, navigation }: Props) {
               value={novoPeso}
               onChangeText={setNovoPeso}
               placeholder="Peso em kg"
-              placeholderTextColor="#666"
+              placeholderTextColor={colors.textMuted}
               keyboardType="decimal-pad"
               style={styles.modalInput}
               autoFocus
@@ -423,29 +424,29 @@ export function AlunoFichaScreen({ route, navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0d0d0d", padding: 16 },
+  container: { flex: 1, backgroundColor: colors.background, padding: 16 },
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#0d0d0d",
+    backgroundColor: colors.background,
   },
   card: {
-    backgroundColor: "#1a1a1a",
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 20,
     marginBottom: 24,
   },
-  alunoNome: { color: "#fff", fontSize: 22, fontWeight: "bold" },
-  alunoEmail: { color: "#888", fontSize: 14, marginTop: 4 },
+  alunoNome: { color: colors.text, fontSize: 22, fontWeight: "bold" },
+  alunoEmail: { color: colors.textMuted, fontSize: 14, marginTop: 4 },
   statsRow: { flexDirection: "row", marginTop: 16, gap: 24 },
   stat: { alignItems: "center" },
-  statValue: { color: "#fff", fontSize: 20, fontWeight: "bold" },
-  statLabel: { color: "#888", fontSize: 12, marginTop: 2 },
+  statValue: { color: colors.text, fontSize: 20, fontWeight: "bold" },
+  statLabel: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
   pesoBox: {
     marginTop: 16,
     borderTopWidth: 1,
-    borderTopColor: "#2a2a2a",
+    borderTopColor: colors.surface,
     paddingTop: 12,
   },
   pesoHeader: {
@@ -453,7 +454,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  pesoTitulo: { color: "#d4d4d4", fontSize: 13, fontWeight: "600" },
+  pesoTitulo: { color: colors.text, fontSize: 13, fontWeight: "600" },
   pesoAddButton: {
     width: 24,
     height: 24,
@@ -461,40 +462,40 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#2f9f58",
-    backgroundColor: "#122818",
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
-  pesoAddButtonText: { color: "#7de3a2", fontSize: 16, fontWeight: "700" },
-  pesoAtual: { color: "#fff", fontSize: 19, fontWeight: "700", marginTop: 8 },
-  pesoData: { color: "#9aa0a6", fontSize: 12, marginTop: 4 },
+  pesoAddButtonText: { color: colors.primary, fontSize: 16, fontWeight: "700" },
+  pesoAtual: { color: colors.text, fontSize: 19, fontWeight: "700", marginTop: 8 },
+  pesoData: { color: colors.textMuted, fontSize: 12, marginTop: 4 },
   recursosBox: {
     marginTop: 16,
     borderTopWidth: 1,
-    borderTopColor: "#2a2a2a",
+    borderTopColor: colors.surface,
     paddingTop: 12,
   },
-  recursosTitle: { color: "#d4d4d4", fontSize: 13, fontWeight: "600" },
+  recursosTitle: { color: colors.text, fontSize: 13, fontWeight: "600" },
   condominioResumo: {
-    color: "#9fe6b4",
+    color: colors.primary,
     fontSize: 13,
     marginTop: 8,
   },
   gerirRecursosButton: {
     marginTop: 12,
     borderWidth: 1,
-    borderColor: "#22c55e",
+    borderColor: colors.primary,
     borderRadius: 10,
-    backgroundColor: "#102217",
+    backgroundColor: colors.surface,
     paddingVertical: 10,
     alignItems: "center",
   },
   gerirRecursosButtonText: {
-    color: "#7de3a2",
+    color: colors.primary,
     fontWeight: "700",
     fontSize: 13,
   },
   sectionTitle: {
-    color: "#fff",
+    color: colors.text,
     fontSize: 18,
     fontWeight: "bold",
     marginBottom: 12,
@@ -502,39 +503,39 @@ const styles = StyleSheet.create({
 
   // --- Card Ativo (grande, destaque) ---
   cardAtivo: {
-    backgroundColor: "#1a1a1a",
+    backgroundColor: colors.surface,
     borderRadius: 14,
     padding: 20,
     marginBottom: 14,
     borderLeftWidth: 4,
-    borderLeftColor: "#22c55e",
+    borderLeftColor: colors.primary,
   },
   ativoHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
   },
-  ativoNome: { color: "#fff", fontSize: 20, fontWeight: "bold" },
+  ativoNome: { color: colors.text, fontSize: 20, fontWeight: "bold" },
   datasContainer: { marginTop: 4 },
-  ativoDatas: { color: "#888", fontSize: 13, marginTop: 4 },
+  ativoDatas: { color: colors.textMuted, fontSize: 13, marginTop: 4 },
   badgeContainer: {
-    backgroundColor: "#22c55e",
+    backgroundColor: colors.primary,
     borderRadius: 6,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
-  badge: { color: "#fff", fontSize: 11, fontWeight: "bold" },
+  badge: { color: colors.text, fontSize: 11, fontWeight: "bold" },
   ativoCta: {
     marginTop: 14,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: "#2a2a2a",
+    borderTopColor: colors.surface,
   },
-  ativoCtaText: { color: "#22c55e", fontSize: 14, fontWeight: "600" },
+  ativoCtaText: { color: colors.primary, fontSize: 14, fontWeight: "600" },
 
   // --- Card Inativo (compacto) ---
   cardInativo: {
-    backgroundColor: "#141414",
+    backgroundColor: colors.surface,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -546,31 +547,31 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   inativoInfo: { flex: 1, paddingRight: 12 },
-  inativoNome: { color: "#999", fontSize: 15 },
-  inativoDatas: { color: "#666", fontSize: 12, marginTop: 2 },
+  inativoNome: { color: colors.textMuted, fontSize: 15 },
+  inativoDatas: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
   ativarBtn: {
-    backgroundColor: "#0a1f0a",
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#22c55e",
+    borderColor: colors.primary,
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 6,
   },
-  ativarText: { color: "#22c55e", fontSize: 13, fontWeight: "600" },
+  ativarText: { color: colors.primary, fontSize: 13, fontWeight: "600" },
   concluidaBadge: {
-    backgroundColor: "#201616",
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#4a2626",
+    borderColor: colors.border,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
-  concluidaText: { color: "#ef9a9a", fontSize: 13, fontWeight: "600" },
+  concluidaText: { color: colors.danger, fontSize: 13, fontWeight: "600" },
 
   // --- Footer / Empty ---
   addCard: {
     borderWidth: 1,
-    borderColor: "#2a2a2a",
+    borderColor: colors.surface,
     borderStyle: "dashed",
     borderRadius: 12,
     padding: 16,
@@ -580,11 +581,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
   },
-  addIcon: { color: "#22c55e", fontSize: 20, fontWeight: "bold" },
-  addText: { color: "#888", fontSize: 15 },
+  addIcon: { color: colors.primary, fontSize: 20, fontWeight: "bold" },
+  addText: { color: colors.textMuted, fontSize: 15 },
   emptyContainer: { alignItems: "center", paddingVertical: 24 },
-  emptyText: { color: "#888", fontSize: 16 },
-  emptySub: { color: "#555", fontSize: 13, marginTop: 4 },
+  emptyText: { color: colors.textMuted, fontSize: 16 },
+  emptySub: { color: colors.border, fontSize: 13, marginTop: 4 },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.65)",
@@ -592,24 +593,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   modalContent: {
-    backgroundColor: "#181818",
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#2a2a2a",
+    borderColor: colors.surface,
   },
   modalTitle: {
-    color: "#fff",
+    color: colors.text,
     fontSize: 16,
     fontWeight: "700",
     marginBottom: 12,
   },
   modalInput: {
-    backgroundColor: "#121212",
-    borderColor: "#2a2a2a",
+    backgroundColor: colors.background,
+    borderColor: colors.surface,
     borderWidth: 1,
     borderRadius: 10,
-    color: "#fff",
+    color: colors.text,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
@@ -623,21 +624,21 @@ const styles = StyleSheet.create({
   modalButtonSecondary: {
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#2a2a2a",
+    borderColor: colors.surface,
     paddingHorizontal: 12,
     paddingVertical: 9,
-    backgroundColor: "#141414",
+    backgroundColor: colors.surface,
   },
   modalButtonSecondaryText: {
-    color: "#b0b0b0",
+    color: colors.textMuted,
     fontWeight: "600",
     fontSize: 13,
   },
   modalButtonPrimary: {
     borderRadius: 10,
-    backgroundColor: "#22c55e",
+    backgroundColor: colors.primary,
     paddingHorizontal: 12,
     paddingVertical: 9,
   },
-  modalButtonPrimaryText: { color: "#fff", fontWeight: "700", fontSize: 13 },
+  modalButtonPrimaryText: { color: colors.text, fontWeight: "700", fontSize: 13 },
 });

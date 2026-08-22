@@ -1,13 +1,16 @@
 from functools import lru_cache
+from pathlib import Path
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
+_ENV_FILE = Path(__file__).resolve().parents[3] / ".env"
+
 
 class Settings(BaseSettings):
     environment: str = "development"
-    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/ecg"
+    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/kine"
     secret_key: str | None = None
     admin_api_key: str | None = None
     access_token_expire_minutes: int = 30
@@ -16,7 +19,7 @@ class Settings(BaseSettings):
     api_port: int = 8000
     log_level: str = "INFO"
 
-    model_config = {"env_file": "../../.env", "extra": "ignore"}
+    model_config = {"env_file": str(_ENV_FILE), "extra": "ignore"}
 
     @field_validator("database_url", mode="before")
     @classmethod

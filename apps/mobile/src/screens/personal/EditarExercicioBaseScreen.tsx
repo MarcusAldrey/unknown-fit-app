@@ -15,6 +15,7 @@ import api from "../../api/client";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
 import type { ImplementoExecucao } from "../../types";
 import { formatarImplementoExecucao } from "../../utils/formatters";
+import { colors } from "../../theme/colors";
 
 type Props = NativeStackScreenProps<
   PersonalStackParamList,
@@ -91,7 +92,7 @@ export function EditarExercicioBaseScreen({ route, navigation }: Props) {
             value={value}
             onChangeText={onChange}
             placeholder="Nome do exercício"
-            placeholderTextColor="#666"
+            placeholderTextColor={colors.textMuted}
           />
         )}
       />
@@ -107,7 +108,7 @@ export function EditarExercicioBaseScreen({ route, navigation }: Props) {
             value={value}
             onChangeText={onChange}
             placeholder="Grupo muscular"
-            placeholderTextColor="#666"
+            placeholderTextColor={colors.textMuted}
           />
         )}
       />
@@ -174,23 +175,23 @@ export function EditarExercicioBaseScreen({ route, navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0d0d0d", padding: 16 },
+  container: { flex: 1, backgroundColor: colors.background, padding: 16 },
   label: {
-    color: "#888",
+    color: colors.textMuted,
     fontSize: 12,
     textTransform: "uppercase",
     marginBottom: 8,
     marginTop: 16,
   },
   input: {
-    backgroundColor: "#1a1a1a",
-    color: "#fff",
+    backgroundColor: colors.surface,
+    color: colors.text,
     borderRadius: 10,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: "#282828",
+    borderColor: colors.border,
   },
   row: {
     flexDirection: "row",
@@ -199,18 +200,18 @@ const styles = StyleSheet.create({
   },
   chip: {
     borderWidth: 1,
-    borderColor: "#2b2b2b",
+    borderColor: colors.border,
     borderRadius: 999,
     paddingVertical: 8,
     paddingHorizontal: 12,
-    backgroundColor: "#151515",
+    backgroundColor: colors.surface,
   },
   chipActive: {
-    backgroundColor: "#133120",
-    borderColor: "#245d3d",
+    backgroundColor: colors.surface,
+    borderColor: colors.primary,
   },
-  chipText: { color: "#9aa0a6", fontSize: 12, fontWeight: "600" },
-  chipTextActive: { color: "#c8f2d7" },
+  chipText: { color: colors.textMuted, fontSize: 12, fontWeight: "600" },
+  chipTextActive: { color: colors.primary },
   toggle: {
     borderRadius: 10,
     paddingVertical: 12,
@@ -218,20 +219,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   toggleAtivo: {
-    backgroundColor: "#133120",
-    borderColor: "#245d3d",
+    backgroundColor: colors.surface,
+    borderColor: colors.primary,
   },
   toggleInativo: {
-    backgroundColor: "#171717",
-    borderColor: "#2b2b2b",
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
   },
-  toggleText: { color: "#fff", fontSize: 14, fontWeight: "600" },
+  toggleText: { color: colors.text, fontSize: 14, fontWeight: "600" },
   button: {
-    backgroundColor: "#22c55e",
+    backgroundColor: colors.primary,
     borderRadius: 10,
     paddingVertical: 16,
     alignItems: "center",
     marginTop: 28,
   },
-  buttonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
+  buttonText: { color: colors.text, fontSize: 16, fontWeight: "bold" },
 });

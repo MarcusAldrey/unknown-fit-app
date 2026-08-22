@@ -14,6 +14,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import api from "../../api/client";
 import type { ConjuntoTreino, ConjuntoTreinoCreate } from "../../types";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
+import { colors } from "../../theme/colors";
 
 type Props = NativeStackScreenProps<PersonalStackParamList, "CriarConjunto">;
 
@@ -60,7 +61,7 @@ export function CriarConjuntoScreen({ route, navigation }: Props) {
           <TextInput
             style={styles.input}
             placeholder="Ex: Ciclo Hipertrofia 1"
-            placeholderTextColor="#888"
+            placeholderTextColor={colors.textMuted}
             value={value}
             onChangeText={onChange}
           />
@@ -78,28 +79,28 @@ export function CriarConjuntoScreen({ route, navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0d0d0d", padding: 16 },
+  container: { flex: 1, backgroundColor: colors.background, padding: 16 },
   label: {
-    color: "#888",
+    color: colors.textMuted,
     fontSize: 12,
     textTransform: "uppercase",
     marginBottom: 8,
     marginTop: 16,
   },
   input: {
-    backgroundColor: "#1a1a1a",
-    color: "#fff",
+    backgroundColor: colors.surface,
+    color: colors.text,
     borderRadius: 10,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
   },
   button: {
-    backgroundColor: "#22c55e",
+    backgroundColor: colors.primary,
     borderRadius: 10,
     paddingVertical: 16,
     alignItems: "center",
     marginTop: 32,
   },
-  buttonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
+  buttonText: { color: colors.text, fontSize: 16, fontWeight: "bold" },
 });

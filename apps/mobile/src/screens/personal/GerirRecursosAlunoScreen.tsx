@@ -18,6 +18,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import api from "../../api/client";
 import type { AlunoRecursoDisponibilidade } from "../../types";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
+import { colors } from "../../theme/colors";
 
 type Props = NativeStackScreenProps<
   PersonalStackParamList,
@@ -302,7 +303,7 @@ export function GerirRecursosAlunoScreen({ route }: Props) {
   if (isLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#22c55e" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -386,9 +387,9 @@ export function GerirRecursosAlunoScreen({ route }: Props) {
                   value={item.disponivel_para_aluno}
                   onValueChange={(value) => toggleDisponibilidade(item, value)}
                   disabled={isPending || recursoCrudPendente}
-                  trackColor={{ false: "#3a1f1f", true: "#1f3a27" }}
+                  trackColor={{ false: colors.surface, true: colors.primary }}
                   thumbColor={
-                    item.disponivel_para_aluno ? "#22c55e" : "#ef4444"
+                    item.disponivel_para_aluno ? colors.primary : colors.danger
                   }
                 />
               </View>
@@ -429,7 +430,7 @@ export function GerirRecursosAlunoScreen({ route }: Props) {
               editable={!recursoCrudPendente}
               autoFocus
               placeholder="Nome do recurso"
-              placeholderTextColor="#666"
+              placeholderTextColor={colors.textMuted}
             />
 
             <View style={styles.modalActions}>
@@ -465,14 +466,14 @@ export function GerirRecursosAlunoScreen({ route }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0d0d0d",
+    backgroundColor: colors.background,
     padding: 16,
   },
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#0d0d0d",
+    backgroundColor: colors.background,
     paddingHorizontal: 24,
   },
   actionsRow: {
@@ -487,7 +488,7 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   addRecursoButtonText: {
-    color: "#7dd3a2",
+    color: colors.primary,
     fontSize: 12,
     fontWeight: "600",
     opacity: 0.9,
@@ -498,7 +499,7 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   marcarTodosButtonText: {
-    color: "#22c55e",
+    color: colors.primary,
     fontSize: 13,
     fontWeight: "700",
   },
@@ -514,12 +515,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#2f2f2f",
-    backgroundColor: "#121212",
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
     marginRight: 2,
   },
   rowMenuText: {
-    color: "#7f7f7f",
+    color: colors.textMuted,
     fontSize: 11,
     fontWeight: "700",
     marginTop: -1,
@@ -527,9 +528,9 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#151515",
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#242424",
+    borderColor: colors.border,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -537,7 +538,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   resourceName: {
-    color: "#f0f0f0",
+    color: colors.text,
     fontSize: 15,
     fontWeight: "600",
   },
@@ -547,25 +548,25 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   resourceStatusOn: {
-    color: "#22c55e",
+    color: colors.primary,
   },
   resourceStatusOff: {
-    color: "#ef4444",
+    color: colors.danger,
   },
   emptyText: {
-    color: "#8a8a8a",
+    color: colors.textMuted,
     textAlign: "center",
     marginTop: 32,
   },
   errorTitle: {
-    color: "#fca5a5",
+    color: colors.danger,
     fontSize: 16,
     fontWeight: "700",
     marginBottom: 8,
     textAlign: "center",
   },
   errorText: {
-    color: "#aaaaaa",
+    color: colors.textMuted,
     textAlign: "center",
     fontSize: 13,
   },
@@ -576,23 +577,23 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalContent: {
-    backgroundColor: "#131313",
+    backgroundColor: colors.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#2a2a2a",
+    borderColor: colors.surface,
     padding: 16,
   },
   modalTitle: {
-    color: "#f5f5f5",
+    color: colors.text,
     fontSize: 16,
     fontWeight: "700",
     marginBottom: 12,
   },
   modalInput: {
-    backgroundColor: "#1a1a1a",
-    color: "#fff",
+    backgroundColor: colors.surface,
+    color: colors.text,
     borderWidth: 1,
-    borderColor: "#2f2f2f",
+    borderColor: colors.border,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 12,
@@ -609,22 +610,22 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#323232",
+    borderColor: colors.border,
   },
   modalCancelText: {
-    color: "#b8b8b8",
+    color: colors.textMuted,
     fontWeight: "600",
   },
   modalSaveBtn: {
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 8,
-    backgroundColor: "#14532d",
+    backgroundColor: colors.primary,
     borderWidth: 1,
-    borderColor: "#1f7a45",
+    borderColor: colors.primary,
   },
   modalSaveText: {
-    color: "#d7ffe8",
+    color: colors.text,
     fontWeight: "700",
   },
 });
