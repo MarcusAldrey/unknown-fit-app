@@ -10,7 +10,6 @@ async def estrutura_b(client, admin_headers):
     return await setup_estrutura_personal_b(client, admin_headers)
 
 
-@pytest.mark.xfail(strict=True, reason="IDOR fixed in Phase 1.1")
 async def test_listar_treinos_de_conjunto_alheio_bloqueado(
     client: AsyncClient, personal_token: str, estrutura_b: dict
 ):
@@ -21,7 +20,6 @@ async def test_listar_treinos_de_conjunto_alheio_bloqueado(
     assert resp.status_code in (403, 404)
 
 
-@pytest.mark.xfail(strict=True, reason="IDOR fixed in Phase 1.1")
 async def test_criar_treino_em_conjunto_alheio_bloqueado(
     client: AsyncClient, personal_token: str, estrutura_b: dict
 ):
@@ -33,7 +31,6 @@ async def test_criar_treino_em_conjunto_alheio_bloqueado(
     assert resp.status_code in (403, 404)
 
 
-@pytest.mark.xfail(strict=True, reason="IDOR fixed in Phase 1.1")
 async def test_editar_treino_alheio_bloqueado(
     client: AsyncClient, personal_token: str, estrutura_b: dict
 ):
@@ -45,7 +42,6 @@ async def test_editar_treino_alheio_bloqueado(
     assert resp.status_code in (403, 404)
 
 
-@pytest.mark.xfail(strict=True, reason="IDOR fixed in Phase 1.1")
 async def test_listar_exercicios_de_treino_alheio_bloqueado(
     client: AsyncClient, personal_token: str, estrutura_b: dict
 ):
@@ -56,7 +52,6 @@ async def test_listar_exercicios_de_treino_alheio_bloqueado(
     assert resp.status_code in (403, 404)
 
 
-@pytest.mark.xfail(strict=True, reason="IDOR fixed in Phase 1.1")
 async def test_deletar_exercicio_alheio_bloqueado(
     client: AsyncClient, personal_token: str, estrutura_b: dict
 ):

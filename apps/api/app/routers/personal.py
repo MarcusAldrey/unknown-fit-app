@@ -7,7 +7,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, selectinload
 
 from app.database import get_db
-from app.deps import get_current_personal
+from app.deps import (
+    get_current_personal,
+    get_conjunto_vinculado,
+    get_treino_vinculado,
+    get_exercicio_vinculado,
+)
 from app.models import (
     Personal,
     Aluno,
@@ -22,9 +27,6 @@ from app.models import (
     ExercicioRequisitoRecurso,
     AlunoRecursoDisponibilidade,
     RecursoTreino,
-    AlvoTipo,
-    RerRmTipo,
-    Tecnica,
     RegistroPesoAluno,
 )
 from app.services.equivalencia_exercicio import (
@@ -551,6 +553,7 @@ async def listar_treinos(
     conjunto_id: uuid.UUID,
     personal: Personal = Depends(get_current_personal),
     db: AsyncSession = Depends(get_db),
+    conjunto: ConjuntoTreino = Depends(get_conjunto_vinculado),
 ):
     result = await db.execute(
         select(Treino)
@@ -566,6 +569,7 @@ async def criar_treino(
     body: TreinoCreate,
     personal: Personal = Depends(get_current_personal),
     db: AsyncSession = Depends(get_db),
+    conjunto: ConjuntoTreino = Depends(get_conjunto_vinculado),
 ):
     treino = Treino(
         conjunto_treino_id=conjunto_id,
@@ -684,12 +688,8 @@ async def editar_treino(
     body: TreinoUpdate,
     personal: Personal = Depends(get_current_personal),
     db: AsyncSession = Depends(get_db),
+    treino: Treino = Depends(get_treino_vinculado),
 ):
-    result = await db.execute(select(Treino).where(Treino.id == treino_id))
-    treino = result.scalar_one_or_none()
-    if treino is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Treino não encontrado")
-
     update_data = body.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(treino, key, value)
@@ -743,6 +743,7 @@ async def listar_exercicios(
     treino_id: uuid.UUID,
     personal: Personal = Depends(get_current_personal),
     db: AsyncSession = Depends(get_db),
+    treino: Treino = Depends(get_treino_vinculado),
 ):
     result = await db.execute(
         select(ExercicioTreino)
@@ -807,16 +808,16 @@ async def criar_exercicio(
         ordem=body.ordem,
         numero_series_prescritas=body.numero_series_prescritas,
         prescricao=body.prescricao,
-        alvo_tipo=AlvoTipo(body.alvo_tipo.value),
+        alvo_tipo=body.alvo_tipo,
         alvo_valor_min=body.alvo_valor_min,
         alvo_valor_max=body.alvo_valor_max,
         alvo_outros_texto=body.alvo_outros_texto,
-        rer_rm_tipo=RerRmTipo(body.rer_rm_tipo.value) if body.rer_rm_tipo is not None else None,
+        rer_rm_tipo=body.rer_rm_tipo,
         rer_rm_valor=body.rer_rm_valor,
         descanso_segundos=descanso_max,
         descanso_segundos_min=descanso_min,
         descanso_segundos_max=descanso_max,
-        tecnica=Tecnica(body.tecnica),
+        tecnica=body.tecnica,
         observacoes=body.observacoes,
         observacoes_aluno=body.observacoes_aluno,
     )
@@ -837,16 +838,6 @@ async def editar_exercicio(
     await _garantir_disponibilidades_aluno(treino.conjunto.aluno_id, db)
 
     update_data = body.model_dump(exclude_unset=True)
-    if "tecnica" in update_data:
-        update_data["tecnica"] = Tecnica(update_data["tecnica"])
-    if "alvo_tipo" in update_data and update_data["alvo_tipo"] is not None:
-        update_data["alvo_tipo"] = AlvoTipo(update_data["alvo_tipo"].value)
-    if "rer_rm_tipo" in update_data:
-        update_data["rer_rm_tipo"] = (
-            RerRmTipo(update_data["rer_rm_tipo"].value)
-            if update_data["rer_rm_tipo"] is not None
-            else None
-        )
     if (
         "descanso_segundos" in update_data
         and "descanso_segundos_min" not in update_data
@@ -923,14 +914,8 @@ async def deletar_exercicio(
     exercicio_id: uuid.UUID,
     personal: Personal = Depends(get_current_personal),
     db: AsyncSession = Depends(get_db),
+    exercicio: ExercicioTreino = Depends(get_exercicio_vinculado),
 ):
-    result = await db.execute(
-        select(ExercicioTreino).where(ExercicioTreino.id == exercicio_id)
-    )
-    exercicio = result.scalar_one_or_none()
-    if exercicio is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Exercício não encontrado")
-
     await remover_equivalencias_do_exercicio(db, exercicio_id)
 
     treino_id = exercicio.treino_id

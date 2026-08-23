@@ -18,8 +18,16 @@ class Settings(BaseSettings):
     api_host: str = "0.0.0.0"
     api_port: int = 8000
     log_level: str = "INFO"
+    cors_origins: list[str] = ["http://localhost:8081", "http://localhost:19006"]
 
     model_config = {"env_file": str(_ENV_FILE), "extra": "ignore"}
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, value: object) -> object:
+        if isinstance(value, str):
+            return [origin.strip() for origin in value.split(",") if origin.strip()]
+        return value
 
     @field_validator("database_url", mode="before")
     @classmethod
