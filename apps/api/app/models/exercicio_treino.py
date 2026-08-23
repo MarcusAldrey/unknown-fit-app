@@ -1,4 +1,3 @@
-import enum
 import uuid
 
 from sqlalchemy import String, Integer, ForeignKey, Text, Enum as SAEnum
@@ -6,24 +5,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID
 
 from app.database import Base
-
-
-class Tecnica(str, enum.Enum):
-    PADRAO = "PADRAO"
-    ISOMETRIA = "ISOMETRIA"
-    INSTABILIDADE = "INSTABILIDADE"
-
-
-class AlvoTipo(str, enum.Enum):
-    SEGUNDOS = "SEGUNDOS"
-    REPETICOES = "REPETICOES"
-    PASSOS = "PASSOS"
-    OUTROS = "OUTROS"
-
-
-class RerRmTipo(str, enum.Enum):
-    RER = "RER"
-    RM = "RM"
+from app.domain.enums import Tecnica, AlvoTipo, RerRmTipo
 
 
 class ExercicioTreino(Base):

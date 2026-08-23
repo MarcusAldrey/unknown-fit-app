@@ -1,4 +1,3 @@
-import enum
 import uuid
 
 from sqlalchemy import String, Boolean, Enum as SAEnum
@@ -7,17 +6,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from app.database import Base
-
-
-class ImplementoExecucao(str, enum.Enum):
-    BARRA = "BARRA"
-    ELASTICO = "ELASTICO"
-    HALTERE = "HALTERE"
-    KETTLEBELL = "KETTLEBELL"
-    CABO = "CABO"
-    MAQUINA = "MAQUINA"
-    PESO_CORPO = "PESO_CORPO"
-    OUTRO = "OUTRO"
+from app.domain.enums import ImplementoExecucao
 
 
 class ExercicioBase(Base):

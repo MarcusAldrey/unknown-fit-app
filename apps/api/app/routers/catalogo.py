@@ -12,7 +12,6 @@ from app.models import (
     AlunoRecursoDisponibilidade,
     ExercicioBase,
     ExercicioRequisitoRecurso,
-    ImplementoExecucao,
     Personal,
     RecursoTreino,
     Usuario,
@@ -72,8 +71,6 @@ async def editar_exercicio_base(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Exercício não encontrado")
 
     update_data = body.model_dump(exclude_unset=True)
-    if "implemento_execucao" in update_data:
-        update_data["implemento_execucao"] = ImplementoExecucao(update_data["implemento_execucao"])
 
     for key, value in update_data.items():
         setattr(exercicio, key, value)

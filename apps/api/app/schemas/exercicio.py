@@ -1,20 +1,8 @@
-import enum
 import uuid
 from pydantic import BaseModel, Field, model_validator
 
+from app.domain.enums import AlvoTipo, ImplementoExecucao, RerRmTipo, Tecnica
 from app.schemas.recurso import RecursoTreinoOut
-
-
-class AlvoTipo(str, enum.Enum):
-    SEGUNDOS = "SEGUNDOS"
-    REPETICOES = "REPETICOES"
-    PASSOS = "PASSOS"
-    OUTROS = "OUTROS"
-
-
-class RerRmTipo(str, enum.Enum):
-    RER = "RER"
-    RM = "RM"
 
 
 class ExercicioTreinoCreate(BaseModel):
@@ -31,7 +19,7 @@ class ExercicioTreinoCreate(BaseModel):
     descanso_segundos: int | None = Field(default=None, ge=0)
     descanso_segundos_min: int | None = Field(default=None, ge=0)
     descanso_segundos_max: int | None = Field(default=None, ge=0)
-    tecnica: str = "PADRAO"
+    tecnica: Tecnica = Tecnica.PADRAO
     observacoes: str | None = None
     observacoes_aluno: str | None = None
 
@@ -97,7 +85,7 @@ class ExercicioTreinoUpdate(BaseModel):
     descanso_segundos: int | None = Field(default=None, ge=0)
     descanso_segundos_min: int | None = Field(default=None, ge=0)
     descanso_segundos_max: int | None = Field(default=None, ge=0)
-    tecnica: str | None = None
+    tecnica: Tecnica | None = None
     observacoes: str | None = None
     observacoes_aluno: str | None = None
 
@@ -174,7 +162,7 @@ class ExercicioTreinoOut(BaseModel):
     descanso_segundos: int | None = None
     descanso_segundos_min: int | None = None
     descanso_segundos_max: int | None = None
-    tecnica: str
+    tecnica: Tecnica
     observacoes: str | None = None
     observacoes_aluno: str | None = None
     equivalentes: list[ExercicioTreinoEquivalenteOut] = Field(default_factory=list)
@@ -186,7 +174,7 @@ class ExercicioBaseOut(BaseModel):
     id: uuid.UUID
     nome: str
     grupo_muscular: str
-    implemento_execucao: str
+    implemento_execucao: ImplementoExecucao
     pode_ser_feito_em_casa: bool
     requisitos_alternativos_recurso: list[RecursoTreinoOut] = Field(default_factory=list)
 
@@ -196,7 +184,7 @@ class ExercicioBaseOut(BaseModel):
 class ExercicioBaseUpdate(BaseModel):
     nome: str | None = None
     grupo_muscular: str | None = None
-    implemento_execucao: str | None = None
+    implemento_execucao: ImplementoExecucao | None = None
     pode_ser_feito_em_casa: bool | None = None
 
 
