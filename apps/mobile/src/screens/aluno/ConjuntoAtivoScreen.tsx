@@ -85,7 +85,6 @@ export function ConjuntoAtivoScreen({ navigation }: Props) {
 
   const {
     data: sessaoAtiva,
-    isLoading: loadingSessaoAtiva,
     refetch: refetchSessaoAtiva,
   } = useQuery<SessaoAtiva | null>({
     queryKey: ["aluno", "sessao-ativa"],

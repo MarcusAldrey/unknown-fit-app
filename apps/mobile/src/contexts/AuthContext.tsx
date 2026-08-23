@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           isAuthenticated: true,
           role,
         });
-      } catch (error: any) {
+      } catch {
         // Token inválido ou expirado
         console.log("Token validation failed, clearing auth");
         await SecureStore.deleteItemAsync("access_token");
