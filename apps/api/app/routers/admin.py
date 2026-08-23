@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import delete, or_, select
@@ -97,9 +98,17 @@ async def _definir_vinculo_ativo_unico(
     aluno_id: uuid.UUID,
     personal_id: uuid.UUID | None,
 ) -> None:
-    await db.execute(
-        delete(VinculoPersonalAluno).where(VinculoPersonalAluno.aluno_id == aluno_id)
+    result = await db.execute(
+        select(VinculoPersonalAluno).where(
+            VinculoPersonalAluno.aluno_id == aluno_id,
+            VinculoPersonalAluno.ativo.is_(True),
+        )
     )
+    for vinculo in result.scalars().all():
+        vinculo.ativo = False
+        vinculo.fim_em = datetime.utcnow()
+
+    await db.flush()
 
     if personal_id is None:
         return

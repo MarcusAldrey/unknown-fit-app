@@ -1,9 +1,11 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models import Usuario
+from app.models import Usuario, RefreshTokenRevogado
 from app.deps import get_current_user
 from app.schemas.auth import LoginRequest, TokenResponse, RefreshRequest
 from app.schemas.usuario import UsuarioOut
@@ -15,6 +17,24 @@ from app.services.auth import (
 )
 
 router = APIRouter()
+
+
+async def _revogar_refresh_token(db: AsyncSession, refresh_token: str) -> None:
+    try:
+        payload = decodificar_token(refresh_token)
+    except ValueError:
+        return
+
+    jti = payload.get("jti")
+    if jti is None:
+        return
+
+    result = await db.execute(
+        select(RefreshTokenRevogado).where(RefreshTokenRevogado.jti == jti)
+    )
+    if result.scalar_one_or_none() is None:
+        db.add(RefreshTokenRevogado(jti=jti, revogado_em=datetime.utcnow()))
+        await db.flush()
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -48,6 +68,14 @@ async def refresh(body: RefreshRequest, db: AsyncSession = Depends(get_db)):
     if payload.get("type") != "refresh":
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token não é refresh")
 
+    jti = payload.get("jti")
+    if jti is not None:
+        result = await db.execute(
+            select(RefreshTokenRevogado).where(RefreshTokenRevogado.jti == jti)
+        )
+        if result.scalar_one_or_none() is not None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token revogado")
+
     user_id = payload.get("sub")
     result = await db.execute(select(Usuario).where(Usuario.id == user_id))
     user = result.scalar_one_or_none()
@@ -66,7 +94,12 @@ async def refresh(body: RefreshRequest, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/logout")
-async def logout():
+async def logout(
+    body: RefreshRequest | None = None,
+    db: AsyncSession = Depends(get_db),
+):
+    if body is not None:
+        await _revogar_refresh_token(db, body.refresh_token)
     return {"detail": "Logout realizado"}
 
 

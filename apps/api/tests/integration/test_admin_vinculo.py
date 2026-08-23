@@ -1,4 +1,3 @@
-import pytest
 from httpx import AsyncClient
 from sqlalchemy import select
 
@@ -15,7 +14,6 @@ async def _aluno_id_por_email(client: AsyncClient, admin_headers: dict, email: s
     raise AssertionError(f"Aluno {email} não encontrado")
 
 
-@pytest.mark.xfail(strict=True, reason="vínculo history fixed in Phase 1.4")
 async def test_revincular_aluno_mantem_historico(
     client: AsyncClient, admin_headers: dict, db_session
 ):

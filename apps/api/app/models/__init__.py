@@ -20,3 +20,4 @@ from app.models.recurso_treino import (  # noqa: F401
 from app.models.sessao_treino import SessaoTreino, StatusSessao  # noqa: F401
 from app.models.serie_executada import SerieExecutada  # noqa: F401
 from app.models.peso_registro import RegistroPesoAluno  # noqa: F401
+from app.models.refresh_token_revogado import RefreshTokenRevogado  # noqa: F401

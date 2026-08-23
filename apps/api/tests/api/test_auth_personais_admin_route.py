@@ -102,6 +102,8 @@ async def test_criar_aluno_com_admin_key_retorna_201(
         "_buscar_usuario_por_email",
         AsyncMock(return_value=None),
     )
+    definir_vinculo_mock = AsyncMock()
+    monkeypatch.setattr(admin_router, "_definir_vinculo_ativo_unico", definir_vinculo_mock)
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -131,7 +133,7 @@ async def test_criar_aluno_com_admin_key_retorna_201(
     assert payload["usuario_id"]
     assert len(dummy_db.added) == 2
     assert dummy_db.flush.await_count == 3
-    assert dummy_db.execute.await_count == 1
+    definir_vinculo_mock.assert_awaited_once()
 
 
 async def test_remover_personal_apaga_personal_e_usuario(

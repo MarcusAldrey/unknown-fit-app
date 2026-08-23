@@ -1,5 +1,6 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
+import uuid
 
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -30,7 +31,7 @@ def verificar_senha(senha: str, senha_hash: str) -> bool:
 
 def criar_token(data: dict[str, Any], expires_delta: timedelta) -> str:
     to_encode = data.copy()
-    expire = datetime.utcnow() + expires_delta
+    expire = datetime.now(timezone.utc) + expires_delta
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, _get_secret_key(), algorithm=ALGORITHM)
 
@@ -44,7 +45,7 @@ def criar_access_token(sub: str, role: str) -> str:
 
 def criar_refresh_token(sub: str) -> str:
     return criar_token(
-        {"sub": sub, "type": "refresh"},
+        {"sub": sub, "type": "refresh", "jti": str(uuid.uuid4())},
         timedelta(days=settings.refresh_token_expire_days),
     )
 

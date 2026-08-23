@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import ForeignKey, Boolean, UniqueConstraint
+from sqlalchemy import Boolean, ForeignKey, Index, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID
 
@@ -11,7 +11,12 @@ from app.database import Base
 class VinculoPersonalAluno(Base):
     __tablename__ = "vinculos_personal_aluno"
     __table_args__ = (
-        UniqueConstraint("aluno_id", "ativo", name="uq_aluno_vinculo_ativo"),
+        Index(
+            "uq_aluno_vinculo_ativo",
+            "aluno_id",
+            unique=True,
+            postgresql_where=text("ativo"),
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
