@@ -47,7 +47,6 @@ def aluno_overrides(dummy_db, dummy_aluno):
     app.dependency_overrides[get_current_aluno] = _override_get_current_aluno
 
 
-@pytest.mark.asyncio
 async def test_get_ultimo_peso_retorna_peso_e_repeticoes(aluno_overrides, dummy_db):
     exercicio_id = uuid.uuid4()
     dummy_db.execute.side_effect = [
@@ -67,7 +66,6 @@ async def test_get_ultimo_peso_retorna_peso_e_repeticoes(aluno_overrides, dummy_
     assert dummy_db.execute.await_count == 2
 
 
-@pytest.mark.asyncio
 async def test_get_ultimo_peso_retorna_nulos_quando_sem_historico(aluno_overrides, dummy_db):
     exercicio_id = uuid.uuid4()
     dummy_db.execute.side_effect = [

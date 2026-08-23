@@ -41,7 +41,6 @@ def db_override(dummy_db):
     app.dependency_overrides[get_db] = _override_get_db
 
 
-@pytest.mark.asyncio
 async def test_criar_personal_exige_admin_key(db_override):
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -58,7 +57,6 @@ async def test_criar_personal_exige_admin_key(db_override):
     assert response.json()["detail"] == "Admin key inválida"
 
 
-@pytest.mark.asyncio
 async def test_criar_personal_com_admin_key_retorna_201(
     monkeypatch: pytest.MonkeyPatch,
     db_override,
@@ -94,7 +92,6 @@ async def test_criar_personal_com_admin_key_retorna_201(
     assert dummy_db.flush.await_count == 2
 
 
-@pytest.mark.asyncio
 async def test_criar_aluno_com_admin_key_retorna_201(
     monkeypatch: pytest.MonkeyPatch,
     db_override,
@@ -137,7 +134,6 @@ async def test_criar_aluno_com_admin_key_retorna_201(
     assert dummy_db.execute.await_count == 1
 
 
-@pytest.mark.asyncio
 async def test_remover_personal_apaga_personal_e_usuario(
     monkeypatch: pytest.MonkeyPatch,
     db_override,
@@ -171,7 +167,6 @@ async def test_remover_personal_apaga_personal_e_usuario(
     assert dummy_db.delete.await_count == 2
 
 
-@pytest.mark.asyncio
 async def test_remover_aluno_apaga_aluno_e_usuario(
     monkeypatch: pytest.MonkeyPatch,
     db_override,
@@ -206,7 +201,6 @@ async def test_remover_aluno_apaga_aluno_e_usuario(
     assert dummy_db.delete.await_count == 2
 
 
-@pytest.mark.asyncio
 async def test_rota_antiga_de_personais_saiu_do_auth(db_override):
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:

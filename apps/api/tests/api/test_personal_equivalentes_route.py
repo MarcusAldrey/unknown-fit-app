@@ -41,7 +41,6 @@ def personal_overrides(dummy_db, dummy_personal):
     app.dependency_overrides[get_current_personal] = _override_get_current_personal
 
 
-@pytest.mark.asyncio
 async def test_put_equivalentes_retorna_lista_do_servico(
     monkeypatch: pytest.MonkeyPatch,
     personal_overrides,
@@ -91,7 +90,6 @@ async def test_put_equivalentes_retorna_lista_do_servico(
     )
 
 
-@pytest.mark.asyncio
 async def test_put_equivalentes_retorna_404_quando_exercicio_nao_encontrado(
     monkeypatch: pytest.MonkeyPatch,
     personal_overrides,
@@ -114,7 +112,6 @@ async def test_put_equivalentes_retorna_404_quando_exercicio_nao_encontrado(
     assert response.json()["detail"] == "Exercício não encontrado"
 
 
-@pytest.mark.asyncio
 async def test_put_equivalentes_retorna_422_para_ids_duplicados(
     monkeypatch: pytest.MonkeyPatch,
     personal_overrides,

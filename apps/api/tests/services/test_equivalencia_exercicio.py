@@ -194,7 +194,6 @@ def test_calcular_bloco_limpeza_equivalencia_com_equivalente_fora_do_treino() ->
     assert bloco_limpeza == {a, b, fora}
 
 
-@pytest.mark.asyncio
 async def test_substituir_equivalentes_rejeita_ids_fora_do_treino(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -221,7 +220,6 @@ async def test_substituir_equivalentes_rejeita_ids_fora_do_treino(
     assert db.flush.await_count == 0
 
 
-@pytest.mark.asyncio
 async def test_substituir_equivalentes_limpa_bloco_ao_zerar(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -257,7 +255,6 @@ async def test_substituir_equivalentes_limpa_bloco_ao_zerar(
     assert db.flush.await_count == 2
 
 
-@pytest.mark.asyncio
 async def test_substituir_equivalentes_mescla_blocos_e_respeita_ordem(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -296,7 +293,6 @@ async def test_substituir_equivalentes_mescla_blocos_e_respeita_ordem(
     assert db.flush.await_count == 3
 
 
-@pytest.mark.asyncio
 async def test_reordenar_ordens_exercicios_do_treino_corrige_sequencia(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
