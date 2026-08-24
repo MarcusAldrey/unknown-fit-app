@@ -9,7 +9,7 @@ import type {
   SessaoTreino,
   Treino,
   UltimoPesoExercicio,
-} from "../../types";
+} from "@ecg/types";
 
 export const alunoService = {
   conjuntoAtivo: async (): Promise<ConjuntoTreino> => {

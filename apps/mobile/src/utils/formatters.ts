@@ -1,4 +1,4 @@
-import type { ImplementoExecucao } from "../types";
+import type { ImplementoExecucao } from "@ecg/types";
 
 const IMPLEMENTO_LABELS: Record<ImplementoExecucao, string> = {
   BARRA: "Barra",

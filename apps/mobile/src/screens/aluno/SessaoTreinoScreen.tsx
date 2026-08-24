@@ -26,7 +26,7 @@ import type {
   SerieCreate,
   Treino,
   UltimoPesoExercicio,
-} from "../../types";
+} from "@ecg/types";
 import type { AlunoTreinoStackParamList } from "../../navigation/AlunoNavigator";
 import { formatarIntervaloDescanso } from "../../utils/formatters";
 import { colors } from "../../theme/colors";

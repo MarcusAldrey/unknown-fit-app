@@ -18,7 +18,7 @@ import { keys } from "../../api/queryKeys";
 import { authService } from "../../api/services/auth";
 import { personalService } from "../../api/services/personal";
 import { useAuth } from "../../contexts/AuthContext";
-import type { AlunoResumo, Usuario } from "../../types";
+import type { AlunoResumo, Usuario } from "@ecg/types";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
 import { colors } from "../../theme/colors";
 

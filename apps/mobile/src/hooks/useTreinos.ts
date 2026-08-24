@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { keys } from "../api/queryKeys";
 import { personalService } from "../api/services/personal";
-import type { Treino } from "../types";
+import type { Treino } from "@ecg/types";
 
 export function useTreinos(conjuntoId: string | undefined) {
   return useQuery<Treino[]>({

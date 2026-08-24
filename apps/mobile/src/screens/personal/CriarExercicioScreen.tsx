@@ -32,7 +32,7 @@ import type {
   ExercicioTreino,
   ExercicioBase,
   RerRmTipo,
-} from "../../types";
+} from "@ecg/types";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
 import { formatarImplementoExecucao } from "../../utils/formatters";
 import { colors } from "../../theme/colors";

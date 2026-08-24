@@ -21,7 +21,7 @@ import type {
   ConjuntoTreino,
   RegistroPeso,
   RegistroPesoCreate,
-} from "../../types";
+} from "@ecg/types";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
 import { colors } from "../../theme/colors";
 

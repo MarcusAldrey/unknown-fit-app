@@ -14,7 +14,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { keys } from "../../api/queryKeys";
 import { catalogoService } from "../../api/services/catalogo";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
-import type { ImplementoExecucao } from "../../types";
+import type { ImplementoExecucao } from "@ecg/types";
 import { formatarImplementoExecucao } from "../../utils/formatters";
 import { colors } from "../../theme/colors";
 

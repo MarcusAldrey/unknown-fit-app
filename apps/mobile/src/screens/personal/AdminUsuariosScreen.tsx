@@ -21,7 +21,7 @@ import type {
   AlunoAdminCreateRequest,
   PersonalAdmin,
   PersonalAdminCreateRequest,
-} from "../../types";
+} from "@ecg/types";
 import { colors } from "../../theme/colors";
 
 type Aba = "personais" | "alunos";

@@ -1,5 +1,5 @@
 import api from "../client";
-import type { LoginRequest, TokenResponse, Usuario } from "../../types";
+import type { LoginRequest, TokenResponse, Usuario } from "@ecg/types";
 
 export const authService = {
   login: async (body: LoginRequest): Promise<TokenResponse> => {

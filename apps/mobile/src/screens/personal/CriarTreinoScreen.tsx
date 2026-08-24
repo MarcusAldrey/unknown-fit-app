@@ -13,7 +13,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { keys } from "../../api/queryKeys";
 import { personalService } from "../../api/services/personal";
-import type { Treino } from "../../types";
+import type { Treino } from "@ecg/types";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
 import { colors } from "../../theme/colors";
 

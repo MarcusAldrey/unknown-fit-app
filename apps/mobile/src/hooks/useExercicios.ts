@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { keys } from "../api/queryKeys";
 import { personalService } from "../api/services/personal";
-import type { ExercicioTreino } from "../types";
+import type { ExercicioTreino } from "@ecg/types";
 
 export function useExercicios(treinoId: string | undefined) {
   return useQuery<ExercicioTreino[]>({

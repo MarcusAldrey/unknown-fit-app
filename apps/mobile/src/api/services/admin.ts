@@ -6,7 +6,7 @@ import type {
   PersonalAdmin,
   PersonalAdminCreateRequest,
   PersonalAdminUpdateRequest,
-} from "../../types";
+} from "@ecg/types";
 
 export const adminService = {
   personais: async (): Promise<PersonalAdmin[]> => {

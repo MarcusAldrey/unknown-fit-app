@@ -13,7 +13,7 @@ import type {
   SessaoResumo,
   Treino,
   TreinoCreate,
-} from "../../types";
+} from "@ecg/types";
 
 export const personalService = {
   alunos: async (): Promise<AlunoResumo[]> => {

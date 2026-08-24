@@ -2,7 +2,7 @@ import api from "../client";
 import type {
   ExercicioBase,
   RecursoTreino,
-} from "../../types";
+} from "@ecg/types";
 
 export const catalogoService = {
   exerciciosBase: async (): Promise<ExercicioBase[]> => {

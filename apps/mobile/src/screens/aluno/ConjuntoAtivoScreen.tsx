@@ -20,7 +20,7 @@ import type {
   Treino,
   SessaoAtiva,
   SessaoResumo,
-} from "../../types";
+} from "@ecg/types";
 import type { AlunoTreinoStackParamList } from "../../navigation/AlunoNavigator";
 import { colors } from "../../theme/colors";
 

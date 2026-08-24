@@ -18,12 +18,96 @@ export type AlvoTipo = "SEGUNDOS" | "REPETICOES" | "PASSOS" | "OUTROS";
 
 export type RerRmTipo = "RER" | "RM";
 
+// --- Auth ---
+
+export interface LoginRequest {
+  email: string;
+  senha: string;
+}
+
+export interface RefreshRequest {
+  refresh_token: string;
+}
+
 export interface TokenResponse {
   access_token: string;
   refresh_token: string;
   token_type: string;
   role: Role;
 }
+
+// --- Usuário ---
+
+export interface Usuario {
+  id: string;
+  nome: string;
+  email: string;
+  role: Role;
+  ativo: boolean;
+}
+
+// --- Admin ---
+
+export interface PersonalAdmin {
+  personal_id: string;
+  usuario_id: string;
+  nome: string;
+  email: string;
+  ativo: boolean;
+  role: Role;
+}
+
+export interface PersonalAdminCreateRequest {
+  nome: string;
+  email: string;
+  senha: string;
+}
+
+export interface PersonalAdminUpdateRequest {
+  nome?: string;
+  email?: string;
+  senha?: string;
+  ativo?: boolean;
+}
+
+export interface AlunoAdmin {
+  aluno_id: string;
+  usuario_id: string;
+  nome: string;
+  email: string;
+  ativo: boolean;
+  role: Role;
+  idade: number | null;
+  peso: number | null;
+  altura: number | null;
+  treina_em_academia_condominio: boolean;
+  personal_id: string | null;
+}
+
+export interface AlunoAdminCreateRequest {
+  nome: string;
+  email: string;
+  senha: string;
+  idade?: number | null;
+  peso?: number | null;
+  altura?: number | null;
+  treina_em_academia_condominio?: boolean;
+  personal_id?: string | null;
+}
+
+export interface AlunoAdminUpdateRequest {
+  nome?: string;
+  email?: string;
+  senha?: string;
+  ativo?: boolean;
+  idade?: number | null;
+  peso?: number | null;
+  altura?: number | null;
+  treina_em_academia_condominio?: boolean;
+  personal_id?: string | null;
+}
+
+// --- Aluno ---
 
 export interface AlunoResumo {
   id: string;
@@ -55,6 +139,8 @@ export interface RegistroPesoCreate {
   peso: number;
 }
 
+// --- Conjunto de Treino ---
+
 export interface ConjuntoTreino {
   id: string;
   aluno_id: string;
@@ -64,6 +150,14 @@ export interface ConjuntoTreino {
   data_fim: string | null;
 }
 
+export interface ConjuntoTreinoCreate {
+  nome: string;
+  data_inicio?: string | null;
+  data_fim?: string | null;
+}
+
+// --- Treino ---
+
 export interface Treino {
   id: string;
   conjunto_treino_id: string;
@@ -72,6 +166,15 @@ export interface Treino {
   observacoes_aluno: string | null;
   ordem: number;
 }
+
+export interface TreinoCreate {
+  codigo: string;
+  nome: string;
+  observacoes_aluno?: string | null;
+  ordem: number;
+}
+
+// --- Exercício ---
 
 export interface ExercicioTreino {
   id: string;
@@ -88,10 +191,50 @@ export interface ExercicioTreino {
   rer_rm_tipo: RerRmTipo | null;
   rer_rm_valor: string | null;
   descanso_segundos: number | null;
+  descanso_segundos_min: number | null;
+  descanso_segundos_max: number | null;
   tecnica: Tecnica;
   observacoes: string | null;
   observacoes_aluno: string | null;
   equivalentes: ExercicioTreinoEquivalente[];
+}
+
+export interface ExercicioTreinoCreate {
+  exercicio_base_id: string;
+  ordem?: number;
+  numero_series_prescritas: number;
+  prescricao?: string | null;
+  alvo_tipo: AlvoTipo;
+  alvo_valor_min?: number | null;
+  alvo_valor_max?: number | null;
+  alvo_outros_texto?: string | null;
+  rer_rm_tipo?: RerRmTipo | null;
+  rer_rm_valor?: string | null;
+  descanso_segundos?: number | null;
+  descanso_segundos_min?: number | null;
+  descanso_segundos_max?: number | null;
+  tecnica?: Tecnica;
+  observacoes?: string | null;
+  observacoes_aluno?: string | null;
+}
+
+export interface ExercicioTreinoUpdate {
+  exercicio_base_id?: string;
+  ordem?: number;
+  numero_series_prescritas?: number;
+  prescricao?: string | null;
+  alvo_tipo?: AlvoTipo;
+  alvo_valor_min?: number | null;
+  alvo_valor_max?: number | null;
+  alvo_outros_texto?: string | null;
+  rer_rm_tipo?: RerRmTipo | null;
+  rer_rm_valor?: string | null;
+  descanso_segundos?: number | null;
+  descanso_segundos_min?: number | null;
+  descanso_segundos_max?: number | null;
+  tecnica?: Tecnica;
+  observacoes?: string | null;
+  observacoes_aluno?: string | null;
 }
 
 export interface ExercicioTreinoEquivalente {
@@ -123,6 +266,8 @@ export interface RecursoTreino {
   criado_em: string;
 }
 
+// --- Sessão de Treino ---
+
 export interface SessaoTreino {
   id: string;
   aluno_id: string;
@@ -131,6 +276,32 @@ export interface SessaoTreino {
   finalizado_em: string | null;
   status: StatusSessao;
 }
+
+export interface SessaoResumo {
+  id: string;
+  treino_id: string;
+  treino_codigo: string;
+  treino_nome: string;
+  iniciado_em: string;
+  finalizado_em: string | null;
+  status: StatusSessao;
+}
+
+export interface SessaoCreate {
+  treino_id: string;
+}
+
+export interface SessaoAtiva {
+  id: string;
+  treino_id: string;
+  treino_codigo: string;
+  treino_nome: string;
+  iniciado_em: string;
+  status: StatusSessao;
+  series: SerieExecutada[];
+}
+
+// --- Série Executada ---
 
 export interface SerieExecutada {
   id: string;
@@ -143,15 +314,6 @@ export interface SerieExecutada {
   concluida: boolean;
 }
 
-export interface SerieCreate {
-  exercicio_treino_id: string;
-  exercicio_treino_executado_id?: string;
-  numero_serie: number;
-  peso_utilizado?: number;
-  repeticoes_realizadas?: number;
-  concluida?: boolean;
-}
-
 export interface SerieDetalhe {
   id: string;
   exercicio_treino_id: string;
@@ -162,4 +324,19 @@ export interface SerieDetalhe {
   peso_utilizado: number | null;
   repeticoes_realizadas: number | null;
   concluida: boolean;
+}
+
+export interface SerieCreate {
+  exercicio_treino_id: string;
+  exercicio_treino_executado_id?: string | null;
+  numero_serie: number;
+  peso_utilizado?: number | null;
+  repeticoes_realizadas?: number | null;
+  concluida?: boolean;
+}
+
+export interface UltimoPesoExercicio {
+  exercicio_treino_id: string;
+  peso_utilizado: number | null;
+  repeticoes_realizadas: number | null;
 }

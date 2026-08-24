@@ -11,7 +11,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { keys } from "../../api/queryKeys";
 import { alunoService } from "../../api/services/aluno";
-import type { SerieDetalhe } from "../../types";
+import type { SerieDetalhe } from "@ecg/types";
 import type { AlunoHistoricoStackParamList } from "../../navigation/AlunoNavigator";
 import { colors } from "../../theme/colors";
 

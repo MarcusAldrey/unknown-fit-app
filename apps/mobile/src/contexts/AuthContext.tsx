@@ -5,7 +5,7 @@ import axios from "axios";
 
 import { setOnAuthFailure } from "../api/client";
 import { authService } from "../api/services/auth";
-import type { LoginRequest, Role } from "../types";
+import type { LoginRequest, Role } from "@ecg/types";
 
 interface AuthState {
   isLoading: boolean;
