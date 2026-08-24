@@ -18,8 +18,14 @@ const extraAdminApiKey =
 // Prioriza host detectado pelo Expo para evitar IP fixo stale em app.json.
 const DEV_API_HOST = hostFromExpo ?? extraApiHost ?? "127.0.0.1";
 const DEV_API_BASE_URL = `http://${DEV_API_HOST}:8000/api/v1`;
-const API_BASE_URL =
-  envApiUrl || (__DEV__ ? DEV_API_BASE_URL : "https://api.ecg.com/api/v1");
+const API_BASE_URL = envApiUrl || (__DEV__ ? DEV_API_BASE_URL : "");
+
+if (!API_BASE_URL) {
+  throw new Error(
+    "EXPO_PUBLIC_API_URL não definida: configure a URL da API para o build de produção.",
+  );
+}
+
 const ADMIN_API_KEY = envAdminApiKey ?? extraAdminApiKey ?? "";
 
 if (__DEV__) {
