@@ -15,4 +15,10 @@ config.resolver.nodeModulesPaths = [
   path.resolve(monorepoRoot, "node_modules"),
 ];
 
+// Resolve the "@/" alias to src/ (mirrors tsconfig paths)
+config.resolver.extraNodeModules = {
+  ...(config.resolver.extraNodeModules ?? {}),
+  "@": path.resolve(projectRoot, "src"),
+};
+
 module.exports = config;
