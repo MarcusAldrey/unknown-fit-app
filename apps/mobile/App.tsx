@@ -26,7 +26,17 @@ export default function App() {
   return (
     <PersistQueryClientProvider
       client={queryClient}
-      persistOptions={{ persister: asyncStoragePersister }}
+      persistOptions={{
+        persister: asyncStoragePersister,
+        dehydrateOptions: {
+          shouldDehydrateQuery: (query) => {
+            const key = query.queryKey;
+            const isSessaoAtiva = key.includes("sessao-ativa");
+            const isAdmin = key[0] === "admin";
+            return !isSessaoAtiva && !isAdmin;
+          },
+        },
+      }}
     >
       <AuthProvider>
         <RootNavigator />

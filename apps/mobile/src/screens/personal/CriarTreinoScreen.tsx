@@ -11,7 +11,8 @@ import { useForm, Controller } from "react-hook-form";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
-import api from "../../api/client";
+import { keys } from "../../api/queryKeys";
+import { personalService } from "../../api/services/personal";
 import type { Treino } from "../../types";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
 import { colors } from "../../theme/colors";
@@ -28,11 +29,8 @@ export function CriarTreinoScreen({ route, navigation }: Props) {
   const queryClient = useQueryClient();
 
   const { data: treinos } = useQuery<Treino[]>({
-    queryKey: ["personal", "conjunto", conjuntoId, "treinos"],
-    queryFn: async () => {
-      const res = await api.get(`/personal/conjuntos/${conjuntoId}/treinos`);
-      return res.data;
-    },
+    queryKey: keys.personal.conjuntoTreinos(conjuntoId),
+    queryFn: () => personalService.conjuntoTreinos(conjuntoId),
   });
 
   const nextOrdem = (treinos?.length ?? 0) + 1;
@@ -44,15 +42,14 @@ export function CriarTreinoScreen({ route, navigation }: Props) {
 
   const mutation = useMutation({
     mutationFn: async (data: FormData) => {
-      const res = await api.post<Treino>(
-        `/personal/conjuntos/${conjuntoId}/treinos`,
-        { ...data, ordem: nextOrdem },
-      );
-      return res.data;
+      return personalService.criarTreino(conjuntoId, {
+        ...data,
+        ordem: nextOrdem,
+      });
     },
     onSuccess: (treino) => {
       queryClient.invalidateQueries({
-        queryKey: ["personal", "conjunto", conjuntoId, "treinos"],
+        queryKey: keys.personal.conjuntoTreinos(conjuntoId),
       });
       navigation.replace("Exercicios", {
         alunoId,

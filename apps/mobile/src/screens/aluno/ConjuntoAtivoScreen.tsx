@@ -13,7 +13,8 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useFocusEffect } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
 
-import api from "../../api/client";
+import { keys } from "../../api/queryKeys";
+import { alunoService } from "../../api/services/aluno";
 import type {
   ConjuntoTreino,
   Treino,
@@ -58,28 +59,19 @@ export function ConjuntoAtivoScreen({ navigation }: Props) {
 
   const { data: conjunto, isLoading: loadingConjunto } =
     useQuery<ConjuntoTreino>({
-      queryKey: ["aluno", "conjunto-ativo"],
-      queryFn: async () => {
-        const res = await api.get("/aluno/me/conjunto-ativo");
-        return res.data;
-      },
+      queryKey: keys.aluno.conjuntoAtivo(),
+      queryFn: () => alunoService.conjuntoAtivo(),
     });
 
   const { data: treinos, isLoading: loadingTreinos } = useQuery<Treino[]>({
-    queryKey: ["aluno", "conjunto-ativo", "treinos"],
-    queryFn: async () => {
-      const res = await api.get("/aluno/me/conjunto-ativo/treinos");
-      return res.data;
-    },
+    queryKey: keys.aluno.conjuntoAtivoTreinos(),
+    queryFn: () => alunoService.conjuntoAtivoTreinos(),
     enabled: !!conjunto,
   });
 
   const { data: sessoes = [] } = useQuery<SessaoResumo[]>({
-    queryKey: ["aluno", "sessoes", "historico"],
-    queryFn: async () => {
-      const res = await api.get("/aluno/sessoes");
-      return res.data;
-    },
+    queryKey: keys.aluno.sessoes(),
+    queryFn: () => alunoService.sessoes(),
     enabled: !!treinos?.length,
   });
 
@@ -87,11 +79,10 @@ export function ConjuntoAtivoScreen({ navigation }: Props) {
     data: sessaoAtiva,
     refetch: refetchSessaoAtiva,
   } = useQuery<SessaoAtiva | null>({
-    queryKey: ["aluno", "sessao-ativa"],
+    queryKey: keys.aluno.sessaoAtiva(),
     queryFn: async () => {
       try {
-        const res = await api.get("/aluno/sessoes/ativa");
-        return res.data;
+        return await alunoService.sessaoAtiva();
       } catch (err: any) {
         if (err.response?.status === 404) return null;
         throw err;
@@ -110,19 +101,17 @@ export function ConjuntoAtivoScreen({ navigation }: Props) {
   );
 
   const descartarSessaoMutation = useMutation({
-    mutationFn: async (sessaoId: string) => {
-      await api.delete(`/aluno/sessoes/${sessaoId}`);
-    },
+    mutationFn: (sessaoId: string) => alunoService.descartarSessao(sessaoId),
     onSuccess: async () => {
       await queryClient.invalidateQueries({
-        queryKey: ["aluno", "sessao-ativa"],
+        queryKey: keys.aluno.sessaoAtiva(),
       });
       Alert.alert("Treino descartado", "A sessão em andamento foi descartada.");
     },
     onError: async (err: any) => {
       if (err?.response?.status === 404) {
         await queryClient.invalidateQueries({
-          queryKey: ["aluno", "sessao-ativa"],
+          queryKey: keys.aluno.sessaoAtiva(),
         });
         Alert.alert(
           "Treino descartado",

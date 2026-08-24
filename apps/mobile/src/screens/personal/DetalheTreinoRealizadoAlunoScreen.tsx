@@ -9,7 +9,8 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
-import api from "../../api/client";
+import { keys } from "../../api/queryKeys";
+import { personalService } from "../../api/services/personal";
 import type { SerieDetalhe } from "../../types";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
 import { colors } from "../../theme/colors";
@@ -28,13 +29,8 @@ export function DetalheTreinoRealizadoAlunoScreen({ route }: Props) {
   const { alunoId, sessao } = route.params;
 
   const { data, isLoading, isError } = useQuery<SerieDetalhe[]>({
-    queryKey: ["personal", "aluno", alunoId, "sessao", sessao.id, "series"],
-    queryFn: async () => {
-      const res = await api.get(
-        `/personal/alunos/${alunoId}/sessoes/${sessao.id}/series`,
-      );
-      return res.data;
-    },
+    queryKey: keys.personal.alunoSessaoSeries(alunoId, sessao.id),
+    queryFn: () => personalService.alunoSessaoSeries(alunoId, sessao.id),
   });
 
   const grupos = useMemo<GrupoExercicio[]>(() => {

@@ -219,38 +219,38 @@ export interface ExercicioTreinoCreate {
   exercicio_base_id: string;
   ordem?: number;
   numero_series_prescritas: number;
-  prescricao?: string;
+  prescricao?: string | null;
   alvo_tipo: AlvoTipo;
-  alvo_valor_min?: number;
-  alvo_valor_max?: number;
-  alvo_outros_texto?: string;
-  rer_rm_tipo?: RerRmTipo;
-  rer_rm_valor?: string;
-  descanso_segundos?: number;
-  descanso_segundos_min?: number;
-  descanso_segundos_max?: number;
+  alvo_valor_min?: number | null;
+  alvo_valor_max?: number | null;
+  alvo_outros_texto?: string | null;
+  rer_rm_tipo?: RerRmTipo | null;
+  rer_rm_valor?: string | null;
+  descanso_segundos?: number | null;
+  descanso_segundos_min?: number | null;
+  descanso_segundos_max?: number | null;
   tecnica?: Tecnica;
-  observacoes?: string;
-  observacoes_aluno?: string;
+  observacoes?: string | null;
+  observacoes_aluno?: string | null;
 }
 
 export interface ExercicioTreinoUpdate {
   exercicio_base_id?: string;
   ordem?: number;
   numero_series_prescritas?: number;
-  prescricao?: string;
+  prescricao?: string | null;
   alvo_tipo?: AlvoTipo;
-  alvo_valor_min?: number;
-  alvo_valor_max?: number;
-  alvo_outros_texto?: string;
-  rer_rm_tipo?: RerRmTipo;
-  rer_rm_valor?: string;
-  descanso_segundos?: number;
-  descanso_segundos_min?: number;
-  descanso_segundos_max?: number;
+  alvo_valor_min?: number | null;
+  alvo_valor_max?: number | null;
+  alvo_outros_texto?: string | null;
+  rer_rm_tipo?: RerRmTipo | null;
+  rer_rm_valor?: string | null;
+  descanso_segundos?: number | null;
+  descanso_segundos_min?: number | null;
+  descanso_segundos_max?: number | null;
   tecnica?: Tecnica;
-  observacoes?: string;
-  observacoes_aluno?: string;
+  observacoes?: string | null;
+  observacoes_aluno?: string | null;
 }
 
 export interface ExercicioBase {

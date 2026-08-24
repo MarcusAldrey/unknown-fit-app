@@ -16,6 +16,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import api from "../../api/client";
+import { keys } from "../../api/queryKeys";
+import { catalogoService } from "../../api/services/catalogo";
+import { personalService } from "../../api/services/personal";
 import type { AlunoRecursoDisponibilidade } from "../../types";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
 import { colors } from "../../theme/colors";
@@ -34,12 +37,7 @@ export function GerirRecursosAlunoScreen({ route }: Props) {
   const [recursoEmEdicao, setRecursoEmEdicao] =
     useState<AlunoRecursoDisponibilidade | null>(null);
 
-  const recursosQueryKey = [
-    "personal",
-    "aluno",
-    alunoId,
-    "recursos-treino",
-  ] as const;
+  const recursosQueryKey = keys.personal.alunoRecursos(alunoId);
 
   const {
     data: recursos,
@@ -48,10 +46,7 @@ export function GerirRecursosAlunoScreen({ route }: Props) {
     error,
   } = useQuery<AlunoRecursoDisponibilidade[]>({
     queryKey: recursosQueryKey,
-    queryFn: async () => {
-      const res = await api.get(`/personal/alunos/${alunoId}/recursos-treino`);
-      return res.data;
-    },
+    queryFn: () => personalService.alunoRecursos(alunoId),
   });
 
   const atualizarDisponibilidadeMutation = useMutation({
@@ -60,39 +55,28 @@ export function GerirRecursosAlunoScreen({ route }: Props) {
       disponivel: boolean;
     }) => {
       const { recursoId, disponivel } = variables;
-      const res = await api.patch(
-        `/personal/alunos/${alunoId}/recursos-treino/${recursoId}`,
-        {
-          disponivel_para_aluno: disponivel,
-        },
-      );
-      return res.data as AlunoRecursoDisponibilidade;
+      return personalService.atualizarRecurso(alunoId, recursoId, disponivel);
     },
   });
 
   const atualizarDisponibilidadeEmLoteMutation = useMutation({
     mutationFn: async (disponivel: boolean) => {
-      const res = await api.patch(
-        `/personal/alunos/${alunoId}/recursos-treino`,
-        {
-          disponivel_para_aluno: disponivel,
-        },
-      );
-      return res.data as AlunoRecursoDisponibilidade[];
+      return personalService.atualizarRecursosEmLote(alunoId, disponivel);
     },
   });
 
   const criarRecursoMutation = useMutation({
     mutationFn: async (nome: string) => {
-      await api.post("/catalogo/recursos-treino", { nome });
+      await catalogoService.criarRecursoTreino(nome);
     },
   });
 
   const editarRecursoMutation = useMutation({
     mutationFn: async (variables: { recursoId: string; nome: string }) => {
-      await api.patch(`/catalogo/recursos-treino/${variables.recursoId}`, {
-        nome: variables.nome,
-      });
+      await catalogoService.editarRecursoTreino(
+        variables.recursoId,
+        variables.nome,
+      );
     },
   });
 
@@ -112,10 +96,10 @@ export function GerirRecursosAlunoScreen({ route }: Props) {
   const invalidarRecursos = () => {
     queryClient.invalidateQueries({ queryKey: recursosQueryKey });
     queryClient.invalidateQueries({
-      queryKey: ["catalogo", "recursos-treino"],
+      queryKey: keys.catalogo.recursosTreino(),
     });
     queryClient.invalidateQueries({
-      queryKey: ["catalogo", "exercicios-base"],
+      queryKey: keys.catalogo.exerciciosBase(),
     });
   };
 

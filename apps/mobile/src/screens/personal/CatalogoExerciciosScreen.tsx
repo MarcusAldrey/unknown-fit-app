@@ -14,7 +14,9 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { AxiosError } from "axios";
 
-import api from "../../api/client";
+import { keys } from "../../api/queryKeys";
+import { authService } from "../../api/services/auth";
+import { catalogoService } from "../../api/services/catalogo";
 import { useAuth } from "../../contexts/AuthContext";
 import type { ExercicioBase, Usuario } from "../../types";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
@@ -35,11 +37,8 @@ export function CatalogoExerciciosScreen({ navigation }: Props) {
   const [grupoFiltro, setGrupoFiltro] = useState("Todos");
 
   const { data: usuario } = useQuery<Usuario>({
-    queryKey: ["auth", "me"],
-    queryFn: async () => {
-      const res = await api.get("/auth/me");
-      return res.data;
-    },
+    queryKey: keys.auth.me(),
+    queryFn: () => authService.me(),
   });
 
   const {
@@ -48,11 +47,8 @@ export function CatalogoExerciciosScreen({ navigation }: Props) {
     isError,
     error,
   } = useQuery<ExercicioBase[], AxiosError<{ detail?: string }>>({
-    queryKey: ["catalogo", "exercicios-base"],
-    queryFn: async () => {
-      const res = await api.get("/catalogo/exercicios-base");
-      return res.data;
-    },
+    queryKey: keys.catalogo.exerciciosBase(),
+    queryFn: () => catalogoService.exerciciosBase(),
     staleTime: 0,
     refetchOnMount: "always",
   });

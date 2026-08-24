@@ -14,7 +14,8 @@ import {
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
-import api from "../../api/client";
+import { keys } from "../../api/queryKeys";
+import { personalService } from "../../api/services/personal";
 import type { ExercicioTreino } from "../../types";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
 import { formatarIntervaloDescanso } from "../../utils/formatters";
@@ -141,11 +142,8 @@ export function ExerciciosScreen({ route, navigation }: Props) {
 
   // --- Queries ---
   const { data: exercicios, isLoading } = useQuery<ExercicioTreino[]>({
-    queryKey: ["personal", "treino", treinoId, "exercicios"],
-    queryFn: async () => {
-      const res = await api.get(`/personal/treinos/${treinoId}/exercicios`);
-      return res.data;
-    },
+    queryKey: keys.personal.treinoExercicios(treinoId),
+    queryFn: () => personalService.treinoExercicios(treinoId),
   });
 
   useEffect(() => {
@@ -155,7 +153,7 @@ export function ExerciciosScreen({ route, navigation }: Props) {
   // --- Mutations ---
   const editNomeMutation = useMutation({
     mutationFn: async (nome: string) => {
-      await api.patch(`/personal/treinos/${treinoId}`, { nome });
+      await personalService.editarTreino(treinoId, { nome });
     },
     onSuccess: () => {
       setLocalNome(editNomeText);
@@ -171,11 +169,11 @@ export function ExerciciosScreen({ route, navigation }: Props) {
 
   const deleteMutation = useMutation({
     mutationFn: async (exercicioId: string) => {
-      await api.delete(`/personal/exercicios/${exercicioId}`);
+      await personalService.deletarExercicio(exercicioId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["personal", "treino", treinoId, "exercicios"],
+        queryKey: keys.personal.treinoExercicios(treinoId),
       });
       setMenuVisible(false);
       setMenuExercicio(null);
@@ -188,7 +186,7 @@ export function ExerciciosScreen({ route, navigation }: Props) {
   const duplicateMutation = useMutation({
     mutationFn: async (ex: ExercicioTreino) => {
       const nextOrdem = (exercicios?.length ?? 0) + 1;
-      await api.post(`/personal/treinos/${treinoId}/exercicios`, {
+      await personalService.criarExercicio(treinoId, {
         exercicio_base_id: ex.exercicio_base_id,
         ordem: nextOrdem,
         numero_series_prescritas: ex.numero_series_prescritas,
@@ -207,7 +205,7 @@ export function ExerciciosScreen({ route, navigation }: Props) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["personal", "treino", treinoId, "exercicios"],
+        queryKey: keys.personal.treinoExercicios(treinoId),
       });
       setMenuVisible(false);
       setMenuExercicio(null);
@@ -221,13 +219,13 @@ export function ExerciciosScreen({ route, navigation }: Props) {
     mutationFn: async (items: ExercicioTreino[]) => {
       await Promise.all(
         items.map((ex, idx) =>
-          api.patch(`/personal/exercicios/${ex.id}`, { ordem: idx + 1 }),
+          personalService.editarExercicio(ex.id, { ordem: idx + 1 }),
         ),
       );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["personal", "treino", treinoId, "exercicios"],
+        queryKey: keys.personal.treinoExercicios(treinoId),
       });
       setReorderMode(false);
     },
@@ -238,17 +236,14 @@ export function ExerciciosScreen({ route, navigation }: Props) {
       exercicioId: string;
       equivalentesIds: string[];
     }) => {
-      const res = await api.put(
-        `/personal/exercicios/${payload.exercicioId}/equivalentes`,
-        {
-          exercicios_equivalentes_ids: payload.equivalentesIds,
-        },
+      return personalService.substituirEquivalentes(
+        payload.exercicioId,
+        payload.equivalentesIds,
       );
-      return res.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["personal", "treino", treinoId, "exercicios"],
+        queryKey: keys.personal.treinoExercicios(treinoId),
       });
       setEquivalentesVisible(false);
       setEquivalenteBase(null);

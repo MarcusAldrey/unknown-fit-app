@@ -14,7 +14,8 @@ import {
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
-import api from "../../api/client";
+import { keys } from "../../api/queryKeys";
+import { personalService } from "../../api/services/personal";
 import type {
   AlunoFicha,
   ConjuntoTreino,
@@ -33,31 +34,22 @@ export function AlunoFichaScreen({ route, navigation }: Props) {
   const [modalPesoVisivel, setModalPesoVisivel] = useState(false);
 
   const { data: aluno, isLoading: loadingAluno } = useQuery<AlunoFicha>({
-    queryKey: ["personal", "aluno", alunoId],
-    queryFn: async () => {
-      const res = await api.get(`/personal/alunos/${alunoId}`);
-      return res.data;
-    },
+    queryKey: keys.personal.aluno(alunoId),
+    queryFn: () => personalService.fichaAluno(alunoId),
   });
 
   const { data: conjuntos, isLoading: loadingConjuntos } = useQuery<
     ConjuntoTreino[]
   >({
-    queryKey: ["personal", "aluno", alunoId, "conjuntos"],
-    queryFn: async () => {
-      const res = await api.get(`/personal/alunos/${alunoId}/conjuntos`);
-      return res.data;
-    },
+    queryKey: keys.personal.alunoConjuntos(alunoId),
+    queryFn: () => personalService.alunoConjuntos(alunoId),
   });
 
   const { data: registrosPeso, isLoading: loadingPeso } = useQuery<
     RegistroPeso[]
   >({
-    queryKey: ["personal", "aluno", alunoId, "peso"],
-    queryFn: async () => {
-      const res = await api.get(`/personal/alunos/${alunoId}/peso`);
-      return res.data;
-    },
+    queryKey: keys.personal.alunoPeso(alunoId),
+    queryFn: () => personalService.alunoPeso(alunoId),
   });
 
   const sortedConjuntos = useMemo(() => {
@@ -92,13 +84,11 @@ export function AlunoFichaScreen({ route, navigation }: Props) {
 
   const ativarMutation = useMutation({
     mutationFn: async (conjuntoId: string) => {
-      await api.patch(
-        `/personal/alunos/${alunoId}/conjuntos/${conjuntoId}/ativar`,
-      );
+      await personalService.ativarConjunto(alunoId, conjuntoId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["personal", "aluno", alunoId, "conjuntos"],
+        queryKey: keys.personal.alunoConjuntos(alunoId),
       });
     },
     onError: (error: any) => {
@@ -114,16 +104,16 @@ export function AlunoFichaScreen({ route, navigation }: Props) {
 
   const registrarPesoMutation = useMutation({
     mutationFn: async (payload: RegistroPesoCreate) => {
-      await api.post(`/personal/alunos/${alunoId}/peso`, payload);
+      await personalService.registrarPeso(alunoId, payload.peso);
     },
     onSuccess: () => {
       setNovoPeso("");
       setModalPesoVisivel(false);
       queryClient.invalidateQueries({
-        queryKey: ["personal", "aluno", alunoId],
+        queryKey: keys.personal.aluno(alunoId),
       });
       queryClient.invalidateQueries({
-        queryKey: ["personal", "aluno", alunoId, "peso"],
+        queryKey: keys.personal.alunoPeso(alunoId),
       });
     },
     onError: (error: any) => {

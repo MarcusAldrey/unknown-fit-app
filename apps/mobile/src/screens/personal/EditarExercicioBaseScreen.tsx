@@ -11,7 +11,8 @@ import { Controller, useForm } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
-import api from "../../api/client";
+import { keys } from "../../api/queryKeys";
+import { catalogoService } from "../../api/services/catalogo";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
 import type { ImplementoExecucao } from "../../types";
 import { formatarImplementoExecucao } from "../../utils/formatters";
@@ -55,7 +56,7 @@ export function EditarExercicioBaseScreen({ route, navigation }: Props) {
 
   const mutation = useMutation({
     mutationFn: async (data: FormData) => {
-      await api.patch(`/catalogo/exercicios-base/${exercicio.id}`, {
+      await catalogoService.editarExercicioBase(exercicio.id, {
         nome: data.nome.trim(),
         grupo_muscular: data.grupo_muscular.trim(),
         implemento_execucao: data.implemento_execucao,
@@ -64,7 +65,7 @@ export function EditarExercicioBaseScreen({ route, navigation }: Props) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["catalogo", "exercicios-base"],
+        queryKey: keys.catalogo.exerciciosBase(),
       });
       navigation.goBack();
     },

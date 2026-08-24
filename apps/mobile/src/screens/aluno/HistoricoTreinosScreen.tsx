@@ -12,7 +12,9 @@ import { useQuery } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import api from "../../api/client";
+import { keys } from "../../api/queryKeys";
+import { authService } from "../../api/services/auth";
+import { alunoService } from "../../api/services/aluno";
 import { useAuth } from "../../contexts/AuthContext";
 import type { SessaoResumo, Usuario } from "../../types";
 import type { AlunoHistoricoStackParamList } from "../../navigation/AlunoNavigator";
@@ -53,19 +55,13 @@ export function HistoricoTreinosScreen({ navigation }: Props) {
   const [menuAberto, setMenuAberto] = useState(false);
 
   const { data: usuario } = useQuery<Usuario>({
-    queryKey: ["auth", "me"],
-    queryFn: async () => {
-      const res = await api.get("/auth/me");
-      return res.data;
-    },
+    queryKey: keys.auth.me(),
+    queryFn: () => authService.me(),
   });
 
   const { data, isLoading, isError } = useQuery<SessaoResumo[]>({
-    queryKey: ["aluno", "sessoes", "historico"],
-    queryFn: async () => {
-      const res = await api.get("/aluno/sessoes");
-      return res.data;
-    },
+    queryKey: keys.aluno.sessoes(),
+    queryFn: () => alunoService.sessoes(),
   });
 
   if (isLoading) {

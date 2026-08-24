@@ -11,8 +11,9 @@ import { useForm, Controller } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
-import api from "../../api/client";
-import type { ConjuntoTreino, ConjuntoTreinoCreate } from "../../types";
+import { keys } from "../../api/queryKeys";
+import { personalService } from "../../api/services/personal";
+import type { ConjuntoTreinoCreate } from "../../types";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
 import { colors } from "../../theme/colors";
 
@@ -28,15 +29,11 @@ export function CriarConjuntoScreen({ route, navigation }: Props) {
 
   const mutation = useMutation({
     mutationFn: async (data: ConjuntoTreinoCreate) => {
-      const res = await api.post<ConjuntoTreino>(
-        `/personal/alunos/${alunoId}/conjuntos`,
-        data,
-      );
-      return res.data;
+      return personalService.criarConjunto(alunoId, data);
     },
     onSuccess: (conjuntoCriado) => {
       queryClient.invalidateQueries({
-        queryKey: ["personal", "aluno", alunoId, "conjuntos"],
+        queryKey: keys.personal.alunoConjuntos(alunoId),
       });
       navigation.replace("Treinos", {
         alunoId,

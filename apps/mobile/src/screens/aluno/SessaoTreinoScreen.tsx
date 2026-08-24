@@ -18,11 +18,11 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
-import api from "../../api/client";
+import { keys } from "../../api/queryKeys";
+import { alunoService } from "../../api/services/aluno";
 import type {
   ExercicioTreino,
   SessaoAtiva,
-  SessaoTreino,
   SerieCreate,
   Treino,
   UltimoPesoExercicio,
@@ -194,11 +194,8 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
   }, []);
 
   const { data: exercicios, isLoading } = useQuery<ExercicioTreino[]>({
-    queryKey: ["aluno", "treino", treinoId, "exercicios"],
-    queryFn: async () => {
-      const res = await api.get(`/aluno/treinos/${treinoId}/exercicios`);
-      return res.data;
-    },
+    queryKey: keys.aluno.treinoExercicios(treinoId),
+    queryFn: () => alunoService.treinoExercicios(treinoId),
   });
 
   const exerciciosPorId = useMemo(() => {
@@ -268,20 +265,16 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
   }
 
   const { data: treinosAtivos } = useQuery<Treino[]>({
-    queryKey: ["aluno", "conjunto-ativo", "treinos"],
-    queryFn: async () => {
-      const res = await api.get("/aluno/me/conjunto-ativo/treinos");
-      return res.data;
-    },
+    queryKey: keys.aluno.conjuntoAtivoTreinos(),
+    queryFn: () => alunoService.conjuntoAtivoTreinos(),
   });
 
   const { data: sessaoAtivaAtual, isLoading: loadingSessaoAtivaAtual } =
     useQuery<SessaoAtiva | null>({
-      queryKey: ["aluno", "sessao-ativa"],
+      queryKey: keys.aluno.sessaoAtiva(),
       queryFn: async () => {
         try {
-          const res = await api.get("/aluno/sessoes/ativa");
-          return res.data;
+          return await alunoService.sessaoAtiva();
         } catch (err: any) {
           if (err.response?.status === 404) return null;
           throw err;
@@ -296,15 +289,13 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
   const { data: ultimosPesos = {} } = useQuery<
     Record<string, UltimoPesoExercicio>
   >({
-    queryKey: ["aluno", "treino", treinoId, "ultimos-pesos"],
+    queryKey: keys.aluno.ultimosPesos(treinoId),
     enabled: !!exercicios?.length,
     queryFn: async () => {
       const responses = await Promise.all(
         (exercicios ?? []).map(async (exercicio) => {
-          const res = await api.get<UltimoPesoExercicio>(
-            `/aluno/exercicios/${exercicio.id}/ultimo-peso`,
-          );
-          return [exercicio.id, res.data] as const;
+          const ultimoPeso = await alunoService.ultimoPeso(exercicio.id);
+          return [exercicio.id, ultimoPeso] as const;
         }),
       );
 
@@ -350,15 +341,10 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
   }, [treinosAtivos, treinoId]);
 
   const iniciarMutation = useMutation({
-    mutationFn: async () => {
-      const res = await api.post<SessaoTreino>("/aluno/sessoes", {
-        treino_id: treinoId,
-      });
-      return res.data;
-    },
+    mutationFn: () => alunoService.iniciarSessao(treinoId),
     onSuccess: (data) => {
       void queryClient.invalidateQueries({
-        queryKey: ["aluno", "sessao-ativa"],
+        queryKey: keys.aluno.sessaoAtiva(),
       });
 
       setSessaoId(data.id);
@@ -388,7 +374,7 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
 
   const finalizarSessaoConflitanteMutation = useMutation({
     mutationFn: async (sessaoIdConflitante: string) => {
-      await api.patch(`/aluno/sessoes/${sessaoIdConflitante}/finalizar`);
+      await alunoService.finalizarSessao(sessaoIdConflitante);
     },
     onError: () => {
       Alert.alert("Erro", "Não foi possível concluir o treino em andamento.");
@@ -396,16 +382,15 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
   });
 
   const descartarSessaoConflitanteMutation = useMutation({
-    mutationFn: async (sessaoIdConflitante: string) => {
-      await api.delete(`/aluno/sessoes/${sessaoIdConflitante}`);
-    },
+    mutationFn: (sessaoIdConflitante: string) =>
+      alunoService.descartarSessao(sessaoIdConflitante),
   });
 
   function descartarSessaoConflitanteEIniciar(sessaoIdConflitante: string) {
     descartarSessaoConflitanteMutation.mutate(sessaoIdConflitante, {
       onSuccess: () => {
         queryClient.invalidateQueries({
-          queryKey: ["aluno", "sessao-ativa"],
+          queryKey: keys.aluno.sessaoAtiva(),
         });
         iniciarMutation.mutate();
       },
@@ -413,7 +398,7 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
         // Se a sessão já não existe mais como ativa (stale cache), seguimos o fluxo normalmente.
         if (err?.response?.status === 404) {
           queryClient.invalidateQueries({
-            queryKey: ["aluno", "sessao-ativa"],
+            queryKey: keys.aluno.sessaoAtiva(),
           });
           iniciarMutation.mutate();
           return;
@@ -460,7 +445,7 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
             finalizarSessaoConflitanteMutation.mutate(sessaoConflitante.id, {
               onSuccess: () => {
                 queryClient.invalidateQueries({
-                  queryKey: ["aluno", "sessao-ativa"],
+                  queryKey: keys.aluno.sessaoAtiva(),
                 });
                 iniciarMutation.mutate();
               },
@@ -569,11 +554,11 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
 
   const finalizarMutation = useMutation({
     mutationFn: async () => {
-      await api.patch(`/aluno/sessoes/${sessaoId}/finalizar`);
+      await alunoService.finalizarSessao(sessaoId!);
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: ["aluno", "sessao-ativa"],
+        queryKey: keys.aluno.sessaoAtiva(),
       });
       queryClient.invalidateQueries({ queryKey: ["aluno"] });
       Alert.alert("Parabéns!", "Sessão finalizada com sucesso.", [
@@ -706,31 +691,25 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
   }
 
   const serieMutation = useMutation({
-    mutationFn: async (body: SerieCreate) => {
-      const res = await api.post(`/aluno/sessoes/${sessaoId}/series`, body);
-      return res.data;
-    },
+    mutationFn: (body: SerieCreate) =>
+      alunoService.registrarSerie(sessaoId!, body),
     onError: () => {
       Alert.alert("Erro", "Falha ao salvar série.");
     },
   });
 
   const excluirSerieMutation = useMutation({
-    mutationFn: async (serieId: string) => {
-      await api.delete(`/aluno/sessoes/${sessaoId}/series/${serieId}`);
-    },
+    mutationFn: (serieId: string) => alunoService.excluirSerie(sessaoId!, serieId),
   });
 
   const salvarObservacaoTreinoMutation = useMutation({
     mutationFn: async (observacoesAluno: string) => {
-      await api.patch(`/aluno/treinos/${treinoId}/observacoes-aluno`, {
-        observacoes_aluno: observacoesAluno,
-      });
+      await alunoService.atualizarObsTreino(treinoId, observacoesAluno);
     },
     onSuccess: (_, observacoesAluno) => {
       ultimaObservacaoTreinoSalvaRef.current = observacoesAluno;
       queryClient.setQueryData<Treino[]>(
-        ["aluno", "conjunto-ativo", "treinos"],
+        keys.aluno.conjuntoAtivoTreinos(),
         (current) =>
           current?.map((treino) =>
             treino.id === treinoId
@@ -749,16 +728,14 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
       exercicioId: string;
       observacoesAluno: string;
     }) => {
-      await api.patch(`/aluno/exercicios/${exercicioId}/observacoes-aluno`, {
-        observacoes_aluno: observacoesAluno,
-      });
+      await alunoService.atualizarObsExercicio(exercicioId, observacoesAluno);
     },
     onSuccess: (_, vars) => {
       observacoesExercicioSalvasRef.current[vars.exercicioId] =
         vars.observacoesAluno;
       delete debounceObservacoesExercicioRef.current[vars.exercicioId];
       queryClient.setQueryData<ExercicioTreino[]>(
-        ["aluno", "treino", treinoId, "exercicios"],
+        keys.aluno.treinoExercicios(treinoId),
         (current) =>
           current?.map((exercicio) =>
             exercicio.id === vars.exercicioId
@@ -863,7 +840,11 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
           setSeries((current) =>
             current.map((item) =>
               item.localId === serie.localId
-                ? { ...item, serieId: savedSerie.id, deleting: false }
+                ? {
+                    ...item,
+                    serieId: (savedSerie as { id: string }).id,
+                    deleting: false,
+                  }
                 : item,
             ),
           );

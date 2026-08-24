@@ -1,8 +1,11 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import * as SecureStore from "expo-secure-store";
+import { useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
 
-import api from "../api/client";
-import type { Role, TokenResponse, LoginRequest } from "../types";
+import { setOnAuthFailure } from "../api/client";
+import { authService } from "../api/services/auth";
+import type { LoginRequest, Role } from "../types";
 
 interface AuthState {
   isLoading: boolean;
@@ -18,6 +21,7 @@ interface AuthContextData extends AuthState {
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const queryClient = useQueryClient();
   const [state, setState] = useState<AuthState>({
     isLoading: true,
     isAuthenticated: false,
@@ -27,6 +31,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     checkAuth();
   }, []);
+
+  useEffect(() => {
+    setOnAuthFailure(() => {
+      setState({
+        isLoading: false,
+        isAuthenticated: false,
+        role: null,
+      });
+    });
+    return () => setOnAuthFailure(null);
+  }, []);
+
+  async function clearAuthState() {
+    await SecureStore.deleteItemAsync("access_token");
+    await SecureStore.deleteItemAsync("refresh_token");
+    await SecureStore.deleteItemAsync("user_role");
+    queryClient.clear();
+  }
 
   async function checkAuth() {
     try {
@@ -44,10 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Validar token chamando uma rota autenticada existente
       try {
-        await api.get("/auth/me", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        // Token válido
+        await authService.me();
         setState({
           isLoading: false,
           isAuthenticated: true,
@@ -55,18 +74,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
       } catch {
         // Token inválido ou expirado
-        console.log("Token validation failed, clearing auth");
-        await SecureStore.deleteItemAsync("access_token");
-        await SecureStore.deleteItemAsync("refresh_token");
-        await SecureStore.deleteItemAsync("user_role");
+        await clearAuthState();
         setState({
           isLoading: false,
           isAuthenticated: false,
           role: null,
         });
       }
-    } catch (error) {
-      console.error("checkAuth error:", error);
+    } catch {
       setState({
         isLoading: false,
         isAuthenticated: false,
@@ -77,9 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function login(body: LoginRequest) {
     try {
-      console.log("[Auth] Login attempt:", body.email);
-      const { data } = await api.post<TokenResponse>("/auth/login", body);
-      console.log("[Auth] Login success:", data.role);
+      const data = await authService.login(body);
 
       await SecureStore.setItemAsync("access_token", data.access_token);
       await SecureStore.setItemAsync("refresh_token", data.refresh_token);
@@ -90,9 +103,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated: true,
         role: data.role,
       });
-    } catch (error: any) {
-      console.error("[Auth] Login error:", error.message);
-      if (error.response?.status === 422) {
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 422) {
         throw new Error("Email ou senha incorretos");
       }
       throw error;
@@ -100,9 +112,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function logout() {
-    await SecureStore.deleteItemAsync("access_token");
-    await SecureStore.deleteItemAsync("refresh_token");
-    await SecureStore.deleteItemAsync("user_role");
+    try {
+      const refreshToken = await SecureStore.getItemAsync("refresh_token");
+      if (refreshToken) {
+        await authService.logout(refreshToken);
+      }
+    } catch {
+      // Logout é best-effort; limpa o estado local mesmo se a API falhar.
+    }
+
+    await clearAuthState();
 
     setState({
       isLoading: false,

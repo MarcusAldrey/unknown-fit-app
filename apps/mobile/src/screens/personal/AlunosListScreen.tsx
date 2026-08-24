@@ -13,7 +13,10 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { AxiosError } from "axios";
 
-import api, { hasAdminApiKey } from "../../api/client";
+import { hasAdminApiKey } from "../../api/client";
+import { keys } from "../../api/queryKeys";
+import { authService } from "../../api/services/auth";
+import { personalService } from "../../api/services/personal";
 import { useAuth } from "../../contexts/AuthContext";
 import type { AlunoResumo, Usuario } from "../../types";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
@@ -27,11 +30,8 @@ export function AlunosListScreen({ navigation }: Props) {
   const [menuAberto, setMenuAberto] = useState(false);
 
   const { data: usuario } = useQuery<Usuario>({
-    queryKey: ["auth", "me"],
-    queryFn: async () => {
-      const res = await api.get("/auth/me");
-      return res.data;
-    },
+    queryKey: keys.auth.me(),
+    queryFn: () => authService.me(),
   });
 
   const {
@@ -40,11 +40,8 @@ export function AlunosListScreen({ navigation }: Props) {
     isError,
     error,
   } = useQuery<AlunoResumo[], AxiosError<{ detail?: string }>>({
-    queryKey: ["personal", "alunos"],
-    queryFn: async () => {
-      const res = await api.get("/personal/alunos");
-      return res.data;
-    },
+    queryKey: keys.personal.alunos(),
+    queryFn: () => personalService.alunos(),
   });
 
   if (isError) {

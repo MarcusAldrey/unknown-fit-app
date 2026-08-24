@@ -22,7 +22,9 @@ import { useForm, Controller } from "react-hook-form";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
-import api from "../../api/client";
+import { keys } from "../../api/queryKeys";
+import { catalogoService } from "../../api/services/catalogo";
+import { personalService } from "../../api/services/personal";
 import type {
   AlvoTipo,
   AlunoRecursoDisponibilidade,
@@ -206,31 +208,22 @@ export function CriarExercicioScreen({ route, navigation }: Props) {
   }, [tecnica, alvoTipo, setValue]);
 
   const { data: existingExercicios } = useQuery<ExercicioTreino[]>({
-    queryKey: ["personal", "treino", treinoId, "exercicios"],
-    queryFn: async () => {
-      const res = await api.get(`/personal/treinos/${treinoId}/exercicios`);
-      return res.data;
-    },
+    queryKey: keys.personal.treinoExercicios(treinoId),
+    queryFn: () => personalService.treinoExercicios(treinoId),
     enabled: !isEditMode,
   });
 
   const { data: exerciciosBase } = useQuery<ExercicioBase[]>({
-    queryKey: ["catalogo", "exercicios-base"],
-    queryFn: async () => {
-      const res = await api.get("/catalogo/exercicios-base");
-      return res.data;
-    },
+    queryKey: keys.catalogo.exerciciosBase(),
+    queryFn: () => catalogoService.exerciciosBase(),
     staleTime: 1000 * 60 * 10,
   });
 
   const { data: recursosAluno, isLoading: loadingRecursosAluno } = useQuery<
     AlunoRecursoDisponibilidade[]
   >({
-    queryKey: ["personal", "aluno", alunoId, "recursos-treino"],
-    queryFn: async () => {
-      const res = await api.get(`/personal/alunos/${alunoId}/recursos-treino`);
-      return res.data;
-    },
+    queryKey: keys.personal.alunoRecursos(alunoId),
+    queryFn: () => personalService.alunoRecursos(alunoId),
   });
 
   const disponibilidadeRecursos = useMemo(() => {
@@ -327,14 +320,14 @@ export function CriarExercicioScreen({ route, navigation }: Props) {
   const createMutation = useMutation({
     mutationFn: async (data: ExercicioTreinoCreate) => {
       const nextOrdem = (existingExercicios?.length ?? 0) + 1;
-      await api.post(`/personal/treinos/${treinoId}/exercicios`, {
+      await personalService.criarExercicio(treinoId, {
         ...data,
         ordem: nextOrdem,
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["personal", "treino", treinoId, "exercicios"],
+        queryKey: keys.personal.treinoExercicios(treinoId),
       });
       navigation.goBack();
     },
@@ -351,7 +344,7 @@ export function CriarExercicioScreen({ route, navigation }: Props) {
 
   const editMutation = useMutation({
     mutationFn: async (data: ExercicioTreinoCreate) => {
-      await api.patch(`/personal/exercicios/${exercicioData!.id}`, {
+      await personalService.editarExercicio(exercicioData!.id, {
         exercicio_base_id: data.exercicio_base_id,
         numero_series_prescritas: data.numero_series_prescritas,
         alvo_tipo: data.alvo_tipo,
@@ -370,7 +363,7 @@ export function CriarExercicioScreen({ route, navigation }: Props) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["personal", "treino", treinoId, "exercicios"],
+        queryKey: keys.personal.treinoExercicios(treinoId),
       });
       navigation.goBack();
     },

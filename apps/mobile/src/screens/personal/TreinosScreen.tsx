@@ -14,7 +14,8 @@ import {
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
-import api from "../../api/client";
+import { keys } from "../../api/queryKeys";
+import { personalService } from "../../api/services/personal";
 import type { SessaoResumo, Treino } from "../../types";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
 import { colors } from "../../theme/colors";
@@ -29,21 +30,13 @@ export function TreinosScreen({ route, navigation }: Props) {
   const [editConjuntoText, setEditConjuntoText] = useState(conjuntoNome);
 
   const { data: treinos, isLoading } = useQuery<Treino[]>({
-    queryKey: ["personal", "conjunto", conjuntoId, "treinos"],
-    queryFn: async () => {
-      const res = await api.get(`/personal/conjuntos/${conjuntoId}/treinos`);
-      return res.data;
-    },
+    queryKey: keys.personal.conjuntoTreinos(conjuntoId),
+    queryFn: () => personalService.conjuntoTreinos(conjuntoId),
   });
 
   const { data: sessoes } = useQuery<SessaoResumo[]>({
-    queryKey: ["personal", "aluno", alunoId, "conjunto", conjuntoId, "sessoes"],
-    queryFn: async () => {
-      const res = await api.get(
-        `/personal/alunos/${alunoId}/conjuntos/${conjuntoId}/sessoes`,
-      );
-      return res.data;
-    },
+    queryKey: keys.personal.alunoConjuntoSessoes(alunoId, conjuntoId),
+    queryFn: () => personalService.alunoConjuntoSessoes(alunoId, conjuntoId),
   });
 
   const [reorderMode, setReorderMode] = useState(false);
@@ -67,7 +60,7 @@ export function TreinosScreen({ route, navigation }: Props) {
     mutationFn: async (items: Treino[]) => {
       await Promise.all(
         items.map((t, idx) =>
-          api.patch(`/personal/treinos/${t.id}`, {
+          personalService.editarTreino(t.id, {
             ordem: idx + 1,
             codigo: String.fromCharCode(65 + idx),
           }),
@@ -76,7 +69,7 @@ export function TreinosScreen({ route, navigation }: Props) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["personal", "conjunto", conjuntoId, "treinos"],
+        queryKey: keys.personal.conjuntoTreinos(conjuntoId),
       });
       setReorderMode(false);
     },
@@ -84,7 +77,7 @@ export function TreinosScreen({ route, navigation }: Props) {
 
   const editConjuntoMutation = useMutation({
     mutationFn: async (nome: string) => {
-      await api.patch(`/personal/conjuntos/${conjuntoId}`, { nome });
+      await personalService.editarConjunto(conjuntoId, { nome });
     },
     onSuccess: () => {
       setLocalConjuntoNome(editConjuntoText.trim());
@@ -93,7 +86,7 @@ export function TreinosScreen({ route, navigation }: Props) {
         queryKey: ["personal", "aluno"],
       });
       queryClient.invalidateQueries({
-        queryKey: ["personal", "conjunto", conjuntoId, "treinos"],
+        queryKey: keys.personal.conjuntoTreinos(conjuntoId),
       });
     },
     onError: () => {
@@ -107,7 +100,7 @@ export function TreinosScreen({ route, navigation }: Props) {
       nome: string;
       codigo: string;
     }) => {
-      await api.patch(`/personal/treinos/${payload.treinoId}`, {
+      await personalService.editarTreino(payload.treinoId, {
         nome: payload.nome,
         codigo: payload.codigo,
       });
@@ -116,7 +109,7 @@ export function TreinosScreen({ route, navigation }: Props) {
       setEditTreinoVisible(false);
       setMenuTreino(null);
       queryClient.invalidateQueries({
-        queryKey: ["personal", "conjunto", conjuntoId, "treinos"],
+        queryKey: keys.personal.conjuntoTreinos(conjuntoId),
       });
     },
     onError: () => {
@@ -126,13 +119,13 @@ export function TreinosScreen({ route, navigation }: Props) {
 
   const deleteTreinoMutation = useMutation({
     mutationFn: async (treinoId: string) => {
-      await api.delete(`/personal/treinos/${treinoId}`);
+      await personalService.deletarTreino(treinoId);
     },
     onSuccess: () => {
       setMenuVisible(false);
       setMenuTreino(null);
       queryClient.invalidateQueries({
-        queryKey: ["personal", "conjunto", conjuntoId, "treinos"],
+        queryKey: keys.personal.conjuntoTreinos(conjuntoId),
       });
     },
     onError: () => {

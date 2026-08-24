@@ -13,7 +13,9 @@ import {
 } from "react-native";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import api, { hasAdminApiKey } from "../../api/client";
+import { hasAdminApiKey } from "../../api/client";
+import { keys } from "../../api/queryKeys";
+import { adminService } from "../../api/services/admin";
 import type {
   AlunoAdmin,
   AlunoAdminCreateRequest,
@@ -70,33 +72,26 @@ export function AdminUsuariosScreen() {
   const [treinaCondominio, setTreinaCondominio] = useState(false);
 
   const personaisQuery = useQuery<PersonalAdmin[]>({
-    queryKey: ["admin", "personais"],
-    queryFn: async () => {
-      const res = await api.get("/admin/personais");
-      return res.data;
-    },
+    queryKey: keys.admin.personais(),
+    queryFn: () => adminService.personais(),
     enabled: hasAdminApiKey && aba === "personais",
   });
 
   const alunosQuery = useQuery<AlunoAdmin[]>({
-    queryKey: ["admin", "alunos"],
-    queryFn: async () => {
-      const res = await api.get("/admin/alunos");
-      return res.data;
-    },
+    queryKey: keys.admin.alunos(),
+    queryFn: () => adminService.alunos(),
     enabled: hasAdminApiKey && aba === "alunos",
   });
 
   const createPersonalMutation = useMutation({
     mutationFn: async (payload: PersonalAdminCreateRequest) => {
-      const res = await api.post<PersonalAdmin>("/admin/personais", payload);
-      return res.data;
+      return adminService.criarPersonal(payload);
     },
     onSuccess: () => {
       setPersonalNome("");
       setPersonalEmail("");
       setPersonalSenha("");
-      queryClient.invalidateQueries({ queryKey: ["admin", "personais"] });
+      queryClient.invalidateQueries({ queryKey: keys.admin.personais() });
     },
     onError: (error: any) => {
       const detail = error?.response?.data?.detail;
@@ -111,8 +106,7 @@ export function AdminUsuariosScreen() {
 
   const createAlunoMutation = useMutation({
     mutationFn: async (payload: AlunoAdminCreateRequest) => {
-      const res = await api.post<AlunoAdmin>("/admin/alunos", payload);
-      return res.data;
+      return adminService.criarAluno(payload);
     },
     onSuccess: () => {
       setAlunoNome("");
@@ -123,7 +117,7 @@ export function AdminUsuariosScreen() {
       setAlunoAltura("");
       setAlunoPersonalId("");
       setTreinaCondominio(false);
-      queryClient.invalidateQueries({ queryKey: ["admin", "alunos"] });
+      queryClient.invalidateQueries({ queryKey: keys.admin.alunos() });
     },
     onError: (error: any) => {
       const detail = error?.response?.data?.detail;
@@ -142,10 +136,10 @@ export function AdminUsuariosScreen() {
       personalId: string;
       ativo: boolean;
     }) => {
-      await api.patch(`/admin/personais/${personalId}`, { ativo });
+      await adminService.atualizarPersonal(personalId, { ativo });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "personais"] });
+      queryClient.invalidateQueries({ queryKey: keys.admin.personais() });
     },
     onError: (error: any) => {
       const detail = error?.response?.data?.detail;
@@ -166,10 +160,10 @@ export function AdminUsuariosScreen() {
       alunoId: string;
       ativo: boolean;
     }) => {
-      await api.patch(`/admin/alunos/${alunoId}`, { ativo });
+      await adminService.atualizarAluno(alunoId, { ativo });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "alunos"] });
+      queryClient.invalidateQueries({ queryKey: keys.admin.alunos() });
     },
     onError: (error: any) => {
       const detail = error?.response?.data?.detail;
@@ -184,10 +178,10 @@ export function AdminUsuariosScreen() {
 
   const deletePersonalMutation = useMutation({
     mutationFn: async (personalId: string) => {
-      await api.delete(`/admin/personais/${personalId}`);
+      await adminService.removerPersonal(personalId);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "personais"] });
+      queryClient.invalidateQueries({ queryKey: keys.admin.personais() });
     },
     onError: (error: any) => {
       const detail = error?.response?.data?.detail;
@@ -202,10 +196,10 @@ export function AdminUsuariosScreen() {
 
   const deleteAlunoMutation = useMutation({
     mutationFn: async (alunoId: string) => {
-      await api.delete(`/admin/alunos/${alunoId}`);
+      await adminService.removerAluno(alunoId);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "alunos"] });
+      queryClient.invalidateQueries({ queryKey: keys.admin.alunos() });
     },
     onError: (error: any) => {
       const detail = error?.response?.data?.detail;

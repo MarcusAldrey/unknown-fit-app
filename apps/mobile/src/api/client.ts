@@ -22,12 +22,28 @@ const API_BASE_URL =
   envApiUrl || (__DEV__ ? DEV_API_BASE_URL : "https://api.ecg.com/api/v1");
 const ADMIN_API_KEY = envAdminApiKey ?? extraAdminApiKey ?? "";
 
-console.log("[API Client] __DEV__:", __DEV__);
-console.log("[API Client] envApiUrl:", envApiUrl);
-console.log("[API Client] DEV_API_HOST:", DEV_API_HOST);
-console.log("[API Client] API_BASE_URL:", API_BASE_URL);
+if (__DEV__) {
+  console.log("[API Client] __DEV__:", __DEV__);
+  console.log("[API Client] envApiUrl:", envApiUrl);
+  console.log("[API Client] DEV_API_HOST:", DEV_API_HOST);
+  console.log("[API Client] API_BASE_URL:", API_BASE_URL);
+}
 
 export const hasAdminApiKey = ADMIN_API_KEY.length > 0;
+
+declare module "axios" {
+  interface InternalAxiosRequestConfig {
+    _retry?: boolean;
+  }
+}
+
+type AuthFailureHandler = () => void;
+
+let onAuthFailure: AuthFailureHandler | null = null;
+
+export function setOnAuthFailure(handler: AuthFailureHandler | null): void {
+  onAuthFailure = handler;
+}
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -39,9 +55,11 @@ api.interceptors.request.use(async (config) => {
   const requestUrl = config.url ?? "";
   config.headers = config.headers ?? {};
 
-  console.log(
-    `[API Request] ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`,
-  );
+  if (__DEV__) {
+    console.log(
+      `[API Request] ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`,
+    );
+  }
 
   const token = await SecureStore.getItemAsync("access_token");
   if (token) {
@@ -56,12 +74,37 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
+// Single-flight refresh: 401s concorrentes compartilham uma única chamada.
+let refreshPromise: Promise<string | null> | null = null;
+
+async function refreshTokens(): Promise<string | null> {
+  const refreshToken = await SecureStore.getItemAsync("refresh_token");
+  if (!refreshToken) {
+    return null;
+  }
+
+  try {
+    const { data } = await axios.post(`${API_BASE_URL}/auth/refresh`, {
+      refresh_token: refreshToken,
+    });
+    await SecureStore.setItemAsync("access_token", data.access_token);
+    await SecureStore.setItemAsync("refresh_token", data.refresh_token);
+    return data.access_token as string;
+  } catch {
+    await SecureStore.deleteItemAsync("access_token");
+    await SecureStore.deleteItemAsync("refresh_token");
+    return null;
+  }
+}
+
 // Interceptor: refresh automático em 401
 api.interceptors.response.use(
   (response) => {
-    console.log(
-      `[API Response] ${response.status} ${response.config.method?.toUpperCase()} ${response.config.url}`,
-    );
+    if (__DEV__) {
+      console.log(
+        `[API Response] ${response.status} ${response.config.method?.toUpperCase()} ${response.config.url}`,
+      );
+    }
     return response;
   },
   async (error) => {
@@ -80,21 +123,23 @@ api.interceptors.response.use(
       /\/aluno\/sessoes\/[0-9a-f-]+$/i.test(requestUrl);
 
     if (isExpectedSessaoAtiva404) {
-      console.log("[API Info] Nenhuma sessão ativa no momento.");
+      if (__DEV__) console.log("[API Info] Nenhuma sessão ativa no momento.");
       return Promise.reject(error);
     }
 
     if (isExpectedDescartarSessao404) {
-      console.log("[API Info] Sessão já não estava em andamento.");
+      if (__DEV__) console.log("[API Info] Sessão já não estava em andamento.");
       return Promise.reject(error);
     }
 
-    console.error(
-      `[API Error] ${error.response?.status || error.code} ${error.config?.method?.toUpperCase()} ${error.config?.url}`,
-    );
-    console.error(`[API Error] Message: ${error.message}`);
-    if (error.response?.data) {
-      console.error(`[API Error] Data:`, error.response.data);
+    if (__DEV__) {
+      console.error(
+        `[API Error] ${error.response?.status || error.code} ${error.config?.method?.toUpperCase()} ${error.config?.url}`,
+      );
+      console.error(`[API Error] Message: ${error.message}`);
+      if (error.response?.data) {
+        console.error(`[API Error] Data:`, error.response.data);
+      }
     }
 
     if (
@@ -104,23 +149,19 @@ api.interceptors.response.use(
     ) {
       originalRequest._retry = true;
 
-      const refreshToken = await SecureStore.getItemAsync("refresh_token");
-      if (refreshToken) {
-        try {
-          const { data } = await axios.post(`${API_BASE_URL}/auth/refresh`, {
-            refresh_token: refreshToken,
-          });
-
-          await SecureStore.setItemAsync("access_token", data.access_token);
-          await SecureStore.setItemAsync("refresh_token", data.refresh_token);
-
-          originalRequest.headers.Authorization = `Bearer ${data.access_token}`;
-          return api(originalRequest);
-        } catch {
-          await SecureStore.deleteItemAsync("access_token");
-          await SecureStore.deleteItemAsync("refresh_token");
-        }
+      if (!refreshPromise) {
+        refreshPromise = refreshTokens().finally(() => {
+          refreshPromise = null;
+        });
       }
+
+      const newToken = await refreshPromise;
+      if (newToken) {
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        return api(originalRequest);
+      }
+
+      onAuthFailure?.();
     }
 
     return Promise.reject(error);

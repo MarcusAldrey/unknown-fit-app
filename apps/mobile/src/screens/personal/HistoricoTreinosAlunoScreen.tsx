@@ -10,7 +10,8 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
-import api from "../../api/client";
+import { keys } from "../../api/queryKeys";
+import { personalService } from "../../api/services/personal";
 import type { SessaoResumo } from "../../types";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
 import { colors } from "../../theme/colors";
@@ -48,13 +49,8 @@ export function HistoricoTreinosAlunoScreen({ route, navigation }: Props) {
   const { alunoId, conjuntoId, conjuntoNome, alunoNome } = route.params;
 
   const { data, isLoading, isError } = useQuery<SessaoResumo[]>({
-    queryKey: ["personal", "aluno", alunoId, "conjunto", conjuntoId, "sessoes"],
-    queryFn: async () => {
-      const res = await api.get(
-        `/personal/alunos/${alunoId}/conjuntos/${conjuntoId}/sessoes`,
-      );
-      return res.data;
-    },
+    queryKey: keys.personal.alunoConjuntoSessoes(alunoId, conjuntoId),
+    queryFn: () => personalService.alunoConjuntoSessoes(alunoId, conjuntoId),
   });
 
   if (isLoading) {
