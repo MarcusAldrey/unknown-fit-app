@@ -1,29 +1,13 @@
 # Frontend IA Contexto (ECG)
 
-Este arquivo orienta agentes de IA a trabalhar no app mobile React Native/Expo deste repositório.
+Regras compartilhadas de arquitetura, domínio e convenções estão no
+[`AGENTS.md`](../../AGENTS.md). Este arquivo mantém apenas extras específicos
+do frontend.
 
 ## Escopo
 
-O frontend está em `apps/mobile` e atende dois perfis principais: `PERSONAL` e `ALUNO`.
-A API consumida é a do backend FastAPI em `/api/v1`.
-
-## Stack e padrões
-
-- React Native com Expo
-- TypeScript
-- React Query para cache e fetch
-- React Navigation (stack + tabs)
-- Axios com interceptors de token e refresh
-- SecureStore para tokens
-- `AuthContext` (`src/contexts/AuthContext.tsx`) controla sessão e navegação por role (`PERSONAL`/`ALUNO`)
-
-## Regras práticas para IA
-
-- Respeitar os tipos de `apps/mobile/src/types/index.ts`.
-- Se alterar contratos de API, alinhar com `packages/types/src/index.ts` e backend.
-- Não mascarar falhas de API como lista vazia: exibir estado de erro quando a query falhar.
-- Evitar hardcode de host da API quando o host do Expo estiver disponível.
-- Manter UI consistente com o tema já usado nas telas (fundo escuro, cartões, tipografia atual).
+O frontend está em `apps/mobile` e atende dois perfis: `PERSONAL` e `ALUNO`.
+A API consumida é o backend FastAPI em `/api/v1`.
 
 ## Pontos críticos
 
@@ -37,13 +21,6 @@ A prioridade de resolução é:
 Endpoints `/admin/` recebem o header `X-Admin-Key` automaticamente quando
 `EXPO_PUBLIC_ADMIN_API_KEY` (ou `extra.adminApiKey`) está definido.
 O refresh de token em 401 não é tentado para endpoints admin.
-
-## Checklist de mudança no frontend
-
-- Atualizou tipos locais em `apps/mobile/src/types/index.ts` quando necessário.
-- Se contrato compartilhado mudou, atualizou também `packages/types/src/index.ts`.
-- Verificou telas afetadas por erro/loading/empty state.
-- Validou manualmente login e fluxo com dados seed (`personal@ecg.com`, `aluno@ecg.com`).
 
 ## Comandos úteis
 
@@ -59,4 +36,6 @@ Dentro de `apps/mobile`:
 pnpm start
 pnpm android
 pnpm ios
+pnpm typecheck
+pnpm lint
 ```

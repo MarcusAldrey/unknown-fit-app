@@ -7,9 +7,22 @@ Monorepo MVP para aplicação de academia com app mobile React Native (Personal 
 ```
 apps/
   api/          → Backend FastAPI (Python)
+    app/
+      domain/       → enums (fonte única)
+      models/       → SQLAlchemy models
+      schemas/      → Pydantic schemas
+      routers/      → HTTP routers (personal/ é um pacote)
+      services/     → lógica de negócio
+    alembic/     → migrations
+    seeds/       → fixtures de seed
   mobile/       → App React Native com Expo (iOS + Android)
+    src/
+      api/         → client + queryKeys + services/
+      hooks/       → React Query hooks
+      components/  → componentes compartilhados
+      theme/       → design tokens
 packages/
-  types/        → Tipos TypeScript compartilhados
+  types/        → Tipos TypeScript compartilhados (@ecg/types)
 ```
 
 ## Pré-requisitos
