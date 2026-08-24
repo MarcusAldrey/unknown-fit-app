@@ -1,5 +1,4 @@
 import uuid
-from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import select
@@ -33,11 +32,15 @@ from app.schemas import (
     TreinoObservacaoAlunoUpdate,
     ExercicioObservacaoAlunoUpdate,
 )
+from app.services.sessao import (
+    excluir_serie,
+    finalizar_sessao,
+    iniciar_sessao,
+    registrar_serie,
+)
 
 router = APIRouter()
 
-
-# --- Conjunto ativo ---
 
 @router.get("/me/conjunto-ativo", response_model=ConjuntoTreinoOut)
 async def conjunto_ativo(
@@ -47,7 +50,7 @@ async def conjunto_ativo(
     result = await db.execute(
         select(ConjuntoTreino).where(
             ConjuntoTreino.aluno_id == aluno.id,
-            ConjuntoTreino.ativo == True,  # noqa: E712
+            ConjuntoTreino.ativo.is_(True),
         )
     )
     conjunto = result.scalar_one_or_none()
@@ -64,7 +67,7 @@ async def treinos_do_conjunto_ativo(
     result = await db.execute(
         select(ConjuntoTreino).where(
             ConjuntoTreino.aluno_id == aluno.id,
-            ConjuntoTreino.ativo == True,  # noqa: E712
+            ConjuntoTreino.ativo.is_(True),
         )
     )
     conjunto = result.scalar_one_or_none()
@@ -172,14 +175,11 @@ async def exercicios_do_treino(
     return result.scalars().all()
 
 
-# --- Sessões de treino ---
-
 @router.get("/sessoes/ativa", response_model=SessaoAtivaOut)
 async def sessao_ativa(
     aluno: Aluno = Depends(get_current_aluno),
     db: AsyncSession = Depends(get_db),
 ):
-    """Retorna a sessão EM_ANDAMENTO do aluno, ou 404."""
     result = await db.execute(
         select(SessaoTreino, Treino)
         .join(Treino, SessaoTreino.treino_id == Treino.id)
@@ -196,7 +196,6 @@ async def sessao_ativa(
 
     sessao, treino = row
 
-    # Buscar séries já registradas
     result_series = await db.execute(
         select(SerieExecutada)
         .where(SerieExecutada.sessao_treino_id == sessao.id)
@@ -216,47 +215,12 @@ async def sessao_ativa(
 
 
 @router.post("/sessoes", response_model=SessaoOut, status_code=201)
-async def iniciar_sessao(
+async def iniciar_sessao_route(
     body: SessaoCreate,
     aluno: Aluno = Depends(get_current_aluno),
     db: AsyncSession = Depends(get_db),
 ):
-    # Verificar se o treino pertence ao conjunto ativo
-    result = await db.execute(
-        select(Treino)
-        .where(Treino.id == body.treino_id)
-        .options(selectinload(Treino.conjunto))
-    )
-    treino = result.scalar_one_or_none()
-
-    if treino is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Treino não encontrado")
-
-    if treino.conjunto.aluno_id != aluno.id or not treino.conjunto.ativo:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Treino não pertence ao conjunto ativo",
-        )
-
-    # Auto-finalizar qualquer sessão em andamento
-    result_ativas = await db.execute(
-        select(SessaoTreino).where(
-            SessaoTreino.aluno_id == aluno.id,
-            SessaoTreino.status == StatusSessao.EM_ANDAMENTO,
-        )
-    )
-    for sessao_antiga in result_ativas.scalars():
-        sessao_antiga.status = StatusSessao.FINALIZADO
-        sessao_antiga.finalizado_em = datetime.utcnow()
-
-    sessao = SessaoTreino(
-        aluno_id=aluno.id,
-        treino_id=body.treino_id,
-    )
-    db.add(sessao)
-    await db.flush()
-    await db.refresh(sessao)
-    return sessao
+    return await iniciar_sessao(db, aluno, body.treino_id)
 
 
 @router.get("/sessoes/{sessao_id}", response_model=SessaoOut)
@@ -294,18 +258,7 @@ async def listar_sessoes(
     )
 
     rows = result.all()
-    return [
-        SessaoResumoOut(
-            id=sessao.id,
-            treino_id=sessao.treino_id,
-            treino_codigo=treino.codigo,
-            treino_nome=treino.nome,
-            iniciado_em=sessao.iniciado_em,
-            finalizado_em=sessao.finalizado_em,
-            status=sessao.status.value,
-        )
-        for sessao, treino in rows
-    ]
+    return [SessaoResumoOut.from_model(sessao, treino) for sessao, treino in rows]
 
 
 @router.get("/sessoes/{sessao_id}/series", response_model=list[SerieDetalheOut])
@@ -338,20 +291,7 @@ async def listar_series_da_sessao(
     rows = result.all()
 
     return [
-        SerieDetalheOut(
-            id=serie.id,
-            exercicio_treino_id=serie.exercicio_treino_id,
-            exercicio_treino_executado_id=serie.exercicio_treino_executado_id,
-            nome_exercicio=exercicio.nome_exercicio,
-            nome_exercicio_executado=(
-                exercicio_executado.nome_exercicio if exercicio_executado is not None else None
-            ),
-            numero_serie=serie.numero_serie,
-            peso_utilizado=serie.peso_utilizado,
-            repeticoes_realizadas=serie.repeticoes_realizadas,
-            concluida=serie.concluida,
-            concluida_em=serie.concluida_em,
-        )
+        SerieDetalheOut.from_model(serie, exercicio, exercicio_executado)
         for serie, exercicio, exercicio_executado in rows
     ]
 
@@ -398,143 +338,33 @@ async def ultimo_peso_exercicio(
 
 
 @router.post("/sessoes/{sessao_id}/series", response_model=SerieOut, status_code=201)
-async def registrar_serie(
+async def registrar_serie_route(
     sessao_id: uuid.UUID,
     body: SerieCreate,
     aluno: Aluno = Depends(get_current_aluno),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(
-        select(SessaoTreino).where(
-            SessaoTreino.id == sessao_id,
-            SessaoTreino.aluno_id == aluno.id,
-            SessaoTreino.status == StatusSessao.EM_ANDAMENTO,
-        )
-    )
-    sessao = result.scalar_one_or_none()
-    if sessao is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Sessão não encontrada ou já finalizada",
-        )
-
-    exercicio_prescrito = (
-        await db.execute(
-            select(ExercicioTreino).where(
-                ExercicioTreino.id == body.exercicio_treino_id,
-                ExercicioTreino.treino_id == sessao.treino_id,
-            )
-        )
-    ).scalar_one_or_none()
-    if exercicio_prescrito is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Exercício do bloco não pertence ao treino da sessão",
-        )
-
-    exercicio_executado_id = body.exercicio_treino_executado_id
-    if exercicio_executado_id is not None and exercicio_executado_id != body.exercicio_treino_id:
-        exercicio_executado = (
-            await db.execute(
-                select(ExercicioTreino).where(
-                    ExercicioTreino.id == exercicio_executado_id,
-                    ExercicioTreino.treino_id == sessao.treino_id,
-                )
-            )
-        ).scalar_one_or_none()
-        if exercicio_executado is None:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Exercício ativo não pertence ao treino da sessão",
-            )
-
-        equivalente = (
-            await db.execute(
-                select(ExercicioTreinoEquivalente.id).where(
-                    ExercicioTreinoEquivalente.exercicio_treino_id == body.exercicio_treino_id,
-                    ExercicioTreinoEquivalente.exercicio_equivalente_treino_id
-                    == exercicio_executado_id,
-                )
-            )
-        ).scalar_one_or_none()
-        if equivalente is None:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Exercício ativo não está configurado como equivalente para este bloco",
-            )
-
-    serie = SerieExecutada(
-        sessao_treino_id=sessao_id,
-        exercicio_treino_id=body.exercicio_treino_id,
-        exercicio_treino_executado_id=(
-            exercicio_executado_id
-            if exercicio_executado_id is not None and exercicio_executado_id != body.exercicio_treino_id
-            else None
-        ),
-        numero_serie=body.numero_serie,
-        peso_utilizado=body.peso_utilizado,
-        repeticoes_realizadas=body.repeticoes_realizadas,
-        concluida=body.concluida,
-        concluida_em=datetime.utcnow() if body.concluida else None,
-    )
-    db.add(serie)
-    await db.flush()
-    await db.refresh(serie)
-    return serie
+    return await registrar_serie(db, aluno, sessao_id, body)
 
 
 @router.delete("/sessoes/{sessao_id}/series/{serie_id}", status_code=204)
-async def excluir_serie(
+async def excluir_serie_route(
     sessao_id: uuid.UUID,
     serie_id: uuid.UUID,
     aluno: Aluno = Depends(get_current_aluno),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(
-        select(SerieExecutada, SessaoTreino)
-        .join(SessaoTreino, SerieExecutada.sessao_treino_id == SessaoTreino.id)
-        .where(
-            SerieExecutada.id == serie_id,
-            SerieExecutada.sessao_treino_id == sessao_id,
-            SessaoTreino.aluno_id == aluno.id,
-            SessaoTreino.status == StatusSessao.EM_ANDAMENTO,
-        )
-    )
-    row = result.first()
-    if row is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Série não encontrada na sessão em andamento",
-        )
-
-    serie, _ = row
-    await db.delete(serie)
-    await db.flush()
+    await excluir_serie(db, aluno, sessao_id, serie_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.patch("/sessoes/{sessao_id}/finalizar", response_model=SessaoOut)
-async def finalizar_sessao(
+async def finalizar_sessao_route(
     sessao_id: uuid.UUID,
     aluno: Aluno = Depends(get_current_aluno),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(
-        select(SessaoTreino).where(
-            SessaoTreino.id == sessao_id,
-            SessaoTreino.aluno_id == aluno.id,
-        )
-    )
-    sessao = result.scalar_one_or_none()
-    if sessao is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sessão não encontrada")
-
-    sessao.status = StatusSessao.FINALIZADO
-    sessao.finalizado_em = datetime.utcnow()
-
-    await db.flush()
-    await db.refresh(sessao)
-    return sessao
+    return await finalizar_sessao(db, aluno, sessao_id)
 
 
 @router.delete("/sessoes/{sessao_id}", status_code=204)

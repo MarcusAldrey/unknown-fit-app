@@ -1,9 +1,9 @@
 import uuid
 from collections import deque
 
-from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.exceptions import DomainValidationError
 from app.models import ExercicioTreinoEquivalente
 from app.repositories import EquivalenciaExercicioRepository
 
@@ -159,9 +159,8 @@ async def _validar_equivalentes_no_treino(
         exercicios_ids=equivalentes_ids,
     )
     if len(existentes_ids) != len(equivalentes_ids):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Todos os equivalentes devem pertencer ao mesmo treino",
+        raise DomainValidationError(
+            "Todos os equivalentes devem pertencer ao mesmo treino"
         )
 
 
@@ -174,9 +173,8 @@ async def substituir_equivalentes_no_treino(
     repo = EquivalenciaExercicioRepository(db)
 
     if exercicio_id in equivalentes_ids:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Um exercício não pode ser equivalente de si mesmo",
+        raise DomainValidationError(
+            "Um exercício não pode ser equivalente de si mesmo"
         )
 
     await _validar_equivalentes_no_treino(

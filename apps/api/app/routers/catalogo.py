@@ -8,8 +8,6 @@ from sqlalchemy.orm import selectinload
 from app.database import get_db
 from app.deps import get_current_user, get_current_personal
 from app.models import (
-    Aluno,
-    AlunoRecursoDisponibilidade,
     ExercicioBase,
     ExercicioRequisitoRecurso,
     Personal,
@@ -24,6 +22,7 @@ from app.schemas import (
     RecursoTreinoOut,
     RecursoTreinoUpdate,
 )
+from app.services.disponibilidade import ensure_disponibilidade_rows
 
 router = APIRouter()
 
@@ -48,7 +47,7 @@ async def listar_exercicios_base(
 ):
     result = await db.execute(
         select(ExercicioBase)
-        .where(ExercicioBase.ativo == True)  # noqa: E712
+        .where(ExercicioBase.ativo.is_(True))
         .options(
             selectinload(ExercicioBase.requisitos_recurso_links).selectinload(
                 ExercicioRequisitoRecurso.recurso_treino
@@ -88,7 +87,7 @@ async def listar_recursos_treino(
 ):
     result = await db.execute(
         select(RecursoTreino)
-        .where(RecursoTreino.ativo == True)  # noqa: E712
+        .where(RecursoTreino.ativo.is_(True))
         .order_by(RecursoTreino.nome)
     )
     return result.scalars().all()
@@ -114,15 +113,7 @@ async def criar_recurso_treino(
     db.add(recurso)
     await db.flush()
 
-    alunos = (await db.execute(select(Aluno.id))).scalars().all()
-    for aluno_id in alunos:
-        db.add(
-            AlunoRecursoDisponibilidade(
-                aluno_id=aluno_id,
-                recurso_treino_id=recurso.id,
-                disponivel_para_aluno=True,
-            )
-        )
+    await ensure_disponibilidade_rows(db)
 
     await db.flush()
     await db.refresh(recurso)
@@ -181,7 +172,7 @@ async def atualizar_requisitos_recurso_exercicio_base(
             await db.execute(
                 select(RecursoTreino.id).where(
                     RecursoTreino.id.in_(recurso_ids),
-                    RecursoTreino.ativo == True,  # noqa: E712
+                    RecursoTreino.ativo.is_(True),
                 )
             )
         ).scalars().all()

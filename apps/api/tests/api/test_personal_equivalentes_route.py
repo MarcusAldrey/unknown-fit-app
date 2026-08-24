@@ -7,9 +7,9 @@ from fastapi import HTTPException
 from httpx import ASGITransport, AsyncClient
 
 from app.database import get_db
-from app.deps import get_current_personal
+from app.deps import get_current_personal, get_exercicio_vinculado
 from app.main import app
-from app.routers import personal as personal_router
+from app.routers.personal import exercicios as exercicios_router
 
 
 @pytest.fixture(autouse=True)
@@ -30,20 +30,33 @@ def dummy_personal():
 
 
 @pytest.fixture
-def personal_overrides(dummy_db, dummy_personal):
+def db_override(dummy_db):
     async def _override_get_db():
         yield dummy_db
 
+    app.dependency_overrides[get_db] = _override_get_db
+
+
+@pytest.fixture
+def personal_override(dummy_personal):
     async def _override_get_current_personal():
         return dummy_personal
 
-    app.dependency_overrides[get_db] = _override_get_db
     app.dependency_overrides[get_current_personal] = _override_get_current_personal
+
+
+@pytest.fixture
+def exercicio_override(exercicio_stub):
+    async def _override_get_exercicio():
+        return exercicio_stub
+
+    app.dependency_overrides[get_exercicio_vinculado] = _override_get_exercicio
 
 
 async def test_put_equivalentes_retorna_lista_do_servico(
     monkeypatch: pytest.MonkeyPatch,
-    personal_overrides,
+    db_override,
+    personal_override,
     dummy_db,
 ):
     exercicio_id = uuid.uuid4()
@@ -51,7 +64,12 @@ async def test_put_equivalentes_retorna_lista_do_servico(
     equivalente_id = uuid.uuid4()
 
     exercicio_stub = SimpleNamespace(id=exercicio_id, treino_id=treino_id)
-    helper_mock = AsyncMock(return_value=exercicio_stub)
+
+    async def _override_get_exercicio():
+        return exercicio_stub
+
+    app.dependency_overrides[get_exercicio_vinculado] = _override_get_exercicio
+
     service_saida = [
         SimpleNamespace(
             id=uuid.uuid4(),
@@ -62,9 +80,9 @@ async def test_put_equivalentes_retorna_lista_do_servico(
         )
     ]
     service_mock = AsyncMock(return_value=service_saida)
-
-    monkeypatch.setattr(personal_router, "_get_exercicio_treino_vinculado", helper_mock)
-    monkeypatch.setattr(personal_router, "substituir_equivalentes_no_treino", service_mock)
+    monkeypatch.setattr(
+        exercicios_router, "substituir_equivalentes_no_treino", service_mock
+    )
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -81,7 +99,6 @@ async def test_put_equivalentes_retorna_lista_do_servico(
     assert data[0]["nome_exercicio"] == "Leg Press"
     assert data[0]["ordem"] == 1
 
-    helper_mock.assert_awaited_once()
     service_mock.assert_awaited_once_with(
         db=dummy_db,
         treino_id=treino_id,
@@ -91,15 +108,15 @@ async def test_put_equivalentes_retorna_lista_do_servico(
 
 
 async def test_put_equivalentes_retorna_404_quando_exercicio_nao_encontrado(
-    monkeypatch: pytest.MonkeyPatch,
-    personal_overrides,
+    db_override,
+    personal_override,
 ):
     exercicio_id = uuid.uuid4()
 
-    async def _helper_404(*args, **kwargs):
+    async def _override_404():
         raise HTTPException(status_code=404, detail="Exercício não encontrado")
 
-    monkeypatch.setattr(personal_router, "_get_exercicio_treino_vinculado", _helper_404)
+    app.dependency_overrides[get_exercicio_vinculado] = _override_404
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -113,19 +130,17 @@ async def test_put_equivalentes_retorna_404_quando_exercicio_nao_encontrado(
 
 
 async def test_put_equivalentes_retorna_422_para_ids_duplicados(
-    monkeypatch: pytest.MonkeyPatch,
-    personal_overrides,
+    db_override,
+    personal_override,
 ):
     exercicio_id = uuid.uuid4()
     treino_id = uuid.uuid4()
     equivalente_id = uuid.uuid4()
 
-    exercicio_stub = SimpleNamespace(id=exercicio_id, treino_id=treino_id)
-    monkeypatch.setattr(
-        personal_router,
-        "_get_exercicio_treino_vinculado",
-        AsyncMock(return_value=exercicio_stub),
-    )
+    async def _override_exercicio():
+        return SimpleNamespace(id=exercicio_id, treino_id=treino_id)
+
+    app.dependency_overrides[get_exercicio_vinculado] = _override_exercicio
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, String, UniqueConstraint
@@ -15,7 +15,9 @@ class RecursoTreino(Base):
     nome: Mapped[str] = mapped_column(String(120), unique=True)
     ativo: Mapped[bool] = mapped_column(Boolean, default=True)
     criado_por_sistema: Mapped[bool] = mapped_column(Boolean, default=True)
-    criado_em: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    criado_em: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
 
     requisitos_exercicio: Mapped[list["ExercicioRequisitoRecurso"]] = relationship(
         back_populates="recurso_treino",
@@ -56,7 +58,9 @@ class AlunoRecursoDisponibilidade(Base):
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    aluno_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("alunos.id"))
+    aluno_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("alunos.id", ondelete="CASCADE")
+    )
     recurso_treino_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("recursos_treino.id"))
     disponivel_para_aluno: Mapped[bool] = mapped_column(Boolean, default=True)
 
@@ -64,5 +68,8 @@ class AlunoRecursoDisponibilidade(Base):
     recurso_treino: Mapped[RecursoTreino] = relationship(back_populates="disponibilidades_aluno")
 
 
-from app.models.aluno import Aluno  # noqa: E402
-from app.models.exercicio_base import ExercicioBase  # noqa: E402
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.aluno import Aluno
+    from app.models.exercicio_base import ExercicioBase

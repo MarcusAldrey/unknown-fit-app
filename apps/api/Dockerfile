@@ -6,12 +6,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-COPY requirements.txt ./requirements.txt
-RUN pip install --upgrade pip && pip install -r requirements.txt
+COPY pyproject.toml ./pyproject.toml
+RUN pip install --upgrade pip && pip install .
 
 COPY alembic.ini ./alembic.ini
 COPY alembic ./alembic
 COPY app ./app
+COPY seeds ./seeds
 COPY entrypoint.sh /entrypoint.sh
 
 RUN chmod +x /entrypoint.sh

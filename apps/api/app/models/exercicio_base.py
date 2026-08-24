@@ -33,4 +33,7 @@ class ExercicioBase(Base):
         return [link.recurso_treino for link in self.requisitos_recurso_links]
 
 
-from app.models.recurso_treino import ExercicioRequisitoRecurso, RecursoTreino  # noqa: E402
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.recurso_treino import ExercicioRequisitoRecurso, RecursoTreino

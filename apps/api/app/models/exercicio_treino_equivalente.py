@@ -11,8 +11,12 @@ class ExercicioTreinoEquivalente(Base):
     __tablename__ = "exercicios_treino_equivalentes"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    exercicio_treino_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("exercicios_treino.id"))
-    exercicio_equivalente_treino_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("exercicios_treino.id"))
+    exercicio_treino_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("exercicios_treino.id", ondelete="CASCADE")
+    )
+    exercicio_equivalente_treino_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("exercicios_treino.id", ondelete="CASCADE")
+    )
     ordem: Mapped[int] = mapped_column(Integer, default=1)
 
     exercicio_treino: Mapped["ExercicioTreino"] = relationship(
@@ -30,4 +34,7 @@ class ExercicioTreinoEquivalente(Base):
         return self.exercicio_equivalente_treino.nome_exercicio
 
 
-from app.models.exercicio_treino import ExercicioTreino  # noqa: E402
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.exercicio_treino import ExercicioTreino

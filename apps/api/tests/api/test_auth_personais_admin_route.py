@@ -60,13 +60,17 @@ async def test_criar_personal_exige_admin_key(db_override):
 async def test_criar_personal_com_admin_key_retorna_201(
     monkeypatch: pytest.MonkeyPatch,
     db_override,
-    dummy_db,
 ):
-    monkeypatch.setattr(
-        admin_router,
-        "_buscar_usuario_por_email",
-        AsyncMock(return_value=None),
+    usuario = SimpleNamespace(
+        id=uuid.uuid4(),
+        nome="Personal Novo",
+        email="personal.novo@ecg.com",
+        ativo=True,
+        role=Role.PERSONAL,
     )
+    personal = SimpleNamespace(id=uuid.uuid4(), usuario=usuario)
+    criar_mock = AsyncMock(return_value=personal)
+    monkeypatch.setattr(admin_router, "criar_personal", criar_mock)
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -88,22 +92,30 @@ async def test_criar_personal_com_admin_key_retorna_201(
     assert payload["ativo"] is True
     assert payload["personal_id"]
     assert payload["usuario_id"]
-    assert len(dummy_db.added) == 2
-    assert dummy_db.flush.await_count == 2
+    criar_mock.assert_awaited_once()
 
 
 async def test_criar_aluno_com_admin_key_retorna_201(
     monkeypatch: pytest.MonkeyPatch,
     db_override,
-    dummy_db,
 ):
-    monkeypatch.setattr(
-        admin_router,
-        "_buscar_usuario_por_email",
-        AsyncMock(return_value=None),
+    usuario = SimpleNamespace(
+        id=uuid.uuid4(),
+        nome="Aluno Novo",
+        email="aluno.novo@ecg.com",
+        ativo=True,
+        role=Role.ALUNO,
     )
-    definir_vinculo_mock = AsyncMock()
-    monkeypatch.setattr(admin_router, "_definir_vinculo_ativo_unico", definir_vinculo_mock)
+    aluno = SimpleNamespace(
+        id=uuid.uuid4(),
+        usuario=usuario,
+        idade=25,
+        peso=78.5,
+        altura=1.8,
+        treina_em_academia_condominio=True,
+    )
+    criar_mock = AsyncMock(return_value=aluno)
+    monkeypatch.setattr(admin_router, "criar_aluno", criar_mock)
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -131,9 +143,7 @@ async def test_criar_aluno_com_admin_key_retorna_201(
     assert payload["treina_em_academia_condominio"] is True
     assert payload["aluno_id"]
     assert payload["usuario_id"]
-    assert len(dummy_db.added) == 2
-    assert dummy_db.flush.await_count == 3
-    definir_vinculo_mock.assert_awaited_once()
+    criar_mock.assert_awaited_once()
 
 
 async def test_remover_personal_apaga_personal_e_usuario(
@@ -185,10 +195,8 @@ async def test_remover_aluno_apaga_aluno_e_usuario(
     aluno = SimpleNamespace(id=aluno_id, usuario=usuario)
 
     buscar_aluno_mock = AsyncMock(return_value=aluno)
-    hard_delete_mock = AsyncMock()
 
     monkeypatch.setattr(admin_router, "_buscar_aluno_por_id", buscar_aluno_mock)
-    monkeypatch.setattr(admin_router, "_hard_delete_aluno_dependencias", hard_delete_mock)
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -199,7 +207,6 @@ async def test_remover_aluno_apaga_aluno_e_usuario(
 
     assert response.status_code == 204
     buscar_aluno_mock.assert_awaited_once()
-    hard_delete_mock.assert_awaited_once_with(dummy_db, aluno_id)
     assert dummy_db.delete.await_count == 2
 
 

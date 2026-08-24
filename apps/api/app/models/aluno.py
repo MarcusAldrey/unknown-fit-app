@@ -18,19 +18,30 @@ class Aluno(Base):
     treina_em_academia_condominio: Mapped[bool] = mapped_column(Boolean, default=False)
 
     usuario: Mapped["Usuario"] = relationship(back_populates="aluno")
-    vinculos: Mapped[list["VinculoPersonalAluno"]] = relationship(back_populates="aluno")
-    conjuntos_treino: Mapped[list["ConjuntoTreino"]] = relationship(back_populates="aluno")
-    sessoes: Mapped[list["SessaoTreino"]] = relationship(back_populates="aluno")
-    registros_peso: Mapped[list["RegistroPesoAluno"]] = relationship(back_populates="aluno")
+    vinculos: Mapped[list["VinculoPersonalAluno"]] = relationship(
+        back_populates="aluno", passive_deletes=True
+    )
+    conjuntos_treino: Mapped[list["ConjuntoTreino"]] = relationship(
+        back_populates="aluno", passive_deletes=True
+    )
+    sessoes: Mapped[list["SessaoTreino"]] = relationship(
+        back_populates="aluno", passive_deletes=True
+    )
+    registros_peso: Mapped[list["RegistroPesoAluno"]] = relationship(
+        back_populates="aluno", passive_deletes=True
+    )
     recursos_disponibilidade: Mapped[list["AlunoRecursoDisponibilidade"]] = relationship(
         back_populates="aluno",
         cascade="all, delete-orphan",
     )
 
 
-from app.models.usuario import Usuario  # noqa: E402
-from app.models.vinculo import VinculoPersonalAluno  # noqa: E402
-from app.models.conjunto_treino import ConjuntoTreino  # noqa: E402
-from app.models.sessao_treino import SessaoTreino  # noqa: E402
-from app.models.peso_registro import RegistroPesoAluno  # noqa: E402
-from app.models.recurso_treino import AlunoRecursoDisponibilidade  # noqa: E402
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.usuario import Usuario
+    from app.models.vinculo import VinculoPersonalAluno
+    from app.models.conjunto_treino import ConjuntoTreino
+    from app.models.sessao_treino import SessaoTreino
+    from app.models.peso_registro import RegistroPesoAluno
+    from app.models.recurso_treino import AlunoRecursoDisponibilidade

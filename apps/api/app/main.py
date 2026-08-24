@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+import importlib.metadata
 import logging
 from time import perf_counter
 import uuid
@@ -8,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.config import get_settings
+from app.exceptions import DomainError
 from app.logging_config import (
     configure_logging,
     get_request_id,
@@ -20,6 +22,16 @@ from app.routers import auth, personal, aluno, catalogo, admin
 settings = get_settings()
 configure_logging(settings.log_level)
 logger = logging.getLogger("ecg.api")
+
+
+def _app_version() -> str:
+    try:
+        return importlib.metadata.version("ecg-api")
+    except importlib.metadata.PackageNotFoundError:
+        return "0.1.0"
+
+
+API_VERSION = _app_version()
 
 _SECRET_PLACEHOLDERS = {
     "dev-secret-key-change-in-production",
@@ -46,7 +58,8 @@ async def lifespan(app: FastAPI):
     invalid_admin_key = _missing_or_placeholder(settings.admin_api_key, _ADMIN_KEY_PLACEHOLDERS)
 
     logger.info(
-        "api_startup version=0.1.0 host=%s port=%s environment=%s",
+        "api_startup version=%s host=%s port=%s environment=%s",
+        API_VERSION,
         settings.api_host,
         settings.api_port,
         settings.environment,
@@ -75,7 +88,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="ECG - Elite Training Gym",
-    version="0.1.0",
+    version=API_VERSION,
     lifespan=lifespan,
 )
 
@@ -120,6 +133,15 @@ async def request_logging_middleware(request: Request, call_next):
         raise
     finally:
         reset_request_id(token)
+
+
+@app.exception_handler(DomainError)
+async def domain_error_handler(request: Request, exc: DomainError):
+    request_id = getattr(request.state, "request_id", get_request_id())
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail, "code": exc.code, "request_id": request_id},
+    )
 
 
 @app.exception_handler(Exception)

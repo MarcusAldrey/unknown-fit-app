@@ -17,5 +17,8 @@ class Personal(Base):
     vinculos: Mapped[list["VinculoPersonalAluno"]] = relationship(back_populates="personal")
 
 
-from app.models.usuario import Usuario  # noqa: E402
-from app.models.vinculo import VinculoPersonalAluno  # noqa: E402
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.usuario import Usuario
+    from app.models.vinculo import VinculoPersonalAluno

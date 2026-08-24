@@ -1,19 +1,22 @@
 """
-Seed idempotente para ExercicioBase.
+Seed idempotente para ExercicioBase e usuários de demonstração.
 Executar: python -m app.seed
 """
 import asyncio
+import json
 import re
 from datetime import date
+from pathlib import Path
 
 from sqlalchemy import select
 
+from app.config import get_settings
 from app.database import engine, async_session, Base
+from app.domain.enums import AlvoTipo, ImplementoExecucao, RerRmTipo, Tecnica
 from app.models import (
     AlunoRecursoDisponibilidade,
     ExercicioBase,
     ExercicioRequisitoRecurso,
-    ImplementoExecucao,
     RecursoTreino,
 )
 from app.models.usuario import Usuario, Role
@@ -22,8 +25,9 @@ from app.models.aluno import Aluno
 from app.models.vinculo import VinculoPersonalAluno
 from app.models.conjunto_treino import ConjuntoTreino
 from app.models.treino import Treino
-from app.models.exercicio_treino import ExercicioTreino, Tecnica, AlvoTipo, RerRmTipo
+from app.models.exercicio_treino import ExercicioTreino
 from app.services.auth import hash_senha
+from app.services.disponibilidade import ensure_disponibilidade_rows
 
 EXERCICIOS_BASE = [
     # Peito
@@ -148,33 +152,6 @@ async def _sincronizar_recursos_e_requisitos(session) -> None:
     await session.flush()
 
 
-async def _sincronizar_disponibilidade_alunos(session) -> None:
-    alunos_ids = (await session.execute(select(Aluno.id))).scalars().all()
-    recursos_ids = (await session.execute(select(RecursoTreino.id))).scalars().all()
-    existentes = set(
-        (await session.execute(
-            select(
-                AlunoRecursoDisponibilidade.aluno_id,
-                AlunoRecursoDisponibilidade.recurso_treino_id,
-            )
-        )).all()
-    )
-
-    for aluno_id in alunos_ids:
-        for recurso_id in recursos_ids:
-            if (aluno_id, recurso_id) in existentes:
-                continue
-            session.add(
-                AlunoRecursoDisponibilidade(
-                    aluno_id=aluno_id,
-                    recurso_treino_id=recurso_id,
-                    disponivel_para_aluno=True,
-                )
-            )
-
-    await session.flush()
-
-
 async def _resolver_exercicio_base_id(session, nome: str):
     result = await session.execute(
         select(ExercicioBase).where(ExercicioBase.nome == nome)
@@ -255,6 +232,46 @@ def _parse_rer_rm(valor: str | None) -> tuple[RerRmTipo | None, str | None]:
     return RerRmTipo.RER, texto
 
 
+def _parse_tecnica(valor: str | None) -> Tecnica:
+    if not valor:
+        return Tecnica.PADRAO
+    normalizado = valor.strip().lower()
+    if "isometria" in normalizado:
+        return Tecnica.ISOMETRIA
+    if "instabilidade" in normalizado:
+        return Tecnica.INSTABILIDADE
+    return Tecnica.PADRAO
+
+
+def _extrair_segundos(parte: str) -> int | None:
+    mm_ss = re.match(r"(\d+):(\d+)\s*min", parte)
+    if mm_ss:
+        return int(mm_ss.group(1)) * 60 + int(mm_ss.group(2))
+    minutos = re.search(r"(\d+)\s*min", parte)
+    if minutos:
+        return int(minutos.group(1)) * 60
+    segundos = re.search(r"(\d+)\s*seg", parte)
+    if segundos:
+        return int(segundos.group(1))
+    return None
+
+
+def _parse_descanso(valor: str | None) -> tuple[int | None, int | None]:
+    if not valor:
+        return None, None
+
+    partes = valor.lower().split(" a ")
+    valores: list[int] = []
+    for parte in partes:
+        segundos = _extrair_segundos(parte)
+        if segundos is not None:
+            valores.append(segundos)
+
+    if not valores:
+        return None, None
+    return min(valores), max(valores)
+
+
 async def seed():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -281,7 +298,19 @@ async def seed():
         await session.commit()
         print(f"Seed concluído: {len(EXERCICIOS_BASE)} exercícios verificados.")
 
-    # --- Usuários de teste ---
+    if _is_production():
+        print("Ambiente de produção: usuários de demonstração ignorados.")
+        return
+
+    await _seed_usuarios_demonstracao()
+    await _seed_treino_aldrey_ciclo1()
+
+
+def _is_production() -> bool:
+    return (get_settings().environment or "").strip().lower() == "production"
+
+
+async def _seed_usuarios_demonstracao():
     async with async_session() as session:
         # Personal
         result = await session.execute(
@@ -317,6 +346,40 @@ async def seed():
             session.add(Aluno(usuario_id=aluno_user.id, idade=25, peso=60.0, altura=1.65))
             await session.flush()
 
+        # Personal customizado (abreu)
+        result = await session.execute(
+            select(Usuario).where(Usuario.email == "abreu@ecg.com")
+        )
+        abreu_user = result.scalar_one_or_none()
+        if abreu_user is None:
+            abreu_user = Usuario(
+                nome="Abreu",
+                email="abreu@ecg.com",
+                senha_hash=hash_senha("654321*"),
+                role=Role.PERSONAL,
+            )
+            session.add(abreu_user)
+            await session.flush()
+            session.add(Personal(usuario_id=abreu_user.id))
+            await session.flush()
+
+        # Aluno customizado (aldrey)
+        result = await session.execute(
+            select(Usuario).where(Usuario.email == "aldrey@ecg.com")
+        )
+        aldrey_user = result.scalar_one_or_none()
+        if aldrey_user is None:
+            aldrey_user = Usuario(
+                nome="Aldrey",
+                email="aldrey@ecg.com",
+                senha_hash=hash_senha("654321*"),
+                role=Role.ALUNO,
+            )
+            session.add(aldrey_user)
+            await session.flush()
+            session.add(Aluno(usuario_id=aldrey_user.id, idade=30, peso=80.0, altura=1.80))
+            await session.flush()
+
         # Vincular personal <-> aluno (se ambos existem)
         result_p = await session.execute(
             select(Personal).join(Usuario).where(Usuario.email == "personal@ecg.com")
@@ -340,92 +403,53 @@ async def seed():
                     ativo=True,
                 ))
 
-            await _sincronizar_disponibilidade_alunos(session)
+            await ensure_disponibilidade_rows(session, aluno.id)
+
+        # Vincular abreu <-> aldrey
+        result_abreu = await session.execute(
+            select(Personal).join(Usuario).where(Usuario.email == "abreu@ecg.com")
+        )
+        abreu = result_abreu.scalar_one_or_none()
+        result_aldrey = await session.execute(
+            select(Aluno).join(Usuario).where(Usuario.email == "aldrey@ecg.com")
+        )
+        aldrey = result_aldrey.scalar_one_or_none()
+        if abreu and aldrey:
+            result_v = await session.execute(
+                select(VinculoPersonalAluno).where(
+                    VinculoPersonalAluno.personal_id == abreu.id,
+                    VinculoPersonalAluno.aluno_id == aldrey.id,
+                )
+            )
+            if result_v.scalar_one_or_none() is None:
+                session.add(VinculoPersonalAluno(
+                    personal_id=abreu.id,
+                    aluno_id=aldrey.id,
+                    ativo=True,
+                ))
+            await ensure_disponibilidade_rows(session, aldrey.id)
 
         await session.commit()
         print("Usuários de teste criados:")
         print("  Personal: personal@ecg.com / 123456")
         print("  Aluno:    aluno@ecg.com / 123456")
+        print("  Personal: abreu@ecg.com / 654321*")
+        print("  Aluno:    aldrey@ecg.com / 654321*")
 
-    # --- Fixture: Treino Aldrey - Ciclo 1 para aluno@ecg.com ---
-    await _seed_treino_aldrey_ciclo1()
+
+_SEED_TREINO_JSON = Path(__file__).resolve().parents[1] / "seeds" / "treino_aldrey_ciclo1.json"
 
 
 async def _seed_treino_aldrey_ciclo1():
     """Cria o ConjuntoTreino 'Aldrey - Ciclo 1' para aluno@ecg.com (idempotente)."""
-    CONJUNTO_NOME = "Aldrey - Ciclo 1 - Adaptativo - ABCDE - 08FEV26"
+    if not _SEED_TREINO_JSON.exists():
+        print("Seed treino: arquivo JSON não encontrado, pulando fixture.")
+        return
 
-    TREINOS = [
-        {
-            "codigo": "A",
-            "nome": "Peito, Ombro e Tríceps",
-            "ordem": 0,
-            "exercicios": [
-                {"nome": "Supino Inclinado com Barra", "series": 3, "rep": "8-12", "tecnica": Tecnica.PADRAO, "rer": "2", "descanso": 90, "obs": None},
-                {"nome": "Supino Reto com Halteres", "series": 3, "rep": "8-12", "tecnica": Tecnica.PADRAO, "rer": "2", "descanso": 90, "obs": None},
-                {"nome": "Crucifixo com Halter", "series": 3, "rep": "8-12", "tecnica": Tecnica.PADRAO, "rer": "2", "descanso": 90, "obs": None},
-                {"nome": "Desenvolvimento Militar", "series": 3, "rep": "8-12", "tecnica": Tecnica.PADRAO, "rer": "2", "descanso": 90, "obs": None},
-                {"nome": "Tríceps Francês com Halteres", "series": 3, "rep": "8-12", "tecnica": Tecnica.PADRAO, "rer": "2", "descanso": 60, "obs": None},
-                {"nome": "Tríceps na Polia", "series": 3, "rep": "8-12", "tecnica": Tecnica.PADRAO, "rer": "2", "descanso": 60, "obs": None},
-            ],
-        },
-        {
-            "codigo": "B",
-            "nome": "Inferiores (Força)",
-            "ordem": 1,
-            "exercicios": [
-                {"nome": "Levantamento Terra", "series": 3, "rep": "5", "tecnica": Tecnica.PADRAO, "rer": "100%/85%", "descanso": None, "obs": "Usar séries longe da falha (1 a 3 reps) com carga progressiva para aquecer e encontrar carga de trabalho. Usar carga de trabalho que falhe em 5RM, depois fazer as outras duas séries em 85% dessa carga."},
-                {"nome": "Agachamento", "series": 3, "rep": "5", "tecnica": Tecnica.PADRAO, "rer": "100%/85%", "descanso": 90, "obs": "Usar séries longe da falha (1 a 3 reps) com carga progressiva para aquecer e encontrar carga de trabalho. Usar carga de trabalho que falhe em 5RM, depois fazer as outras duas séries em 85% dessa carga."},
-                {"nome": "Cadeira Extensora", "series": 3, "rep": "8-12", "tecnica": Tecnica.PADRAO, "rer": "2", "descanso": 90, "obs": None},
-                {"nome": "Cadeira Flexora", "series": 3, "rep": "8-12", "tecnica": Tecnica.PADRAO, "rer": "2", "descanso": 60, "obs": None},
-                {"nome": "Abdominal Canoa", "series": 3, "rep": "30seg a 1min", "tecnica": Tecnica.ISOMETRIA, "rer": None, "descanso": 60, "obs": "Falhar em todas. Direcionar as mãos e pernas para longe do corpo para dificultar sempre que atingir 1 minuto na progressão. Também é possível adicionar carga em mãos e pernas."},
-                {"nome": "Prancha Frontal", "series": 3, "rep": "30seg a 1min", "tecnica": Tecnica.ISOMETRIA, "rer": None, "descanso": 60, "obs": "Falhar em todas."},
-                {"nome": "Prancha Lateral", "series": 3, "rep": "30seg a 1min", "tecnica": Tecnica.ISOMETRIA, "rer": None, "descanso": 60, "obs": "Alternar continuamente entre lados. Levantar perna de cima no ar + segurar anilha a frente do corpo com braço de cima são formas de dificultar e manter dentro de 1min."},
-            ],
-        },
-        {
-            "codigo": "C",
-            "nome": "Costas e Bíceps",
-            "ordem": 2,
-            "exercicios": [
-                {"nome": "Remada Curvada Pronada", "series": 3, "rep": "8-12", "tecnica": Tecnica.PADRAO, "rer": "2", "descanso": 90, "obs": "Verter os cotovelos a frente do corpo e trazer a barra apenas até a linha do queixo ou levemente abaixo."},
-                {"nome": "Puxada Alta Triângulo", "series": 3, "rep": "8-12", "tecnica": Tecnica.PADRAO, "rer": "2", "descanso": 90, "obs": None},
-                {"nome": "Remada Baixa", "series": 3, "rep": "8-12", "tecnica": Tecnica.PADRAO, "rer": "2", "descanso": 90, "obs": None},
-                {"nome": "Rosca Direta com Barra", "series": 3, "rep": "6-8", "tecnica": Tecnica.PADRAO, "rer": "2", "descanso": 120, "obs": "Socar peso nessa bagaça."},
-                {"nome": "Suitcase Carry", "series": 3, "rep": "20 passos mínimos", "tecnica": Tecnica.INSTABILIDADE, "rer": None, "descanso": 30, "obs": "Segurar uma anilha/halter/Kettlebell com apenas uma mão e andar sem deixar o tronco e quadril lateralizar. Andar pelo menos 20 passos. Utilizar carga alta."},
-                {"nome": "Panturrilha em Pé", "series": 3, "rep": "6-8", "tecnica": Tecnica.PADRAO, "rer": "FALHA", "descanso": 120, "obs": "Pode fazer onde preferir, contanto que o joelho esteja esticado conta como em pé. Socar carga e FALHAR."},
-            ],
-        },
-        {
-            "codigo": "D",
-            "nome": "Super Bíceps, Super Lombar e Ombritos",
-            "ordem": 3,
-            "exercicios": [
-                {"nome": "Agachamento Zercher", "series": 4, "rep": "8-12", "tecnica": Tecnica.PADRAO, "rer": "2", "descanso": 120, "obs": None},
-                {"nome": "Isometria de Bíceps em 90 graus de Rosca Direta", "series": 3, "rep": "40seg a 80seg", "tecnica": Tecnica.ISOMETRIA, "rer": None, "descanso": 60, "obs": "Segurar a carga no ângulo de 90 graus."},
-                {"nome": "Rosca Martelo", "series": 3, "rep": "8-12", "tecnica": Tecnica.PADRAO, "rer": None, "descanso": 90, "obs": None},
-                {"nome": "Rosca Scott", "series": 3, "rep": "8-12", "tecnica": Tecnica.PADRAO, "rer": None, "descanso": 90, "obs": None},
-                {"nome": "Superman no Solo", "series": 3, "rep": "30seg a 1min", "tecnica": Tecnica.PADRAO, "rer": "FALHA", "descanso": 60, "obs": None},
-                {"nome": "Desenvolvimento Militar com Halter", "series": 3, "rep": "12-15", "tecnica": Tecnica.PADRAO, "rer": "FALHA", "descanso": 60, "obs": None},
-                {"nome": "Elevação Lateral", "series": 3, "rep": "12-15", "tecnica": Tecnica.PADRAO, "rer": "FALHA", "descanso": 60, "obs": None},
-            ],
-        },
-        {
-            "codigo": "E",
-            "nome": "Inferiores Complementar",
-            "ordem": 4,
-            "exercicios": [
-                {"nome": "Afundo no Smith", "series": 3, "rep": "6-8", "tecnica": Tecnica.PADRAO, "rer": None, "descanso": 120, "obs": None},
-                {"nome": "Elevação Pélvica", "series": 3, "rep": "6-8", "tecnica": Tecnica.PADRAO, "rer": None, "descanso": 120, "obs": None},
-                {"nome": "Cadeira Extensora", "series": 3, "rep": "8-12", "tecnica": Tecnica.PADRAO, "rer": None, "descanso": 90, "obs": None},
-                {"nome": "Cadeira Flexora", "series": 3, "rep": "8-12", "tecnica": Tecnica.PADRAO, "rer": None, "descanso": 90, "obs": None},
-                {"nome": "Flexão de Joelho no Solo", "series": 3, "rep": "30seg a 1min", "tecnica": Tecnica.ISOMETRIA, "rer": None, "descanso": 30, "obs": "Manter apenas os calcanhares e a parte alta das costas no solo."},
-            ],
-        },
-    ]
+    fixture = json.loads(_SEED_TREINO_JSON.read_text(encoding="utf-8"))
+    conjunto_nome = fixture["nome"]
 
     async with async_session() as session:
-        # Buscar aluno
         result_a = await session.execute(
             select(Aluno).join(Usuario).where(Usuario.email == "aluno@ecg.com")
         )
@@ -434,42 +458,46 @@ async def _seed_treino_aldrey_ciclo1():
             print("Seed treino: aluno@ecg.com não encontrado, pulando fixture de treino.")
             return
 
-        # Verificar se já existe
         result_c = await session.execute(
             select(ConjuntoTreino).where(
                 ConjuntoTreino.aluno_id == aluno.id,
-                ConjuntoTreino.nome == CONJUNTO_NOME,
+                ConjuntoTreino.nome == conjunto_nome,
             )
         )
         if result_c.scalar_one_or_none() is not None:
-            print(f"Seed treino: conjunto '{CONJUNTO_NOME}' já existe, pulando.")
+            print(f"Seed treino: conjunto '{conjunto_nome}' já existe, pulando.")
             return
 
-        # Criar conjunto
         conjunto = ConjuntoTreino(
             aluno_id=aluno.id,
-            nome=CONJUNTO_NOME,
+            nome=conjunto_nome,
             ativo=True,
             data_inicio=date(2026, 2, 8),
         )
         session.add(conjunto)
         await session.flush()
 
-        # Criar treinos e exercícios
-        for treino_data in TREINOS:
+        total_exercicios = 0
+        for treino_data in fixture["treinos"]:
             treino = Treino(
                 conjunto_treino_id=conjunto.id,
-                codigo=treino_data["codigo"],
-                nome=treino_data["nome"],
-                ordem=treino_data["ordem"],
+                codigo=treino_data["treino"],
+                nome=treino_data["foco"],
+                ordem=0,
             )
             session.add(treino)
             await session.flush()
 
             for idx, ex in enumerate(treino_data["exercicios"]):
                 exercicio_base_id = await _resolver_exercicio_base_id(session, ex["nome"])
-                alvo_tipo, alvo_valor_min, alvo_valor_max, alvo_outros_texto = _parse_alvo(ex["rep"])
-                rer_rm_tipo, rer_rm_valor = _parse_rer_rm(ex["rer"])
+
+                rep = ex.get("repeticoes") or ex.get("duracao")
+                if ex.get("passos_minimos") is not None:
+                    rep = f"{ex['passos_minimos']} passos mínimos"
+                alvo_tipo, alvo_valor_min, alvo_valor_max, alvo_outros_texto = _parse_alvo(rep)
+                rer_rm_tipo, rer_rm_valor = _parse_rer_rm(ex.get("rer_rm"))
+                descanso_min, descanso_max = _parse_descanso(ex.get("descanso"))
+
                 session.add(ExercicioTreino(
                     treino_id=treino.id,
                     exercicio_base_id=exercicio_base_id,
@@ -479,18 +507,19 @@ async def _seed_treino_aldrey_ciclo1():
                     alvo_valor_min=alvo_valor_min,
                     alvo_valor_max=alvo_valor_max,
                     alvo_outros_texto=alvo_outros_texto,
-                    tecnica=ex["tecnica"],
+                    tecnica=_parse_tecnica(ex.get("tecnica")),
                     rer_rm_tipo=rer_rm_tipo,
                     rer_rm_valor=rer_rm_valor,
-                    descanso_segundos=ex["descanso"],
-                    descanso_segundos_min=ex["descanso"],
-                    descanso_segundos_max=ex["descanso"],
-                    observacoes=ex["obs"],
+                    descanso_segundos=descanso_max,
+                    descanso_segundos_min=descanso_min,
+                    descanso_segundos_max=descanso_max,
+                    observacoes=ex.get("observacoes"),
                 ))
+                total_exercicios += 1
 
         await session.commit()
-        total_ex = sum(len(t["exercicios"]) for t in TREINOS)
-        print(f"Seed treino: '{CONJUNTO_NOME}' criado com {len(TREINOS)} treinos e {total_ex} exercícios.")
+        total_treinos = len(fixture["treinos"])
+        print(f"Seed treino: '{conjunto_nome}' criado com {total_treinos} treinos e {total_exercicios} exercícios.")
 
 
 if __name__ == "__main__":

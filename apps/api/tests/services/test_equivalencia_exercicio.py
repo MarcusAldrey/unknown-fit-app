@@ -3,8 +3,8 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import pytest
-from fastapi import HTTPException
 
+from app.exceptions import DomainValidationError
 import app.services.equivalencia_exercicio as equivalencia_service
 from app.services.equivalencia_exercicio import (
     calcular_bloco_limpeza_equivalencia,
@@ -207,7 +207,7 @@ async def test_substituir_equivalentes_rejeita_ids_fora_do_treino(
     equivalente_valido = repo.ids_existentes[0]
     equivalente_invalido = _novo_id()
 
-    with pytest.raises(HTTPException) as exc_info:
+    with pytest.raises(DomainValidationError) as exc_info:
         await substituir_equivalentes_no_treino(
             db=db,
             treino_id=treino_id,
@@ -215,7 +215,6 @@ async def test_substituir_equivalentes_rejeita_ids_fora_do_treino(
             equivalentes_ids=[equivalente_valido, equivalente_invalido],
         )
 
-    assert exc_info.value.status_code == 400
     assert exc_info.value.detail == "Todos os equivalentes devem pertencer ao mesmo treino"
     assert db.flush.await_count == 0
 

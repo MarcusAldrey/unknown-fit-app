@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
@@ -33,7 +33,7 @@ async def _revogar_refresh_token(db: AsyncSession, refresh_token: str) -> None:
         select(RefreshTokenRevogado).where(RefreshTokenRevogado.jti == jti)
     )
     if result.scalar_one_or_none() is None:
-        db.add(RefreshTokenRevogado(jti=jti, revogado_em=datetime.utcnow()))
+        db.add(RefreshTokenRevogado(jti=jti, revogado_em=datetime.now(timezone.utc)))
         await db.flush()
 
 

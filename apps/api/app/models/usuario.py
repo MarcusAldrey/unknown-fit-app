@@ -1,8 +1,8 @@
 import enum
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
-from sqlalchemy import String, Boolean, Enum as SAEnum
+from sqlalchemy import String, Boolean, DateTime, Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID
 
@@ -23,11 +23,16 @@ class Usuario(Base):
     senha_hash: Mapped[str] = mapped_column(String(255))
     role: Mapped[Role] = mapped_column(SAEnum(Role))
     ativo: Mapped[bool] = mapped_column(Boolean, default=True)
-    criado_em: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    criado_em: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
 
     personal: Mapped["Personal"] = relationship(back_populates="usuario", uselist=False)
     aluno: Mapped["Aluno"] = relationship(back_populates="usuario", uselist=False)
 
 
-from app.models.personal import Personal  # noqa: E402
-from app.models.aluno import Aluno  # noqa: E402
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.personal import Personal
+    from app.models.aluno import Aluno
