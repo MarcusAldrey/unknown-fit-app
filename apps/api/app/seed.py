@@ -12,11 +12,12 @@ from sqlalchemy import select
 
 from app.config import get_settings
 from app.database import engine, async_session, Base
-from app.domain.enums import AlvoTipo, ImplementoExecucao, RerRmTipo, Tecnica
+from app.domain.enums import AlvoTipo, RerRmTipo, Tecnica
 from app.models import (
     AlunoRecursoDisponibilidade,
     ExercicioBase,
     ExercicioRequisitoRecurso,
+    ImplementoExecucao,
     RecursoTreino,
 )
 from app.models.usuario import Usuario, Role
@@ -31,58 +32,58 @@ from app.services.disponibilidade import ensure_disponibilidade_rows
 
 EXERCICIOS_BASE = [
     # Peito
-    {"nome": "Supino Reto com Barra", "grupo_muscular": "Peito", "implemento_execucao": ImplementoExecucao.BARRA},
-    {"nome": "Supino Inclinado com Halteres", "grupo_muscular": "Peito", "implemento_execucao": ImplementoExecucao.HALTERE},
-    {"nome": "Supino Declinado", "grupo_muscular": "Peito", "implemento_execucao": ImplementoExecucao.BARRA},
-    {"nome": "Crucifixo com Halteres", "grupo_muscular": "Peito", "implemento_execucao": ImplementoExecucao.HALTERE},
-    {"nome": "Crossover", "grupo_muscular": "Peito", "implemento_execucao": ImplementoExecucao.CABO},
-    {"nome": "Flexão de Braço", "grupo_muscular": "Peito", "implemento_execucao": ImplementoExecucao.PESO_CORPO},
+    {"nome": "Supino Reto com Barra", "grupo_muscular": "Peito", "implemento_execucao": "Barra"},
+    {"nome": "Supino Inclinado com Halteres", "grupo_muscular": "Peito", "implemento_execucao": "Halteres"},
+    {"nome": "Supino Declinado", "grupo_muscular": "Peito", "implemento_execucao": "Barra"},
+    {"nome": "Crucifixo com Halteres", "grupo_muscular": "Peito", "implemento_execucao": "Halteres"},
+    {"nome": "Crossover", "grupo_muscular": "Peito", "implemento_execucao": "Cabo"},
+    {"nome": "Flexão de Braço", "grupo_muscular": "Peito", "implemento_execucao": "Peso corporal"},
     # Costas
-    {"nome": "Puxada Frontal", "grupo_muscular": "Costas", "implemento_execucao": ImplementoExecucao.CABO},
-    {"nome": "Remada Curvada com Barra", "grupo_muscular": "Costas", "implemento_execucao": ImplementoExecucao.BARRA},
-    {"nome": "Remada Unilateral com Halter", "grupo_muscular": "Costas", "implemento_execucao": ImplementoExecucao.HALTERE},
-    {"nome": "Pulldown", "grupo_muscular": "Costas", "implemento_execucao": ImplementoExecucao.CABO},
-    {"nome": "Barra Fixa", "grupo_muscular": "Costas", "implemento_execucao": ImplementoExecucao.PESO_CORPO},
-    {"nome": "Remada Baixa no Cabo", "grupo_muscular": "Costas", "implemento_execucao": ImplementoExecucao.CABO},
+    {"nome": "Puxada Frontal", "grupo_muscular": "Costas", "implemento_execucao": "Cabo"},
+    {"nome": "Remada Curvada com Barra", "grupo_muscular": "Costas", "implemento_execucao": "Barra"},
+    {"nome": "Remada Unilateral com Halter", "grupo_muscular": "Costas", "implemento_execucao": "Halteres"},
+    {"nome": "Pulldown", "grupo_muscular": "Costas", "implemento_execucao": "Cabo"},
+    {"nome": "Barra Fixa", "grupo_muscular": "Costas", "implemento_execucao": "Peso corporal"},
+    {"nome": "Remada Baixa no Cabo", "grupo_muscular": "Costas", "implemento_execucao": "Cabo"},
     # Pernas
-    {"nome": "Agachamento Livre", "grupo_muscular": "Pernas", "implemento_execucao": ImplementoExecucao.BARRA},
-    {"nome": "Leg Press 45°", "grupo_muscular": "Pernas", "implemento_execucao": ImplementoExecucao.MAQUINA},
-    {"nome": "Cadeira Extensora", "grupo_muscular": "Pernas", "implemento_execucao": ImplementoExecucao.MAQUINA},
-    {"nome": "Mesa Flexora", "grupo_muscular": "Pernas", "implemento_execucao": ImplementoExecucao.MAQUINA},
-    {"nome": "Agachamento Búlgaro", "grupo_muscular": "Pernas", "implemento_execucao": ImplementoExecucao.HALTERE},
-    {"nome": "Afundo no Smith", "grupo_muscular": "Pernas", "implemento_execucao": ImplementoExecucao.MAQUINA},
-    {"nome": "Stiff", "grupo_muscular": "Pernas", "implemento_execucao": ImplementoExecucao.BARRA},
-    {"nome": "Panturrilha em Pé", "grupo_muscular": "Pernas", "implemento_execucao": ImplementoExecucao.MAQUINA},
-    {"nome": "Panturrilha Sentado", "grupo_muscular": "Pernas", "implemento_execucao": ImplementoExecucao.MAQUINA},
+    {"nome": "Agachamento Livre", "grupo_muscular": "Pernas", "implemento_execucao": "Barra"},
+    {"nome": "Leg Press 45°", "grupo_muscular": "Pernas", "implemento_execucao": "Máquina"},
+    {"nome": "Cadeira Extensora", "grupo_muscular": "Pernas", "implemento_execucao": "Máquina"},
+    {"nome": "Mesa Flexora", "grupo_muscular": "Pernas", "implemento_execucao": "Máquina"},
+    {"nome": "Agachamento Búlgaro", "grupo_muscular": "Pernas", "implemento_execucao": "Halteres"},
+    {"nome": "Afundo no Smith", "grupo_muscular": "Pernas", "implemento_execucao": "Máquina"},
+    {"nome": "Stiff", "grupo_muscular": "Pernas", "implemento_execucao": "Barra"},
+    {"nome": "Panturrilha em Pé", "grupo_muscular": "Pernas", "implemento_execucao": "Máquina"},
+    {"nome": "Panturrilha Sentado", "grupo_muscular": "Pernas", "implemento_execucao": "Máquina"},
     # Ombros
-    {"nome": "Desenvolvimento com Halteres", "grupo_muscular": "Ombros", "implemento_execucao": ImplementoExecucao.HALTERE},
-    {"nome": "Elevação Lateral", "grupo_muscular": "Ombros", "implemento_execucao": ImplementoExecucao.HALTERE},
-    {"nome": "Elevação Frontal", "grupo_muscular": "Ombros", "implemento_execucao": ImplementoExecucao.HALTERE},
-    {"nome": "Face Pull", "grupo_muscular": "Ombros", "implemento_execucao": ImplementoExecucao.CABO},
-    {"nome": "Encolhimento com Barra", "grupo_muscular": "Ombros", "implemento_execucao": ImplementoExecucao.BARRA},
+    {"nome": "Desenvolvimento com Halteres", "grupo_muscular": "Ombros", "implemento_execucao": "Halteres"},
+    {"nome": "Elevação Lateral", "grupo_muscular": "Ombros", "implemento_execucao": "Halteres"},
+    {"nome": "Elevação Frontal", "grupo_muscular": "Ombros", "implemento_execucao": "Halteres"},
+    {"nome": "Face Pull", "grupo_muscular": "Ombros", "implemento_execucao": "Cabo"},
+    {"nome": "Encolhimento com Barra", "grupo_muscular": "Ombros", "implemento_execucao": "Barra"},
     # Bíceps
-    {"nome": "Rosca Direta com Barra", "grupo_muscular": "Bíceps", "implemento_execucao": ImplementoExecucao.BARRA},
-    {"nome": "Rosca Alternada com Halteres", "grupo_muscular": "Bíceps", "implemento_execucao": ImplementoExecucao.HALTERE},
-    {"nome": "Rosca Martelo", "grupo_muscular": "Bíceps", "implemento_execucao": ImplementoExecucao.HALTERE},
-    {"nome": "Rosca Scott", "grupo_muscular": "Bíceps", "implemento_execucao": ImplementoExecucao.BARRA},
+    {"nome": "Rosca Direta com Barra", "grupo_muscular": "Bíceps", "implemento_execucao": "Barra"},
+    {"nome": "Rosca Alternada com Halteres", "grupo_muscular": "Bíceps", "implemento_execucao": "Halteres"},
+    {"nome": "Rosca Martelo", "grupo_muscular": "Bíceps", "implemento_execucao": "Halteres"},
+    {"nome": "Rosca Scott", "grupo_muscular": "Bíceps", "implemento_execucao": "Barra"},
     # Tríceps
-    {"nome": "Tríceps Pulley", "grupo_muscular": "Tríceps", "implemento_execucao": ImplementoExecucao.CABO},
-    {"nome": "Tríceps Testa com Barra", "grupo_muscular": "Tríceps", "implemento_execucao": ImplementoExecucao.BARRA},
-    {"nome": "Tríceps Francês com Halter", "grupo_muscular": "Tríceps", "implemento_execucao": ImplementoExecucao.HALTERE},
-    {"nome": "Mergulho em Paralelas", "grupo_muscular": "Tríceps", "implemento_execucao": ImplementoExecucao.PESO_CORPO},
+    {"nome": "Tríceps Pulley", "grupo_muscular": "Tríceps", "implemento_execucao": "Cabo"},
+    {"nome": "Tríceps Testa com Barra", "grupo_muscular": "Tríceps", "implemento_execucao": "Barra"},
+    {"nome": "Tríceps Francês com Halter", "grupo_muscular": "Tríceps", "implemento_execucao": "Halteres"},
+    {"nome": "Mergulho em Paralelas", "grupo_muscular": "Tríceps", "implemento_execucao": "Peso corporal"},
     # Core
-    {"nome": "Abdominal Crunch", "grupo_muscular": "Core", "implemento_execucao": ImplementoExecucao.PESO_CORPO},
-    {"nome": "Prancha", "grupo_muscular": "Core", "implemento_execucao": ImplementoExecucao.PESO_CORPO},
-    {"nome": "Elevação de Pernas", "grupo_muscular": "Core", "implemento_execucao": ImplementoExecucao.PESO_CORPO},
-    {"nome": "Abdominal Bicicleta", "grupo_muscular": "Core", "implemento_execucao": ImplementoExecucao.PESO_CORPO},
+    {"nome": "Abdominal Crunch", "grupo_muscular": "Core", "implemento_execucao": "Peso corporal"},
+    {"nome": "Prancha", "grupo_muscular": "Core", "implemento_execucao": "Peso corporal"},
+    {"nome": "Elevação de Pernas", "grupo_muscular": "Core", "implemento_execucao": "Peso corporal"},
+    {"nome": "Abdominal Bicicleta", "grupo_muscular": "Core", "implemento_execucao": "Peso corporal"},
     # Glúteos
-    {"nome": "Hip Thrust", "grupo_muscular": "Glúteos", "implemento_execucao": ImplementoExecucao.BARRA},
-    {"nome": "Abdução de Quadril", "grupo_muscular": "Glúteos", "implemento_execucao": ImplementoExecucao.MAQUINA},
-    {"nome": "Kickback no Cabo", "grupo_muscular": "Glúteos", "implemento_execucao": ImplementoExecucao.CABO},
+    {"nome": "Hip Thrust", "grupo_muscular": "Glúteos", "implemento_execucao": "Barra"},
+    {"nome": "Abdução de Quadril", "grupo_muscular": "Glúteos", "implemento_execucao": "Máquina"},
+    {"nome": "Kickback no Cabo", "grupo_muscular": "Glúteos", "implemento_execucao": "Cabo"},
 ]
 
 
-def _recursos_por_exercicio(nome_exercicio: str, implemento: ImplementoExecucao) -> list[str]:
+def _recursos_por_exercicio(nome_exercicio: str, implemento: str) -> list[str]:
     nome = nome_exercicio.lower()
 
     if "supino" in nome:
@@ -97,14 +98,14 @@ def _recursos_por_exercicio(nome_exercicio: str, implemento: ImplementoExecucao)
         return ["Mesa Flexora"]
 
     defaults = {
-        ImplementoExecucao.BARRA: ["Suporte de Barra"],
-        ImplementoExecucao.ELASTICO: ["Ponto de Ancoragem para Elástico"],
-        ImplementoExecucao.HALTERE: ["Rack de Halteres"],
-        ImplementoExecucao.KETTLEBELL: ["Rack de Kettlebells"],
-        ImplementoExecucao.CABO: ["Estação de Cabo"],
-        ImplementoExecucao.MAQUINA: ["Máquina Específica"],
-        ImplementoExecucao.PESO_CORPO: [],
-        ImplementoExecucao.OUTRO: [],
+        "Barra": ["Suporte de Barra"],
+        "Elástico": ["Ponto de Ancoragem para Elástico"],
+        "Halteres": ["Rack de Halteres"],
+        "Kettlebell": ["Rack de Kettlebells"],
+        "Cabo": ["Estação de Cabo"],
+        "Máquina": ["Máquina Específica"],
+        "Peso corporal": [],
+        "Outro": [],
     }
     return defaults[implemento]
 
@@ -126,7 +127,7 @@ async def _sincronizar_recursos_e_requisitos(session) -> None:
     exercicios = result.scalars().all()
 
     for exercicio in exercicios:
-        implemento = exercicio.implemento_execucao or ImplementoExecucao.OUTRO
+        implemento = exercicio.implemento_execucao or "Outro"
         exercicio.implemento_execucao = implemento
         recursos_nomes = _recursos_por_exercicio(exercicio.nome, implemento)
 
@@ -152,6 +153,30 @@ async def _sincronizar_recursos_e_requisitos(session) -> None:
     await session.flush()
 
 
+IMPLEMENTOS_BASE = [
+    "Barra",
+    "Elástico",
+    "Halteres",
+    "Kettlebell",
+    "Cabo",
+    "Máquina",
+    "Peso corporal",
+    "Outro",
+]
+
+
+async def _sincronizar_implementos(session) -> None:
+    for nome in IMPLEMENTOS_BASE:
+        result = await session.execute(
+            select(ImplementoExecucao).where(ImplementoExecucao.nome == nome)
+        )
+        if result.scalar_one_or_none() is not None:
+            continue
+        session.add(ImplementoExecucao(nome=nome, criado_por_sistema=True))
+
+    await session.flush()
+
+
 async def _resolver_exercicio_base_id(session, nome: str):
     result = await session.execute(
         select(ExercicioBase).where(ExercicioBase.nome == nome)
@@ -163,7 +188,7 @@ async def _resolver_exercicio_base_id(session, nome: str):
     exercicio = ExercicioBase(
         nome=nome,
         grupo_muscular="Outros",
-        implemento_execucao=ImplementoExecucao.PESO_CORPO,
+        implemento_execucao="Peso corporal",
         criado_por_sistema=False,
     )
     session.add(exercicio)
@@ -294,6 +319,7 @@ async def seed():
             else:
                 existing.implemento_execucao = ex_data["implemento_execucao"]
 
+        await _sincronizar_implementos(session)
         await _sincronizar_recursos_e_requisitos(session)
         await session.commit()
         print(f"Seed concluído: {len(EXERCICIOS_BASE)} exercícios verificados.")
