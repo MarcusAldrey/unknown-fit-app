@@ -20,7 +20,6 @@ import { catalogoService } from "../../api/services/catalogo";
 import { useAuth } from "../../contexts/AuthContext";
 import type { ExercicioBase, Usuario } from "@ecg/types";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
-import { formatarImplementoExecucao } from "../../utils/formatters";
 import { colors } from "../../theme/colors";
 
 type Props = NativeStackScreenProps<
@@ -71,7 +70,7 @@ export function CatalogoExerciciosScreen({ navigation }: Props) {
         .join(", ");
 
     const implementoTexto = (ex: ExercicioBase) =>
-      formatarImplementoExecucao(ex.implemento_execucao).toLowerCase();
+      ex.implemento_execucao.toLowerCase();
 
     return base.filter((ex) => {
       const matchGrupo =
@@ -213,7 +212,7 @@ export function CatalogoExerciciosScreen({ navigation }: Props) {
             <Text style={styles.subInfo}>
               {item.grupo_muscular}
               {item.implemento_execucao
-                ? ` · ${formatarImplementoExecucao(item.implemento_execucao)}`
+                ? ` · ${item.implemento_execucao}`
                 : ""}
             </Text>
           </TouchableOpacity>

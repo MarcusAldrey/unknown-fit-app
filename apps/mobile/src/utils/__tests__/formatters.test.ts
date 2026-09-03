@@ -1,19 +1,7 @@
 import {
-  formatarImplementoExecucao,
   formatarDuracaoSegundos,
   formatarIntervaloDescanso,
 } from "../formatters";
-
-describe("formatarImplementoExecucao", () => {
-  it("traduz valores conhecidos", () => {
-    expect(formatarImplementoExecucao("BARRA")).toBe("Barra");
-    expect(formatarImplementoExecucao("PESO_CORPO")).toBe("Peso corporal");
-  });
-
-  it("retorna o próprio valor para desconhecidos", () => {
-    expect(formatarImplementoExecucao("X" as never)).toBe("X");
-  });
-});
 
 describe("formatarDuracaoSegundos", () => {
   it("formata segundos", () => {

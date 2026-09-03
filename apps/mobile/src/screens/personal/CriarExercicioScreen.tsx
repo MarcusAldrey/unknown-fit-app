@@ -34,7 +34,6 @@ import type {
   RerRmTipo,
 } from "@ecg/types";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
-import { formatarImplementoExecucao } from "../../utils/formatters";
 import { colors } from "../../theme/colors";
 
 type Props = NativeStackScreenProps<PersonalStackParamList, "CriarExercicio">;
@@ -591,8 +590,7 @@ export function CriarExercicioScreen({ route, navigation }: Props) {
                   >
                     <Text style={styles.dropdownNome}>{ex.nome}</Text>
                     <Text style={styles.dropdownGrupo}>
-                      {ex.grupo_muscular} ·{" "}
-                      {formatarImplementoExecucao(ex.implemento_execucao)}
+                      {ex.grupo_muscular} · {ex.implemento_execucao}
                     </Text>
                     {statusRecursos.texto ? (
                       <Text
