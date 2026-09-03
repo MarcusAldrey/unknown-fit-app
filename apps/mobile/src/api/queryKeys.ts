@@ -5,6 +5,7 @@ export const keys = {
   catalogo: {
     exerciciosBase: () => ["catalogo", "exercicios-base"] as const,
     recursosTreino: () => ["catalogo", "recursos-treino"] as const,
+    implementosExecucao: () => ["catalogo", "implementos-execucao"] as const,
   },
   personal: {
     alunos: () => ["personal", "alunos"] as const,

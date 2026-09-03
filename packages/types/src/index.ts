@@ -4,15 +4,6 @@
 export type Role = "PERSONAL" | "ALUNO";
 export type Tecnica = "PADRAO" | "ISOMETRIA" | "INSTABILIDADE";
 export type StatusSessao = "EM_ANDAMENTO" | "FINALIZADO";
-export type ImplementoExecucao =
-  | "BARRA"
-  | "ELASTICO"
-  | "HALTERE"
-  | "KETTLEBELL"
-  | "CABO"
-  | "MAQUINA"
-  | "PESO_CORPO"
-  | "OUTRO";
 
 export type AlvoTipo = "SEGUNDOS" | "REPETICOES" | "PASSOS" | "OUTROS";
 
@@ -253,12 +244,20 @@ export interface ExercicioBase {
   id: string;
   nome: string;
   grupo_muscular: string;
-  implemento_execucao: ImplementoExecucao;
+  implemento_execucao: string;
   pode_ser_feito_em_casa: boolean;
   requisitos_alternativos_recurso: RecursoTreino[];
 }
 
 export interface RecursoTreino {
+  id: string;
+  nome: string;
+  ativo: boolean;
+  criado_por_sistema: boolean;
+  criado_em: string;
+}
+
+export interface ImplementoExecucao {
   id: string;
   nome: string;
   ativo: boolean;

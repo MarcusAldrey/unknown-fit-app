@@ -1,6 +1,7 @@
 import api from "../client";
 import type {
   ExercicioBase,
+  ImplementoExecucao,
   RecursoTreino,
 } from "@ecg/types";
 
@@ -12,6 +13,21 @@ export const catalogoService = {
 
   recursosTreino: async (): Promise<RecursoTreino[]> => {
     const { data } = await api.get<RecursoTreino[]>("/catalogo/recursos-treino");
+    return data;
+  },
+
+  implementosExecucao: async (): Promise<ImplementoExecucao[]> => {
+    const { data } = await api.get<ImplementoExecucao[]>(
+      "/catalogo/implementos-execucao",
+    );
+    return data;
+  },
+
+  criarImplementoExecucao: async (nome: string): Promise<ImplementoExecucao> => {
+    const { data } = await api.post<ImplementoExecucao>(
+      "/catalogo/implementos-execucao",
+      { nome },
+    );
     return data;
   },
 
