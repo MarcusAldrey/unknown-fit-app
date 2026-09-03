@@ -1,12 +1,11 @@
 import uuid
 
-from sqlalchemy import String, Boolean, Enum as SAEnum
+from sqlalchemy import String, Boolean
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from app.database import Base
-from app.domain.enums import ImplementoExecucao
 
 
 class ExercicioBase(Base):
@@ -15,10 +14,7 @@ class ExercicioBase(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     nome: Mapped[str] = mapped_column(String(255))
     grupo_muscular: Mapped[str] = mapped_column(String(100))
-    implemento_execucao: Mapped[ImplementoExecucao] = mapped_column(
-        SAEnum(ImplementoExecucao, name="implementoexecucao"),
-        default=ImplementoExecucao.OUTRO,
-    )
+    implemento_execucao: Mapped[str] = mapped_column(String(120), default="Outro")
     pode_ser_feito_em_casa: Mapped[bool] = mapped_column(Boolean, default=False)
     ativo: Mapped[bool] = mapped_column(Boolean, default=True)
     criado_por_sistema: Mapped[bool] = mapped_column(Boolean, default=True)

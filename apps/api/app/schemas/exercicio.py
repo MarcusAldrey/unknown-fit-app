@@ -1,7 +1,7 @@
 import uuid
 from pydantic import BaseModel, Field, model_validator
 
-from app.domain.enums import AlvoTipo, ImplementoExecucao, RerRmTipo, Tecnica
+from app.domain.enums import AlvoTipo, RerRmTipo, Tecnica
 from app.schemas.recurso import RecursoTreinoOut
 
 
@@ -174,7 +174,7 @@ class ExercicioBaseOut(BaseModel):
     id: uuid.UUID
     nome: str
     grupo_muscular: str
-    implemento_execucao: ImplementoExecucao
+    implemento_execucao: str
     pode_ser_feito_em_casa: bool
     requisitos_alternativos_recurso: list[RecursoTreinoOut] = Field(default_factory=list)
 
@@ -184,7 +184,7 @@ class ExercicioBaseOut(BaseModel):
 class ExercicioBaseUpdate(BaseModel):
     nome: str | None = None
     grupo_muscular: str | None = None
-    implemento_execucao: ImplementoExecucao | None = None
+    implemento_execucao: str | None = None
     pode_ser_feito_em_casa: bool | None = None
 
 

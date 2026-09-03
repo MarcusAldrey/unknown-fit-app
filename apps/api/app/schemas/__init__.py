@@ -54,3 +54,8 @@ from app.schemas.recurso import (  # noqa: F401
     AlunoRecursosDisponibilidadeBatchUpdate,
     AlunoRecursoDisponibilidadeOut,
 )
+from app.schemas.implemento import (  # noqa: F401
+    ImplementoExecucaoCreate,
+    ImplementoExecucaoUpdate,
+    ImplementoExecucaoOut,
+)

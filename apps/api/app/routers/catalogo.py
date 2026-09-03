@@ -10,6 +10,7 @@ from app.deps import get_current_user, get_current_personal
 from app.models import (
     ExercicioBase,
     ExercicioRequisitoRecurso,
+    ImplementoExecucao,
     Personal,
     RecursoTreino,
     Usuario,
@@ -18,6 +19,9 @@ from app.schemas import (
     ExercicioBaseOut,
     ExercicioBaseUpdate,
     ExercicioRequisitosRecursoUpdate,
+    ImplementoExecucaoCreate,
+    ImplementoExecucaoOut,
+    ImplementoExecucaoUpdate,
     RecursoTreinoCreate,
     RecursoTreinoOut,
     RecursoTreinoUpdate,
@@ -153,6 +157,79 @@ async def editar_recurso_treino(
     await db.flush()
     await db.refresh(recurso)
     return recurso
+
+
+@router.get("/implementos-execucao", response_model=list[ImplementoExecucaoOut])
+async def listar_implementos_execucao(
+    _user: Usuario = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(ImplementoExecucao)
+        .where(ImplementoExecucao.ativo.is_(True))
+        .order_by(ImplementoExecucao.nome)
+    )
+    return result.scalars().all()
+
+
+@router.post("/implementos-execucao", response_model=ImplementoExecucaoOut, status_code=201)
+async def criar_implemento_execucao(
+    body: ImplementoExecucaoCreate,
+    _personal: Personal = Depends(get_current_personal),
+    db: AsyncSession = Depends(get_db),
+):
+    nome = body.nome.strip()
+    if not nome:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Nome do implemento inválido")
+
+    result = await db.execute(
+        select(ImplementoExecucao).where(func.lower(ImplementoExecucao.nome) == nome.lower())
+    )
+    if result.scalar_one_or_none() is not None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Implemento já cadastrado")
+
+    implemento = ImplementoExecucao(nome=nome, criado_por_sistema=False)
+    db.add(implemento)
+    await db.flush()
+    await db.refresh(implemento)
+    return implemento
+
+
+@router.patch("/implementos-execucao/{implemento_id}", response_model=ImplementoExecucaoOut)
+async def editar_implemento_execucao(
+    implemento_id: uuid.UUID,
+    body: ImplementoExecucaoUpdate,
+    _personal: Personal = Depends(get_current_personal),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(ImplementoExecucao).where(ImplementoExecucao.id == implemento_id)
+    )
+    implemento = result.scalar_one_or_none()
+    if implemento is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Implemento não encontrado")
+
+    update_data = body.model_dump(exclude_unset=True)
+    if "nome" in update_data and update_data["nome"]:
+        novo_nome = update_data["nome"].strip()
+        if not novo_nome:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Nome do implemento inválido")
+        dup_result = await db.execute(
+            select(ImplementoExecucao).where(
+                func.lower(ImplementoExecucao.nome) == novo_nome.lower(),
+                ImplementoExecucao.id != implemento.id,
+            )
+        )
+        if dup_result.scalar_one_or_none() is not None:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Já existe implemento com este nome")
+        update_data["nome"] = novo_nome
+
+    for key, value in update_data.items():
+        setattr(implemento, key, value)
+
+    await db.flush()
+    await db.refresh(implemento)
+    return implemento
 
 
 @router.put("/exercicios-base/{exercicio_id}/requisitos-recursos", response_model=ExercicioBaseOut)
