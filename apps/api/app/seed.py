@@ -340,13 +340,13 @@ async def _seed_usuarios_demonstracao():
     async with async_session() as session:
         # Personal
         result = await session.execute(
-            select(Usuario).where(Usuario.email == "personal@ecg.com")
+            select(Usuario).where(Usuario.email == "personal@kine.com")
         )
         personal_user = result.scalar_one_or_none()
         if personal_user is None:
             personal_user = Usuario(
                 nome="João Personal",
-                email="personal@ecg.com",
+                email="personal@kine.com",
                 senha_hash=hash_senha("123456"),
                 role=Role.PERSONAL,
             )
@@ -357,13 +357,13 @@ async def _seed_usuarios_demonstracao():
 
         # Aluno
         result = await session.execute(
-            select(Usuario).where(Usuario.email == "aluno@ecg.com")
+            select(Usuario).where(Usuario.email == "aluno@kine.com")
         )
         aluno_user = result.scalar_one_or_none()
         if aluno_user is None:
             aluno_user = Usuario(
                 nome="Maria Aluna",
-                email="aluno@ecg.com",
+                email="aluno@kine.com",
                 senha_hash=hash_senha("123456"),
                 role=Role.ALUNO,
             )
@@ -374,13 +374,13 @@ async def _seed_usuarios_demonstracao():
 
         # Personal customizado (abreu)
         result = await session.execute(
-            select(Usuario).where(Usuario.email == "abreu@ecg.com")
+            select(Usuario).where(Usuario.email == "abreu@kine.com")
         )
         abreu_user = result.scalar_one_or_none()
         if abreu_user is None:
             abreu_user = Usuario(
                 nome="Abreu",
-                email="abreu@ecg.com",
+                email="abreu@kine.com",
                 senha_hash=hash_senha("654321*"),
                 role=Role.PERSONAL,
             )
@@ -391,13 +391,13 @@ async def _seed_usuarios_demonstracao():
 
         # Aluno customizado (aldrey)
         result = await session.execute(
-            select(Usuario).where(Usuario.email == "aldrey@ecg.com")
+            select(Usuario).where(Usuario.email == "aldrey@kine.com")
         )
         aldrey_user = result.scalar_one_or_none()
         if aldrey_user is None:
             aldrey_user = Usuario(
                 nome="Aldrey",
-                email="aldrey@ecg.com",
+                email="aldrey@kine.com",
                 senha_hash=hash_senha("654321*"),
                 role=Role.ALUNO,
             )
@@ -408,11 +408,11 @@ async def _seed_usuarios_demonstracao():
 
         # Vincular personal <-> aluno (se ambos existem)
         result_p = await session.execute(
-            select(Personal).join(Usuario).where(Usuario.email == "personal@ecg.com")
+            select(Personal).join(Usuario).where(Usuario.email == "personal@kine.com")
         )
         personal = result_p.scalar_one_or_none()
         result_a = await session.execute(
-            select(Aluno).join(Usuario).where(Usuario.email == "aluno@ecg.com")
+            select(Aluno).join(Usuario).where(Usuario.email == "aluno@kine.com")
         )
         aluno = result_a.scalar_one_or_none()
         if personal and aluno:
@@ -433,11 +433,11 @@ async def _seed_usuarios_demonstracao():
 
         # Vincular abreu <-> aldrey
         result_abreu = await session.execute(
-            select(Personal).join(Usuario).where(Usuario.email == "abreu@ecg.com")
+            select(Personal).join(Usuario).where(Usuario.email == "abreu@kine.com")
         )
         abreu = result_abreu.scalar_one_or_none()
         result_aldrey = await session.execute(
-            select(Aluno).join(Usuario).where(Usuario.email == "aldrey@ecg.com")
+            select(Aluno).join(Usuario).where(Usuario.email == "aldrey@kine.com")
         )
         aldrey = result_aldrey.scalar_one_or_none()
         if abreu and aldrey:
@@ -457,17 +457,17 @@ async def _seed_usuarios_demonstracao():
 
         await session.commit()
         print("Usuários de teste criados:")
-        print("  Personal: personal@ecg.com / 123456")
-        print("  Aluno:    aluno@ecg.com / 123456")
-        print("  Personal: abreu@ecg.com / 654321*")
-        print("  Aluno:    aldrey@ecg.com / 654321*")
+        print("  Personal: personal@kine.com / 123456")
+        print("  Aluno:    aluno@kine.com / 123456")
+        print("  Personal: abreu@kine.com / 654321*")
+        print("  Aluno:    aldrey@kine.com / 654321*")
 
 
 _SEED_TREINO_JSON = Path(__file__).resolve().parents[1] / "seeds" / "treino_aldrey_ciclo1.json"
 
 
 async def _seed_treino_aldrey_ciclo1():
-    """Cria o ConjuntoTreino 'Aldrey - Ciclo 1' para aluno@ecg.com (idempotente)."""
+    """Cria o ConjuntoTreino 'Aldrey - Ciclo 1' para aluno@kine.com (idempotente)."""
     if not _SEED_TREINO_JSON.exists():
         print("Seed treino: arquivo JSON não encontrado, pulando fixture.")
         return
@@ -477,11 +477,11 @@ async def _seed_treino_aldrey_ciclo1():
 
     async with async_session() as session:
         result_a = await session.execute(
-            select(Aluno).join(Usuario).where(Usuario.email == "aluno@ecg.com")
+            select(Aluno).join(Usuario).where(Usuario.email == "aluno@kine.com")
         )
         aluno = result_a.scalar_one_or_none()
         if aluno is None:
-            print("Seed treino: aluno@ecg.com não encontrado, pulando fixture de treino.")
+            print("Seed treino: aluno@kine.com não encontrado, pulando fixture de treino.")
             return
 
         result_c = await session.execute(

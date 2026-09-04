@@ -1,7 +1,7 @@
 [project]
-name = "ecg-api"
+name = "kine-api"
 version = "0.1.0"
-description = "ECG (Elite Training Gym) - Backend API"
+description = "Kine - Backend API"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115.0",

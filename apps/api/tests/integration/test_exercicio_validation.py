@@ -15,7 +15,7 @@ async def test_criar_exercicio_com_tecnica_invalida_retorna_422(
 ):
     estrutura = await setup_estrutura_personal_b(client, admin_headers)
     login = await client.post(
-        "/api/v1/auth/login", json={"email": "personal.b@ecg.com", "senha": "senha123"}
+        "/api/v1/auth/login", json={"email": "personal.b@kine.com", "senha": "senha123"}
     )
     token_b = login.json()["access_token"]
 

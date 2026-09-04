@@ -23,7 +23,7 @@ from app.services.sessao import registrar_serie
 async def _criar_aluno(db) -> Aluno:
     usuario = Usuario(
         nome="Aluno Teste",
-        email=f"aluno.{uuid.uuid4().hex}@ecg.com",
+        email=f"aluno.{uuid.uuid4().hex}@kine.com",
         senha_hash="x",
         role=Role.ALUNO,
     )

@@ -1,4 +1,4 @@
-# Backend IA Contexto (ECG)
+# Backend IA Contexto (Kine)
 
 Regras compartilhadas de arquitetura, domínio e convenções estão no
 [`AGENTS.md`](../../AGENTS.md). Este arquivo mantém apenas extras específicos

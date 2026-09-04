@@ -18,7 +18,7 @@ import { keys } from "../../api/queryKeys";
 import { authService } from "../../api/services/auth";
 import { catalogoService } from "../../api/services/catalogo";
 import { useAuth } from "../../contexts/AuthContext";
-import type { ExercicioBase, Usuario } from "@ecg/types";
+import type { ExercicioBase, Usuario } from "@kine/types";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
 import { colors } from "../../theme/colors";
 

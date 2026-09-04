@@ -11,12 +11,12 @@
 
 ## 0. Context
 
-Repo = "ECG — Elite Training Gym" (`egt`), pnpm 9 + Turborepo monorepo, Windows host:
+Repo = "Kine" (`kine`), pnpm 9 + Turborepo monorepo, Windows host:
 
 ```
 apps/api        FastAPI + SQLAlchemy async + Alembic (Python 3.11+, venv at apps/api/.venv)
 apps/mobile     React Native + Expo SDK 54 + React Query 5 + Axios (TypeScript)
-packages/types  @ecg/types — shared TS types, raw source (package.json main: src/index.ts)
+packages/types  @kine/types — shared TS types, raw source (package.json main: src/index.ts)
 docs/ai/        backend-ai.md + frontend-ai.md — READ FIRST, they are binding
 ```
 
@@ -109,7 +109,7 @@ HistoricoTreinosAluno,Treinos}Screen.tsx}, theme/colors.ts, types/index.ts, util
 - **Type drift:** `src/types/index.ts` (346 LOC) duplicates ~20 types from
   `packages/types/src/index.ts` (165 LOC); packages `ExercicioTreino` (L76-95) lacks
   `descanso_segundos_min`/`_max` present in mobile's copy (L183-204); mobile has NO
-  dependency on `@ecg/types`.
+  dependency on `@kine/types`.
 - **Tooling void:** `eslint.config.mjs` has ZERO rules (parser only); mobile lacks a
   `typecheck` script (turbo's typecheck task skips it silently); no tests; `@/*` tsconfig
   alias (tsconfig.json L10-14) never used — and Metro has NO alias resolver
@@ -131,7 +131,7 @@ HistoricoTreinosAluno,Treinos}Screen.tsx}, theme/colors.ts, types/index.ts, util
   (`SessaoTreinoScreen` L296-313 ultimo-peso per exercise; reorder PATCH loops
   `TreinosScreen` L66-76, `ExerciciosScreen` L220-227); 401 refresh has no single-flight
   (`client.ts` L100-124) and no auth-failure notification; production fallback
-  `https://api.ecg.com/api/v1` is a placeholder (`client.ts` L22).
+  `https://api.kine.com/api/v1` is a placeholder (`client.ts` L22).
 
 ---
 
@@ -156,7 +156,7 @@ Files: `apps/api/pyproject.toml`, `apps/api/tests/conftest.py`, new `apps/api/te
 base_url="http://test")` + `app.dependency_overrides[get_db]` yielding `db_session`;
      clear overrides on teardown.
    - fixtures `personal_token` / `aluno_token`: POST `/api/v1/auth/login` with seed users
-     `personal@ecg.com` / `aluno@ecg.com` (password `123456`, per `app/seed.py`);
+     `personal@kine.com` / `aluno@kine.com` (password `123456`, per `app/seed.py`);
      `admin_headers = {"X-Admin-Key": "dev-admin-key-change-in-production"}`.
 3. New tests (names are contracts):
    - `tests/integration/test_auth_flow.py`: login → 200 + tokens; `GET /auth/me` → 200
@@ -189,7 +189,7 @@ base_url="http://test")` + `app.dependency_overrides[get_db]` yielding `db_sessi
    `eslint-plugin-react-hooks`, `eslint-plugin-react-native`; apply
    `@typescript-eslint/recommended` + `react-hooks/recommended`; rule
    `@typescript-eslint/no-explicit-any: "warn"`; `settings: { react: { version: "detect" } }`.
-   Run `pnpm --filter @ecg/mobile lint -- --fix`; fix autofixables only; remaining
+   Run `pnpm --filter @kine/mobile lint -- --fix`; fix autofixables only; remaining
    warnings are acceptable — do NOT mass-refactor to zero warnings.
 
 **GATE 0 (all must pass):**
@@ -260,7 +260,7 @@ unique=True, postgresql_where=sa.text("ativo"))`
 4. Add test: logout then reuse the same refresh token → 401.
 
 **GATE 1:** full `pytest` green (incl. previously-xfailed tests); `alembic upgrade head`
-from an empty DB; manual: start uvicorn, login as `personal@ecg.com` works.
+from an empty DB; manual: start uvicorn, login as `personal@kine.com` works.
 
 ---
 
@@ -328,7 +328,7 @@ Add `@classmethod from_model(cls, obj)` (or an `app/mappers.py`) for `SerieDetal
   gate demo-user creation behind `environment != "production"`.
 - Single dependency source: delete `requirements.txt`; update `apps/api/Dockerfile` to
   `COPY pyproject.toml .` + `pip install .` (and document the change in the commit body).
-- Version single source: `main.py` reads `importlib.metadata.version("ecg-api")` with
+- Version single source: `main.py` reads `importlib.metadata.version("kine-api")` with
   "0.1.0" fallback for both the FastAPI `version=` and the startup log line.
 - Fix `alembic.ini` L3: remove the hardcoded URL (env.py already reads from settings).
 - Unify conventions: 204 → `return Response(status_code=204)`; status codes via
@@ -342,7 +342,7 @@ Add `@classmethod from_model(cls, obj)` (or an `app/mappers.py`) for `SerieDetal
   `sessao.registrar_serie` (happy path + the 3 rejection paths).
 
 **GATE 2:** full `pytest` green; `alembic upgrade head` from empty DB; manual smoke as
-`personal@ecg.com` (login → list alunos → open treinos); mobile app still works unchanged.
+`personal@kine.com` (login → list alunos → open treinos); mobile app still works unchanged.
 
 ---
 
@@ -382,12 +382,12 @@ main flows, confirm zero behavior change.
    admin types, `*Create`/`*Update` DTOs, `SessaoResumo`, `SessaoAtiva`, `UltimoPesoExercicio`.
 2. Fix the drift: add `descanso_segundos_min`/`descanso_segundos_max` to the shared
    `ExercicioTreino` (packages L76-95).
-3. `apps/mobile/package.json`: add `"@ecg/types": "workspace:*"` to dependencies; run
+3. `apps/mobile/package.json`: add `"@kine/types": "workspace:*"` to dependencies; run
    `pnpm install`. (Metro is already monorepo-configured via watchFolders/nodeModulesPaths,
    so raw-TS consumption works.)
-4. `apps/mobile/src/types/index.ts` → temporary re-export shim (`export * from "@ecg/types"`)
+4. `apps/mobile/src/types/index.ts` → temporary re-export shim (`export * from "@kine/types"`)
    keeping mobile-only view models (e.g. `SerieLocal`) defined locally; migrate all imports
-   to `@ecg/types`; then delete the shim.
+   to `@kine/types`; then delete the shim.
 5. Manually verify alignment against `apps/api/app/schemas/*.py` (fields/nullability).
 
 **GATE 4:** `pnpm typecheck` green (mobile now compiles against shared types); app runs.
@@ -443,7 +443,7 @@ remaining duplicated helpers/components.
    (edit mode); type tabs with `NavigatorScreenParams`; delete dead param-list types
    (`PersonalNavigator` L68-74).
 7. **Config hygiene:** remove committed LAN/prod IPs from `app.json` `extra` and
-   `.env.example`; remove the `https://api.ecg.com/api/v1` placeholder fallback
+   `.env.example`; remove the `https://api.kine.com/api/v1` placeholder fallback
    (`client.ts` L22) — in production with no `EXPO_PUBLIC_API_URL`, fail fast with a
    clear error instead.
 8. **N+1 mitigation:** centralize the ultimo-peso fan-out in `useUltimosPesos(exercicioIds)`
@@ -505,10 +505,10 @@ remaining duplicated helpers/components.
 pnpm install
 pnpm typecheck
 pnpm lint
-pnpm --filter @ecg/mobile start
+pnpm --filter @kine/mobile start
 ```
 
-Seed users for manual validation: `personal@ecg.com` / `aluno@ecg.com` (password `123456`).
+Seed users for manual validation: `personal@kine.com` / `aluno@kine.com` (password `123456`).
 Admin header (dev only): `X-Admin-Key: dev-admin-key-change-in-production`.
 Summary of what this plan contains:
 

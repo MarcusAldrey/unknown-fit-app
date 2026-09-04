@@ -12,7 +12,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { keys } from "../../api/queryKeys";
 import { personalService } from "../../api/services/personal";
-import type { SessaoResumo } from "@ecg/types";
+import type { SessaoResumo } from "@kine/types";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
 import { colors } from "../../theme/colors";
 

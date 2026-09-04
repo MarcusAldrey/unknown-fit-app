@@ -20,7 +20,7 @@ import type {
   ExercicioBase,
   ImplementoExecucao,
   RecursoTreino,
-} from "@ecg/types";
+} from "@kine/types";
 import { colors } from "../../theme/colors";
 
 function normalizarTexto(texto: string): string {

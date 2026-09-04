@@ -16,7 +16,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { keys } from "../../api/queryKeys";
 import { personalService } from "../../api/services/personal";
-import type { ExercicioTreino } from "@ecg/types";
+import type { ExercicioTreino } from "@kine/types";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
 import { formatarIntervaloDescanso } from "../../utils/formatters";
 import { colors } from "../../theme/colors";

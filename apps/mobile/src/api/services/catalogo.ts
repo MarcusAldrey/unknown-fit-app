@@ -3,7 +3,7 @@ import type {
   ExercicioBase,
   ImplementoExecucao,
   RecursoTreino,
-} from "@ecg/types";
+} from "@kine/types";
 
 export const catalogoService = {
   exerciciosBase: async (): Promise<ExercicioBase[]> => {

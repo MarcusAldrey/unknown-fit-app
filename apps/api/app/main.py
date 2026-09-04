@@ -21,12 +21,12 @@ from app.routers import auth, personal, aluno, catalogo, admin
 
 settings = get_settings()
 configure_logging(settings.log_level)
-logger = logging.getLogger("ecg.api")
+logger = logging.getLogger("kine.api")
 
 
 def _app_version() -> str:
     try:
-        return importlib.metadata.version("ecg-api")
+        return importlib.metadata.version("kine-api")
     except importlib.metadata.PackageNotFoundError:
         return "0.1.0"
 
@@ -87,7 +87,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="ECG - Elite Training Gym",
+    title="Kine",
     version=API_VERSION,
     lifespan=lifespan,
 )

@@ -13,7 +13,7 @@ import type {
   SessaoResumo,
   Treino,
   TreinoCreate,
-} from "@ecg/types";
+} from "@kine/types";
 
 export const personalService = {
   alunos: async (): Promise<AlunoResumo[]> => {

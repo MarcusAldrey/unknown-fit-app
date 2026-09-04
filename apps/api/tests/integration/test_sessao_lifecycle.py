@@ -75,7 +75,7 @@ async def test_aluno_b_nao_acessa_sessao_de_aluno_a(
 
     await criar_aluno_b(client, admin_headers)
     login_b = await client.post(
-        "/api/v1/auth/login", json={"email": "aluno.b@ecg.com", "senha": "senha123"}
+        "/api/v1/auth/login", json={"email": "aluno.b@kine.com", "senha": "senha123"}
     )
     assert login_b.status_code == 200, login_b.text
     token_b = login_b.json()["access_token"]

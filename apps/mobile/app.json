@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "ECG - Elite Training Gym",
-    "slug": "ecg-mobile",
+    "name": "Kine",
+    "slug": "kine-mobile",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -13,14 +13,14 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.ecg.mobile"
+      "bundleIdentifier": "com.kine.mobile"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#172121"
       },
-      "package": "com.ecg.mobile"
+      "package": "com.kine.mobile"
     }
   }
 }

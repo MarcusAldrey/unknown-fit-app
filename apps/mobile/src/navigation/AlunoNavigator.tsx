@@ -7,7 +7,7 @@ import { ConjuntoAtivoScreen } from "../screens/aluno/ConjuntoAtivoScreen";
 import { SessaoTreinoScreen } from "../screens/aluno/SessaoTreinoScreen";
 import { HistoricoTreinosScreen } from "../screens/aluno/HistoricoTreinosScreen";
 import { DetalheTreinoRealizadoScreen } from "../screens/aluno/DetalheTreinoRealizadoScreen";
-import type { SessaoAtiva, SessaoResumo } from "@ecg/types";
+import type { SessaoAtiva, SessaoResumo } from "@kine/types";
 import { colors } from "../theme/colors";
 
 export type AlunoTreinoStackParamList = {

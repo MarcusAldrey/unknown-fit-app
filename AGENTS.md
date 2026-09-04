@@ -40,7 +40,7 @@ apps/mobile       React Native + Expo SDK 54 + React Query 5 + Axios (TypeScript
     utils/         formatters.ts, dates.ts, apiError.ts
   App.tsx          PersistQueryClientProvider + AuthProvider
 
-packages/types     @ecg/types — single source of shared TypeScript types
+packages/types     @kine/types — single source of shared TypeScript types
 docs/ai/           backend-ai.md + frontend-ai.md (scope-specific extras)
 ```
 
@@ -128,10 +128,10 @@ User-facing messages stay PT-BR; code, identifiers and comments are English.
 pnpm install
 pnpm typecheck
 pnpm lint
-pnpm --filter @ecg/mobile start
+pnpm --filter @kine/mobile start
 ```
 
-Seed users: `personal@ecg.com` / `aluno@ecg.com` (password `123456`).
+Seed users: `personal@kine.com` / `aluno@kine.com` (password `123456`).
 Admin header (dev): `X-Admin-Key: dev-admin-key-change-in-production`.
 
 ## Conventions

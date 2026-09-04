@@ -126,9 +126,9 @@ def _auth(token: str) -> dict[str, str]:
 
 @pytest.fixture
 async def personal_token(client) -> str:
-    return await _login(client, "personal@ecg.com", "123456")
+    return await _login(client, "personal@kine.com", "123456")
 
 
 @pytest.fixture
 async def aluno_token(client) -> str:
-    return await _login(client, "aluno@ecg.com", "123456")
+    return await _login(client, "aluno@kine.com", "123456")

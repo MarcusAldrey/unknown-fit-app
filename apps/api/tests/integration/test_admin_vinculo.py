@@ -17,7 +17,7 @@ async def _aluno_id_por_email(client: AsyncClient, admin_headers: dict, email: s
 async def test_revincular_aluno_mantem_historico(
     client: AsyncClient, admin_headers: dict, db_session
 ):
-    aluno_id = await _aluno_id_por_email(client, admin_headers, "aluno@ecg.com")
+    aluno_id = await _aluno_id_por_email(client, admin_headers, "aluno@kine.com")
     personal_b = await criar_personal_b(client, admin_headers)
 
     resp = await client.patch(

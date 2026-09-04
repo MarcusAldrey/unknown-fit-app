@@ -1,4 +1,4 @@
-# ECG — Elite Training Gym
+# Kine
 
 Monorepo MVP para aplicação de academia com app mobile React Native (Personal + Aluno) e backend FastAPI.
 
@@ -22,7 +22,7 @@ apps/
       components/  → componentes compartilhados
       theme/       → design tokens
 packages/
-  types/        → Tipos TypeScript compartilhados (@ecg/types)
+  types/        → Tipos TypeScript compartilhados (@kine/types)
 ```
 
 ## Pré-requisitos
@@ -84,8 +84,8 @@ Passo a passo no servidor (Ubuntu):
 
 ```bash
 # 1) Clonar o repo
-git clone <seu-repo>
-cd egt
+git clone git@github.com:MarcusAldrey/unknown-fit-app.git
+cd kine
 
 # 2) Configurar variaveis de producao
 cp deploy/.env.example deploy/.env

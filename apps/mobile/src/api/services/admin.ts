@@ -6,7 +6,7 @@ import type {
   PersonalAdmin,
   PersonalAdminCreateRequest,
   PersonalAdminUpdateRequest,
-} from "@ecg/types";
+} from "@kine/types";
 
 export const adminService = {
   personais: async (): Promise<PersonalAdmin[]> => {

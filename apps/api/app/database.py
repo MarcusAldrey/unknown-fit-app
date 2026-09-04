@@ -6,7 +6,7 @@ from sqlalchemy.orm import DeclarativeBase
 from app.config import get_settings
 
 settings = get_settings()
-logger = logging.getLogger("ecg.api.database")
+logger = logging.getLogger("kine.api.database")
 
 engine = create_async_engine(settings.database_url, echo=False)
 

@@ -48,7 +48,7 @@ async def test_criar_personal_exige_admin_key(db_override):
             "/api/v1/admin/personais",
             json={
                 "nome": "Personal Novo",
-                "email": "personal.novo@ecg.com",
+                "email": "personal.novo@kine.com",
                 "senha": "senha123",
             },
         )
@@ -64,7 +64,7 @@ async def test_criar_personal_com_admin_key_retorna_201(
     usuario = SimpleNamespace(
         id=uuid.uuid4(),
         nome="Personal Novo",
-        email="personal.novo@ecg.com",
+        email="personal.novo@kine.com",
         ativo=True,
         role=Role.PERSONAL,
     )
@@ -79,7 +79,7 @@ async def test_criar_personal_com_admin_key_retorna_201(
             headers={"X-Admin-Key": "dev-admin-key-change-in-production"},
             json={
                 "nome": "Personal Novo",
-                "email": "personal.novo@ecg.com",
+                "email": "personal.novo@kine.com",
                 "senha": "senha123",
             },
         )
@@ -87,7 +87,7 @@ async def test_criar_personal_com_admin_key_retorna_201(
     assert response.status_code == 201
     payload = response.json()
     assert payload["nome"] == "Personal Novo"
-    assert payload["email"] == "personal.novo@ecg.com"
+    assert payload["email"] == "personal.novo@kine.com"
     assert payload["role"] == "PERSONAL"
     assert payload["ativo"] is True
     assert payload["personal_id"]
@@ -102,7 +102,7 @@ async def test_criar_aluno_com_admin_key_retorna_201(
     usuario = SimpleNamespace(
         id=uuid.uuid4(),
         nome="Aluno Novo",
-        email="aluno.novo@ecg.com",
+        email="aluno.novo@kine.com",
         ativo=True,
         role=Role.ALUNO,
     )
@@ -124,7 +124,7 @@ async def test_criar_aluno_com_admin_key_retorna_201(
             headers={"X-Admin-Key": "dev-admin-key-change-in-production"},
             json={
                 "nome": "Aluno Novo",
-                "email": "aluno.novo@ecg.com",
+                "email": "aluno.novo@kine.com",
                 "senha": "senha123",
                 "idade": 25,
                 "peso": 78.5,
@@ -136,7 +136,7 @@ async def test_criar_aluno_com_admin_key_retorna_201(
     assert response.status_code == 201
     payload = response.json()
     assert payload["nome"] == "Aluno Novo"
-    assert payload["email"] == "aluno.novo@ecg.com"
+    assert payload["email"] == "aluno.novo@kine.com"
     assert payload["role"] == "ALUNO"
     assert payload["ativo"] is True
     assert payload["idade"] == 25
@@ -155,7 +155,7 @@ async def test_remover_personal_apaga_personal_e_usuario(
     usuario = SimpleNamespace(
         id=uuid.uuid4(),
         nome="Personal X",
-        email="personal.x@ecg.com",
+        email="personal.x@kine.com",
         ativo=True,
         role=Role.PERSONAL,
     )
@@ -188,7 +188,7 @@ async def test_remover_aluno_apaga_aluno_e_usuario(
     usuario = SimpleNamespace(
         id=uuid.uuid4(),
         nome="Aluno X",
-        email="aluno.x@ecg.com",
+        email="aluno.x@kine.com",
         ativo=True,
         role=Role.ALUNO,
     )
@@ -218,7 +218,7 @@ async def test_rota_antiga_de_personais_saiu_do_auth(db_override):
             headers={"X-Admin-Key": "dev-admin-key-change-in-production"},
             json={
                 "nome": "Personal Antigo",
-                "email": "personal.antigo@ecg.com",
+                "email": "personal.antigo@kine.com",
                 "senha": "senha123",
             },
         )

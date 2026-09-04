@@ -1,4 +1,4 @@
-# ECG (Elite Training Gym) — Guide de Implementação MVP
+# Kine — Guide de Implementação MVP
 
 ## 1. Objetivo do MVP
 

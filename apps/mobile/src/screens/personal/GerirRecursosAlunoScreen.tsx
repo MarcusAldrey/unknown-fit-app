@@ -19,7 +19,7 @@ import api from "../../api/client";
 import { keys } from "../../api/queryKeys";
 import { catalogoService } from "../../api/services/catalogo";
 import { personalService } from "../../api/services/personal";
-import type { AlunoRecursoDisponibilidade } from "@ecg/types";
+import type { AlunoRecursoDisponibilidade } from "@kine/types";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
 import { colors } from "../../theme/colors";
 

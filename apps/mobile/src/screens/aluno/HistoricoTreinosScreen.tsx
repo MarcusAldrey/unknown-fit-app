@@ -16,7 +16,7 @@ import { keys } from "../../api/queryKeys";
 import { authService } from "../../api/services/auth";
 import { alunoService } from "../../api/services/aluno";
 import { useAuth } from "../../contexts/AuthContext";
-import type { SessaoResumo, Usuario } from "@ecg/types";
+import type { SessaoResumo, Usuario } from "@kine/types";
 import type { AlunoHistoricoStackParamList } from "../../navigation/AlunoNavigator";
 import { colors } from "../../theme/colors";
 

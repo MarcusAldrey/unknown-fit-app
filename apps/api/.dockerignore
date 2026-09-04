@@ -5,5 +5,5 @@ venv/
 .env
 tests/
 .pytest_cache/
-ecg_api.egg-info/
+kine_api.egg-info/
 *.log

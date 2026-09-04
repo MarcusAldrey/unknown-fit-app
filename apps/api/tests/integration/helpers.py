@@ -4,9 +4,9 @@ from httpx import AsyncClient
 
 from tests.integration.conftest import _auth
 
-PERSONAL_B_EMAIL = "personal.b@ecg.com"
+PERSONAL_B_EMAIL = "personal.b@kine.com"
 PERSONAL_B_SENHA = "senha123"
-ALUNO_B_EMAIL = "aluno.b@ecg.com"
+ALUNO_B_EMAIL = "aluno.b@kine.com"
 
 
 async def criar_personal_b(client: AsyncClient, admin_headers: dict) -> dict:

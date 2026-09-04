@@ -1,5 +1,5 @@
 import api from "../client";
-import type { LoginRequest, TokenResponse, Usuario } from "@ecg/types";
+import type { LoginRequest, TokenResponse, Usuario } from "@kine/types";
 
 export const authService = {
   login: async (body: LoginRequest): Promise<TokenResponse> => {

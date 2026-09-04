@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { keys } from "../api/queryKeys";
 import { alunoService } from "../api/services/aluno";
-import type { SessaoAtiva } from "@ecg/types";
+import type { SessaoAtiva } from "@kine/types";
 
 export function useSessaoAtiva() {
   return useQuery<SessaoAtiva | null>({

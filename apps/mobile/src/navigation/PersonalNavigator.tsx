@@ -17,7 +17,7 @@ import { HistoricoTreinosAlunoScreen } from "../screens/personal/HistoricoTreino
 import { DetalheTreinoRealizadoAlunoScreen } from "../screens/personal/DetalheTreinoRealizadoAlunoScreen";
 import { AdminUsuariosScreen } from "../screens/personal/AdminUsuariosScreen";
 
-import type { ExercicioTreino, ExercicioBase, SessaoResumo } from "@ecg/types";
+import type { ExercicioTreino, ExercicioBase, SessaoResumo } from "@kine/types";
 import { colors } from "../theme/colors";
 
 export type PersonalStackParamList = {

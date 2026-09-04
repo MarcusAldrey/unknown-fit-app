@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { keys } from "../api/queryKeys";
 import { alunoService } from "../api/services/aluno";
-import type { UltimoPesoExercicio } from "@ecg/types";
+import type { UltimoPesoExercicio } from "@kine/types";
 
 /**
  * Centraliza o fan-out de último peso por exercício em uma única query,

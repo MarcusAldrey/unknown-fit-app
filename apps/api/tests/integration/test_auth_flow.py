@@ -6,7 +6,7 @@ from tests.integration.conftest import _auth
 async def test_login_retorna_tokens_e_role(client: AsyncClient):
     resp = await client.post(
         "/api/v1/auth/login",
-        json={"email": "personal@ecg.com", "senha": "123456"},
+        json={"email": "personal@kine.com", "senha": "123456"},
     )
     assert resp.status_code == 200
     data = resp.json()
@@ -24,7 +24,7 @@ async def test_me_retorna_role_personal(client: AsyncClient, personal_token: str
 async def test_refresh_retorna_novos_tokens(client: AsyncClient, personal_token: str):
     login = await client.post(
         "/api/v1/auth/login",
-        json={"email": "personal@ecg.com", "senha": "123456"},
+        json={"email": "personal@kine.com", "senha": "123456"},
     )
     refresh_token = login.json()["refresh_token"]
 
@@ -43,7 +43,7 @@ async def test_aluno_token_nao_acessa_rota_personal(client: AsyncClient, aluno_t
 async def test_logout_revoga_refresh_token(client: AsyncClient):
     login = await client.post(
         "/api/v1/auth/login",
-        json={"email": "personal@ecg.com", "senha": "123456"},
+        json={"email": "personal@kine.com", "senha": "123456"},
     )
     assert login.status_code == 200
     refresh_token = login.json()["refresh_token"]
