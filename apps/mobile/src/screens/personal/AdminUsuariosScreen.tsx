@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -16,6 +16,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { hasAdminApiKey } from "../../api/client";
 import { keys } from "../../api/queryKeys";
 import { adminService } from "../../api/services/admin";
+import { authService } from "../../api/services/auth";
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type {
   AlunoAdmin,
   AlunoAdminCreateRequest,
@@ -23,8 +25,10 @@ import type {
   PersonalAdminCreateRequest,
 } from "@kine/types";
 import { colors } from "../../theme/colors";
+import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
 
 type Aba = "personais" | "alunos";
+type Props = NativeStackScreenProps<PersonalStackParamList, "AdminUsuarios">;
 
 function parseOptionalNumber(value: string): number | undefined {
   const normalized = value.trim().replace(",", ".");
@@ -54,7 +58,7 @@ function parseOptionalInteger(value: string): number | undefined {
   return parsed;
 }
 
-export function AdminUsuariosScreen() {
+export function AdminUsuariosScreen({ navigation }: Props) {
   const queryClient = useQueryClient();
   const [aba, setAba] = useState<Aba>("personais");
 
@@ -71,11 +75,27 @@ export function AdminUsuariosScreen() {
   const [alunoPersonalId, setAlunoPersonalId] = useState("");
   const [treinaCondominio, setTreinaCondominio] = useState(false);
 
+  const usuarioQuery = useQuery({
+    queryKey: keys.auth.me(),
+    queryFn: () => authService.me(),
+  });
+
   const personaisQuery = useQuery<PersonalAdmin[]>({
     queryKey: keys.admin.personais(),
     queryFn: () => adminService.personais(),
-    enabled: hasAdminApiKey && aba === "personais",
+    enabled: hasAdminApiKey,
   });
+
+  const personalAtual = personaisQuery.data?.find(
+    (personal) => personal.usuario_id === usuarioQuery.data?.id,
+  );
+  const personalAtualId = personalAtual?.personal_id ?? "";
+
+  useEffect(() => {
+    if (personalAtualId && !alunoPersonalId) {
+      setAlunoPersonalId(personalAtualId);
+    }
+  }, [alunoPersonalId, personalAtualId]);
 
   const alunosQuery = useQuery<AlunoAdmin[]>({
     queryKey: keys.admin.alunos(),
@@ -108,16 +128,18 @@ export function AdminUsuariosScreen() {
     mutationFn: async (payload: AlunoAdminCreateRequest) => {
       return adminService.criarAluno(payload);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       setAlunoNome("");
       setAlunoEmail("");
       setAlunoSenha("");
       setAlunoIdade("");
       setAlunoPeso("");
       setAlunoAltura("");
-      setAlunoPersonalId("");
+      setAlunoPersonalId(personalAtualId);
       setTreinaCondominio(false);
-      queryClient.invalidateQueries({ queryKey: keys.admin.alunos() });
+      await queryClient.invalidateQueries({ queryKey: keys.admin.alunos() });
+      await queryClient.invalidateQueries({ queryKey: keys.personal.alunos() });
+      navigation.goBack();
     },
     onError: (error: any) => {
       const detail = error?.response?.data?.detail;
@@ -256,7 +278,7 @@ export function AdminUsuariosScreen() {
         idade,
         peso,
         altura,
-        personal_id: alunoPersonalId.trim() || undefined,
+        personal_id: personalAtualId || undefined,
         treina_em_academia_condominio: treinaCondominio,
       });
     } catch {
@@ -436,11 +458,11 @@ export function AdminUsuariosScreen() {
             />
             <TextInput
               style={styles.input}
-              placeholder="Personal ID (opcional)"
+              placeholder="Personal ID"
               placeholderTextColor={colors.textMuted}
               autoCapitalize="none"
               value={alunoPersonalId}
-              onChangeText={setAlunoPersonalId}
+              editable={false}
             />
 
             <View style={styles.switchRow}>
@@ -456,7 +478,7 @@ export function AdminUsuariosScreen() {
             <TouchableOpacity
               style={styles.primaryButton}
               onPress={handleCreateAluno}
-              disabled={createAlunoMutation.isPending}
+              disabled={createAlunoMutation.isPending || !personalAtualId}
             >
               <Text style={styles.primaryButtonText}>
                 {createAlunoMutation.isPending ? "Criando..." : "Criar aluno"}

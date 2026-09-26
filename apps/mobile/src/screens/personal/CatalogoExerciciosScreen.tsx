@@ -153,7 +153,7 @@ export function CatalogoExerciciosScreen({ navigation }: Props) {
         value={searchText}
         onChangeText={setSearchText}
         placeholder="Buscar exercício, grupo, implemento ou recurso"
-              placeholderTextColor={colors.textMuted}
+        placeholderTextColor={colors.textMuted}
       />
 
       <View style={styles.filterRow}>
@@ -211,9 +211,7 @@ export function CatalogoExerciciosScreen({ navigation }: Props) {
             <Text style={styles.nome}>{item.nome}</Text>
             <Text style={styles.subInfo}>
               {item.grupo_muscular}
-              {item.implemento_execucao
-                ? ` · ${item.implemento_execucao}`
-                : ""}
+              {item.implemento_execucao ? ` · ${item.implemento_execucao}` : ""}
             </Text>
           </TouchableOpacity>
         )}
@@ -230,7 +228,7 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   menuBackdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 10,
     backgroundColor: "rgba(0,0,0,0.001)",
     elevation: 4,
@@ -351,7 +349,12 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   subInfo: { color: colors.textMuted, fontSize: 14, marginTop: 4 },
-  empty: { color: colors.textMuted, textAlign: "center", marginTop: 32, fontSize: 16 },
+  empty: {
+    color: colors.textMuted,
+    textAlign: "center",
+    marginTop: 32,
+    fontSize: 16,
+  },
   errorTitle: {
     color: colors.danger,
     fontSize: 16,

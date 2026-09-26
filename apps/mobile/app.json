@@ -6,11 +6,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#172121"
-    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.kine.mobile"
@@ -21,6 +16,18 @@
         "backgroundColor": "#172121"
       },
       "package": "com.kine.mobile"
-    }
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#172121"
+        }
+      ]
+    ]
   }
 }

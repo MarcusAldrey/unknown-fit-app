@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   menuBackdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 10,
     backgroundColor: "rgba(0,0,0,0.001)",
     elevation: 4,
@@ -244,7 +244,12 @@ const styles = StyleSheet.create({
   },
   nome: { color: colors.text, fontSize: 18, fontWeight: "bold" },
   email: { color: colors.textMuted, fontSize: 14, marginTop: 4 },
-  empty: { color: colors.textMuted, textAlign: "center", marginTop: 32, fontSize: 16 },
+  empty: {
+    color: colors.textMuted,
+    textAlign: "center",
+    marginTop: 32,
+    fontSize: 16,
+  },
   errorTitle: {
     color: colors.danger,
     fontSize: 16,

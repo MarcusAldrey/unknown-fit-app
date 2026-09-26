@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   menuBackdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 10,
     backgroundColor: "rgba(0,0,0,0.001)",
     elevation: 4,

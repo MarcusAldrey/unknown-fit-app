@@ -7,8 +7,10 @@ import uuid
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy import text
 
 from app.config import get_settings
+from app.database import engine
 from app.exceptions import DomainError
 from app.logging_config import (
     configure_logging,
@@ -167,4 +169,14 @@ app.include_router(catalogo.router, prefix="/api/v1/catalogo", tags=["Catálogo"
 
 @app.get("/health")
 async def health():
-    return {"status": "ok"}
+    try:
+        async with engine.connect() as connection:
+            await connection.execute(text("SELECT 1"))
+    except Exception:
+        logger.exception("health_check_failed")
+        return JSONResponse(
+            status_code=503,
+            content={"status": "unhealthy", "database": "unavailable"},
+        )
+
+    return {"status": "ok", "database": "ok"}

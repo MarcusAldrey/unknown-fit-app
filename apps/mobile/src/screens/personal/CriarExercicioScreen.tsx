@@ -920,7 +920,7 @@ const styles = StyleSheet.create({
   wrapper: { flex: 1, backgroundColor: colors.background },
   container: { flex: 1, padding: 16 },
   floatingBackdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0,0,0,0.001)",
     zIndex: 30,
     elevation: 10,
