@@ -4,8 +4,16 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings
+def _find_env_file() -> Path:
+    current = Path(__file__).resolve()
+    for parent in current.parents:
+        candidate = parent / ".env"
+        if candidate.is_file():
+            return candidate
+    return Path(".env")
 
-_ENV_FILE = Path(__file__).resolve().parents[3] / ".env"
+
+_ENV_FILE = _find_env_file()
 
 
 class Settings(BaseSettings):
