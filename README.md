@@ -72,45 +72,53 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 pnpm api
 ```
 
-### 2.1 Deploy em Droplet (Docker Compose)
+### 2.1 Deploy em Produção (Oracle Cloud / Docker Compose)
 
-Arquivos de deploy para Droplet:
+A infraestrutura de produção utiliza Docker Compose com FastAPI e PostgreSQL 15:
 
-- `deploy/docker-compose.yml`
-- `deploy/.env.example`
+- `docker-compose.yml` (na raiz do monorepo)
 - `apps/api/Dockerfile`
+- `apps/api/entrypoint.sh` (com checagem automática de prontidão do banco e migrações Alembic)
 
-Passo a passo no servidor (Ubuntu):
+Passo a passo no servidor (Ubuntu 24.04 na Oracle Cloud):
 
 ```bash
-# 1) Clonar o repo
-git clone git@github.com:MarcusAldrey/unknown-fit-app.git
-cd kine
+# 1) Clonar o repositório
+git clone https://github.com/MarcusAldrey/unknown-fit-app.git
+cd unknown-fit-app
 
-# 2) Configurar variaveis de producao
-cp deploy/.env.example deploy/.env
-nano deploy/.env
+# 2) Criar arquivo de variáveis de ambiente (.env)
+cat << 'EOF' > .env
+ENVIRONMENT=production
+POSTGRES_PASSWORD=sua-senha-segura-aqui
+SECRET_KEY=sua-chave-secreta-jwt-aqui
+ADMIN_API_KEY=sua-chave-admin-aqui
+CORS_ORIGINS=*
+EOF
 
-# 3) Subir API + PostgreSQL
-docker compose --env-file deploy/.env -f deploy/docker-compose.yml up -d --build
+# 3) Subir os containers (API + PostgreSQL)
+docker compose up -d --build
 
-# 4) Verificar containers e logs
-docker compose -f deploy/docker-compose.yml ps
-docker compose -f deploy/docker-compose.yml logs -f api
+# 4) Verificar status e logs
+docker compose ps
+docker compose logs -f api
+
+# 5) Popular banco de dados inicial (Seed)
+docker compose exec api python -m app.seed
 ```
 
 Smoke test:
 
 ```bash
-curl -i http://<IP_DO_DROPLET>:8000/health
+curl -i http://<IP_DO_SERVIDOR>:8000/docs
 ```
 
-Observacoes importantes para producao:
+Observações importantes para produção:
 
 - Mantenha `ENVIRONMENT=production`, `SECRET_KEY` e `ADMIN_API_KEY` fortes.
-- Nao exponha a porta 5432 do PostgreSQL publicamente.
-- Configure backup periodico do banco (pg_dump + snapshots).
-- Se usar dominio e HTTPS, coloque um reverse proxy (Nginx/Caddy) na frente da API.
+- O acesso visual ao PostgreSQL deve ser feito preferencialmente via **SSH Tunnel** (porta 5432 direcionada para localhost).
+- Em máquinas com 1 GB de RAM (como `VM.Standard.E2.1.Micro`), configure um swap file de 2 GB (`sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile`).
+
 
 ### 3. Mobile
 

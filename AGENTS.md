@@ -41,6 +41,7 @@ apps/mobile       React Native + Expo SDK 54 + React Query 5 + Axios (TypeScript
   App.tsx          PersistQueryClientProvider + AuthProvider
 
 packages/types     @kine/types — single source of shared TypeScript types
+docker-compose.yml production orchestration (FastAPI + PostgreSQL 15)
 docs/ai/           backend-ai.md + frontend-ai.md (scope-specific extras)
 ```
 
@@ -129,6 +130,15 @@ pnpm install
 pnpm typecheck
 pnpm lint
 pnpm --filter @kine/mobile start
+```
+
+### Deployment / Production (from repo root)
+
+```bash
+docker compose up -d --build
+docker compose ps
+docker compose logs -f api
+docker compose exec api python -m app.seed
 ```
 
 Seed users: `personal@kine.com` / `aluno@kine.com` (password `123456`).
