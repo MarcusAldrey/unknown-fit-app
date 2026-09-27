@@ -53,9 +53,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function checkAuth() {
     try {
       const token = await SecureStore.getItemAsync("access_token");
+      const refreshToken = await SecureStore.getItemAsync("refresh_token");
       const role = (await SecureStore.getItemAsync("user_role")) as Role | null;
 
-      if (!token) {
+      if (!token || !refreshToken) {
+        await clearAuthState();
         setState({
           isLoading: false,
           isAuthenticated: false,

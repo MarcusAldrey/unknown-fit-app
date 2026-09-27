@@ -29,6 +29,11 @@ import type {
 } from "@kine/types";
 import type { AlunoTreinoStackParamList } from "../../navigation/AlunoNavigator";
 import { formatarIntervaloDescanso } from "../../utils/formatters";
+import {
+  carregarRascunhoSessao,
+  limparRascunhoSessao,
+  salvarRascunhoSessao,
+} from "../../utils/sessaoDraft";
 import { colors } from "../../theme/colors";
 
 type Props = NativeStackScreenProps<AlunoTreinoStackParamList, "SessaoTreino">;
@@ -135,6 +140,7 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
   const [sessionElapsedSeconds, setSessionElapsedSeconds] = useState(0);
   const [series, setSeries] = useState<SerieLocal[]>([]);
   const [sessaoAtivaInicializada, setSessaoAtivaInicializada] = useState(false);
+  const sessaoRascunhoCarregadoRef = useRef(false);
   const [observacoesAbertas, setObservacoesAbertas] = useState<
     Record<string, boolean>
   >({});
@@ -348,6 +354,7 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
       });
 
       setSessaoId(data.id);
+      sessaoRascunhoCarregadoRef.current = true;
       setSubstituicoesExercicio({});
       const startedAt = parseApiDateToMs(data.iniciado_em);
       setSessionStartMs(startedAt);
@@ -389,6 +396,7 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
   function descartarSessaoConflitanteEIniciar(sessaoIdConflitante: string) {
     descartarSessaoConflitanteMutation.mutate(sessaoIdConflitante, {
       onSuccess: () => {
+        void limparRascunhoSessao(sessaoIdConflitante);
         queryClient.invalidateQueries({
           queryKey: keys.aluno.sessaoAtiva(),
         });
@@ -466,6 +474,8 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
       return;
     }
 
+    let active = true;
+    sessaoRascunhoCarregadoRef.current = false;
     setSessaoId(sessaoAtivaParaRetomar.id);
     const startedAt = parseApiDateToMs(sessaoAtivaParaRetomar.iniciado_em);
     setSessionStartMs(startedAt);
@@ -528,15 +538,47 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
       }
     });
 
-    setSeries(seriesLocal);
-    setSubstituicoesExercicio(substituicoesIniciais);
-    setSessaoAtivaInicializada(true);
+    void (async () => {
+      const rascunho = await carregarRascunhoSessao<SerieLocal[]>(
+        sessaoAtivaParaRetomar.id,
+      );
+      if (!active) return;
+
+      const seriesRestauradas = [...seriesLocal];
+      for (const serie of rascunho ?? []) {
+        const serieNormalizada = { ...serie, deleting: false };
+        const indiceExistente = seriesRestauradas.findIndex(
+          (existente) =>
+            existente.exercicio_treino_id === serie.exercicio_treino_id &&
+            existente.numero_serie === serie.numero_serie,
+        );
+        if (indiceExistente === -1) {
+          seriesRestauradas.push(serieNormalizada);
+        } else if (!seriesRestauradas[indiceExistente].serieId) {
+          seriesRestauradas[indiceExistente] = serieNormalizada;
+        }
+      }
+
+      setSeries(seriesRestauradas);
+      setSubstituicoesExercicio(substituicoesIniciais);
+      sessaoRascunhoCarregadoRef.current = true;
+      setSessaoAtivaInicializada(true);
+    })();
+
+    return () => {
+      active = false;
+    };
   }, [
     sessaoAtivaParaRetomar,
     exercicios,
     exerciciosPorId,
     sessaoAtivaInicializada,
   ]);
+
+  useEffect(() => {
+    if (!sessaoId || !sessaoRascunhoCarregadoRef.current) return;
+    void salvarRascunhoSessao(sessaoId, series);
+  }, [sessaoId, series]);
 
   useEffect(() => {
     if (!sessaoId || !sessionStartMs) return;
@@ -557,6 +599,7 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
       await alunoService.finalizarSessao(sessaoId!);
     },
     onSuccess: () => {
+      void limparRascunhoSessao(sessaoId!);
       void queryClient.invalidateQueries({
         queryKey: keys.aluno.sessaoAtiva(),
       });
@@ -699,7 +742,8 @@ export function SessaoTreinoScreen({ route, navigation }: Props) {
   });
 
   const excluirSerieMutation = useMutation({
-    mutationFn: (serieId: string) => alunoService.excluirSerie(sessaoId!, serieId),
+    mutationFn: (serieId: string) =>
+      alunoService.excluirSerie(sessaoId!, serieId),
   });
 
   const salvarObservacaoTreinoMutation = useMutation({
@@ -1445,7 +1489,12 @@ const styles = StyleSheet.create({
     textAlign: "center",
     paddingHorizontal: 18,
   },
-  iniciarSub: { color: colors.textMuted, fontSize: 16, marginTop: 8, marginBottom: 16 },
+  iniciarSub: {
+    color: colors.textMuted,
+    fontSize: 16,
+    marginTop: 8,
+    marginBottom: 16,
+  },
   preStartContainer: {
     paddingTop: 48,
     paddingBottom: 32,
@@ -1576,7 +1625,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
   },
-  exercicioNome: { color: colors.text, fontSize: 16, fontWeight: "bold", flex: 1 },
+  exercicioNome: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: "bold",
+    flex: 1,
+  },
   exercicioNomeSecundario: {
     color: colors.textMuted,
     fontSize: 12,
@@ -1684,7 +1738,12 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 8,
   },
-  serieNum: { color: colors.primary, fontWeight: "bold", width: 68, fontSize: 12 },
+  serieNum: {
+    color: colors.primary,
+    fontWeight: "bold",
+    width: 68,
+    fontSize: 12,
+  },
   serieInput: {
     backgroundColor: colors.background,
     color: colors.text,

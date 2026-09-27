@@ -18,6 +18,7 @@ import { alunoService } from "../../api/services/aluno";
 import { useAuth } from "../../contexts/AuthContext";
 import type { SessaoResumo, Usuario } from "@kine/types";
 import type { AlunoHistoricoStackParamList } from "../../navigation/AlunoNavigator";
+import { App_version } from "../../constants/app";
 import { colors } from "../../theme/colors";
 
 type Props = NativeStackScreenProps<
@@ -108,6 +109,9 @@ export function HistoricoTreinosScreen({ navigation }: Props) {
 
             {menuAberto ? (
               <View style={styles.settingsMenu}>
+                <Text style={styles.appVersion}>
+                  App Version: {App_version}
+                </Text>
                 <TouchableOpacity
                   style={styles.menuItem}
                   onPress={async () => {
@@ -252,6 +256,13 @@ const styles = StyleSheet.create({
     color: colors.danger,
     fontSize: 14,
     fontWeight: "600",
+  },
+  appVersion: {
+    color: colors.textMuted,
+    fontSize: 10,
+    paddingHorizontal: 14,
+    paddingTop: 9,
+    paddingBottom: 4,
   },
   sectionTitle: {
     color: colors.text,

@@ -20,6 +20,7 @@ import { personalService } from "../../api/services/personal";
 import { useAuth } from "../../contexts/AuthContext";
 import type { AlunoResumo, Usuario } from "@kine/types";
 import type { PersonalStackParamList } from "../../navigation/PersonalNavigator";
+import { App_version } from "../../constants/app";
 import { colors } from "../../theme/colors";
 
 type Props = NativeStackScreenProps<PersonalStackParamList, "AlunosList">;
@@ -89,6 +90,7 @@ export function AlunosListScreen({ navigation }: Props) {
 
           {menuAberto ? (
             <View style={styles.settingsMenu}>
+              <Text style={styles.appVersion}>App Version: {App_version}</Text>
               {hasAdminApiKey ? (
                 <TouchableOpacity
                   style={styles.menuItem}
@@ -223,6 +225,13 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 14,
     fontWeight: "600",
+  },
+  appVersion: {
+    color: colors.textMuted,
+    fontSize: 10,
+    paddingHorizontal: 14,
+    paddingTop: 9,
+    paddingBottom: 4,
   },
   sectionTitle: {
     color: colors.text,

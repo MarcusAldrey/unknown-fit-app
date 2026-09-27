@@ -86,6 +86,9 @@ let refreshPromise: Promise<string | null> | null = null;
 async function refreshTokens(): Promise<string | null> {
   const refreshToken = await SecureStore.getItemAsync("refresh_token");
   if (!refreshToken) {
+    if (__DEV__) {
+      console.warn("[Auth] Refresh ignorado: refresh_token ausente.");
+    }
     return null;
   }
 
@@ -96,7 +99,15 @@ async function refreshTokens(): Promise<string | null> {
     await SecureStore.setItemAsync("access_token", data.access_token);
     await SecureStore.setItemAsync("refresh_token", data.refresh_token);
     return data.access_token as string;
-  } catch {
+  } catch (error) {
+    if (__DEV__) {
+      console.error(
+        "[Auth] Falha no refresh:",
+        axios.isAxiosError(error)
+          ? (error.response?.status ?? error.code)
+          : "erro desconhecido",
+      );
+    }
     await SecureStore.deleteItemAsync("access_token");
     await SecureStore.deleteItemAsync("refresh_token");
     return null;
