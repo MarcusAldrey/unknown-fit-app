@@ -1,10 +1,12 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import * as SecureStore from "expo-secure-store";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 
 import { setOnAuthFailure } from "../api/client";
 import { authService } from "../api/services/auth";
+import { QUERY_CACHE_STORAGE_KEY } from "../constants/app";
 import type { LoginRequest, Role } from "@kine/types";
 
 interface AuthState {
@@ -48,6 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await SecureStore.deleteItemAsync("refresh_token");
     await SecureStore.deleteItemAsync("user_role");
     queryClient.clear();
+    await AsyncStorage.removeItem(QUERY_CACHE_STORAGE_KEY);
   }
 
   async function checkAuth() {
@@ -94,6 +97,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function login(body: LoginRequest) {
     try {
+      queryClient.clear();
+      await AsyncStorage.removeItem(QUERY_CACHE_STORAGE_KEY);
       const data = await authService.login(body);
 
       await SecureStore.setItemAsync("access_token", data.access_token);

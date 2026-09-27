@@ -7,6 +7,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { AuthProvider } from "./src/contexts/AuthContext";
 import { RootNavigator } from "./src/navigation";
+import { QUERY_CACHE_STORAGE_KEY } from "./src/constants/app";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -20,6 +21,7 @@ const queryClient = new QueryClient({
 
 const asyncStoragePersister = createAsyncStoragePersister({
   storage: AsyncStorage,
+  key: QUERY_CACHE_STORAGE_KEY,
 });
 
 export default function App() {
