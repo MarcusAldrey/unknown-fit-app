@@ -1,0 +1,13 @@
+{
+  "build": {
+    "preview": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://kine-api.aldrey.dev/api/v1"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    }
+  }
+}

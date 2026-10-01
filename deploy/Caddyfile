@@ -1,0 +1,3 @@
+kine-api.aldrey.dev {
+    reverse_proxy api:8000
+}
