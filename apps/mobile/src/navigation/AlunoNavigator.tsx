@@ -1,4 +1,5 @@
 import React from "react";
+import { MaterialIcons } from "@expo/vector-icons";
 import { NavigatorScreenParams } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -86,7 +87,10 @@ export function AlunoStack() {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarStyle: { backgroundColor: colors.background, borderTopColor: colors.border },
+        tabBarStyle: {
+          backgroundColor: colors.background,
+          borderTopColor: colors.border,
+        },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
       }}
@@ -94,12 +98,22 @@ export function AlunoStack() {
       <Tab.Screen
         name="MeuTreino"
         component={MeuTreinoStackNavigator}
-        options={{ title: "Meu Treino" }}
+        options={{
+          title: "Meu Treino",
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="fitness-center" color={color} size={size} />
+          ),
+        }}
       />
       <Tab.Screen
         name="Perfil"
         component={HistoricoStackNavigator}
-        options={{ title: "Perfil" }}
+        options={{
+          title: "Perfil",
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="person" color={color} size={size} />
+          ),
+        }}
       />
     </Tab.Navigator>
   );
